@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "569026003826",
+    "project_id": "bright-brush",
+    "storage_bucket": "bright-brush.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:569026003826:android:2c01f0f3cd7ff3909c53eb",
+        "android_client_info": {
+          "package_name": "com.example.brightbrush"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3zA-TXn-R1JbzTTwUcJasb1btFOoB7Uk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
