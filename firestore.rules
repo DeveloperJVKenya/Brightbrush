@@ -37,14 +37,41 @@ rules_version = '2';
 //   - createdAt: timestamp (required, immutable)
 //   - updatedAt: timestamp (required)
 //
-// Collection: staffRoles
-// Document ID: {uid} (the staff member's Firebase Auth uid)
+// Collection: orders
+// Document ID: auto-generated
 // Fields:
-//   - role: string (required, one of 'systemManager' | 'admin' | 'deliveryStaff')
-//   - assignedAt: timestamp (required)
-// This collection has NO client write path (see below): it is the seed for
-// future RBAC and is bootstrapped by a developer directly in the Firebase
-// console after a staff member signs in once and their uid is known.
+//   - customerId: string (required, immutable, Firebase Auth uid of the placing customer)
+//   - contactName: string (required, immutable, 2-80 chars)
+//   - contactPhone: string (required, immutable, 3-30 chars)
+//   - deliveryAddress: string (required, immutable, 5-300 chars)
+//   - notes: string (optional, immutable, <= 1000 chars)
+//   - items: list<map> (required, immutable, 1-50 entries: {itemId, name, category, unitPrice, quantity})
+//   - subtotal: number (required, immutable, > 0)
+//   - total: number (required, immutable, > 0) -- no delivery fee/tax modeling yet, equals subtotal
+//   - status: string (required, one of ORDER_STATUSES) -- customer can only ever set 'pendingReview' (create)
+//     or move 'pendingReview' -> 'cancelled' (self-cancel); every other transition is staff-only
+//   - paymentStatus: string (required, one of 'unpaid' | 'invoiced' | 'paid') -- this pilot has no payment
+//     gateway; staff mark orders invoiced/paid manually against an offline payment (bank transfer, mobile
+//     money, in person)
+//   - createdAt: timestamp (required, immutable)
+//   - updatedAt: timestamp (required)
+// Note: Firestore rules can't loop over `items` to validate each entry's inner fields (itemId/unitPrice/
+// etc.) — only the list's size is bounded here. Treat that as a known prototype limitation.
+//
+// Collection: users
+// Document ID: {uid} (the account's Firebase Auth uid)
+// Fields:
+//   - email: string (required, immutable, valid email)
+//   - displayName: string (required, 1-80 chars)
+//   - role: string (required, immutable via client writes — see below — one of
+//     'customer' | 'systemManager' | 'admin' | 'deliveryStaff')
+//   - createdAt: timestamp (required, immutable)
+//   - updatedAt: timestamp (required)
+// A client can only ever self-register as 'customer' (never a staff role) —
+// staff accounts are provisioned by the developer directly against Firestore
+// (Admin SDK/console bypasses rules) after the account is created. Once set,
+// role is immutable through the client update rule, so a customer can never
+// self-promote after registration either.
 //
 // ===============================================================
 // Queries the app performs (rules below MUST allow these):
@@ -53,6 +80,8 @@ rules_version = '2';
 //   catalog_items: orderBy('createdAt', descending: true)                                        [manager/admin, all items]
 //   packages:      where('isActive', isEqualTo: true).orderBy('createdAt', descending: true)    [customer]
 //   packages:      orderBy('createdAt', descending: true)                                        [manager/admin, all items]
+//   orders:        where('customerId', isEqualTo: uid).orderBy('createdAt', descending: true)    [customer, own orders]
+//   orders:        orderBy('createdAt', descending: true)                                         [manager/admin, all orders]
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -112,17 +141,23 @@ service cloud.firestore {
       return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
     }
 
-    // A staff member is anyone with a bootstrapped role doc. This collection
-    // can only be written by the developer via the console/Admin SDK, so it
-    // cannot be self-granted by any client.
+    // A staff member is anyone whose users/{uid} doc carries one of these
+    // roles. Since the create rule below only ever allows a client to set
+    // role == 'customer', and update can't change role at all, no client
+    // can ever grant itself a staff role — only the developer, directly
+    // against Firestore (bypassing rules), can.
     function hasStaffRole(allowedRoles) {
       return isAuthenticated() &&
-        exists(/databases/$(database)/documents/staffRoles/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/staffRoles/$(request.auth.uid)).data.role in allowedRoles;
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in allowedRoles;
     }
 
     function isCatalogManager() {
       return hasStaffRole(['systemManager', 'admin']);
+    }
+
+    function isOrderStaff() {
+      return hasStaffRole(['systemManager', 'admin', 'deliveryStaff']);
     }
 
     // ===============================================================
@@ -181,6 +216,54 @@ service cloud.firestore {
             (!('validTo' in d) || d.validTo is timestamp);
     }
 
+    function isValidOrderStatus(value) {
+      return value in [
+        'pendingReview', 'confirmed', 'inProduction', 'readyForDelivery',
+        'outForDelivery', 'completed', 'cancelled'
+      ];
+    }
+
+    function isValidPaymentStatus(value) {
+      return value in ['unpaid', 'invoiced', 'paid'];
+    }
+
+    function isValidRole(value) {
+      return value in ['customer', 'systemManager', 'admin', 'deliveryStaff'];
+    }
+
+    function isValidUserProfile() {
+      let d = request.resource.data;
+      return hasOnlyAllowedFields(['email', 'displayName', 'role', 'createdAt', 'updatedAt']) &&
+        hasRequiredFields(['email', 'displayName', 'role', 'createdAt', 'updatedAt']) &&
+        d.email is string && d.email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$') &&
+        validStringLength('displayName', 1, 80) &&
+        isValidRole(d.role) &&
+        d.createdAt is timestamp && d.updatedAt is timestamp;
+    }
+
+    function isValidOrder() {
+      let d = request.resource.data;
+      return hasOnlyAllowedFields([
+              'customerId', 'contactName', 'contactPhone', 'deliveryAddress', 'notes',
+              'items', 'subtotal', 'total', 'status', 'paymentStatus', 'createdAt', 'updatedAt'
+            ]) &&
+            hasRequiredFields([
+              'customerId', 'contactName', 'contactPhone', 'deliveryAddress',
+              'items', 'subtotal', 'total', 'status', 'paymentStatus', 'createdAt', 'updatedAt'
+            ]) &&
+            d.customerId is string &&
+            validStringLength('contactName', 2, 80) &&
+            validStringLength('contactPhone', 3, 30) &&
+            validStringLength('deliveryAddress', 5, 300) &&
+            (!('notes' in d) || validStringLength('notes', 0, 1000)) &&
+            d.items is list && d.items.size() >= 1 && d.items.size() <= 50 &&
+            isPositiveNumber('subtotal') && d.subtotal <= 1000000000 &&
+            isPositiveNumber('total') && d.total <= 1000000000 &&
+            isValidOrderStatus(d.status) &&
+            isValidPaymentStatus(d.paymentStatus) &&
+            d.createdAt is timestamp && d.updatedAt is timestamp;
+    }
+
     // ===============================================================
     // Collections
     // ===============================================================
@@ -224,12 +307,67 @@ service cloud.firestore {
       allow delete: if isCatalogManager();
     }
 
-    match /staffRoles/{uid} {
-      // A user may check their own role client-side; nobody may write here
-      // from a client. Roles are bootstrapped by the developer via the
-      // Firebase console (Admin SDK bypasses rules).
+    match /orders/{orderId} {
+      // A customer sees only their own orders; staff (manager/admin/delivery)
+      // see everything — they need the full pipeline to fulfill orders.
+      allow read: if isOwner(resource.data.customerId) || isOrderStaff();
+
+      // Customers place orders themselves; they always start unpaid and
+      // awaiting review — no client can create an order that's already
+      // 'confirmed'/'paid'/etc.
+      allow create: if isAuthenticated() &&
+        request.resource.data.customerId == request.auth.uid &&
+        isValidOrder() &&
+        request.resource.data.status == 'pendingReview' &&
+        request.resource.data.paymentStatus == 'unpaid' &&
+        request.resource.data.createdAt == request.time;
+
+      // Order contents/pricing/contact info are immutable after creation —
+      // regardless of who's updating. The only things anyone may change
+      // post-creation are status and paymentStatus.
+      allow update: if isValidOrder() &&
+        areImmutableFieldsUnchanged([
+          'customerId', 'contactName', 'contactPhone', 'deliveryAddress',
+          'notes', 'items', 'subtotal', 'total', 'createdAt'
+        ]) &&
+        request.resource.data.updatedAt == request.time &&
+        (
+          // Staff can move status/paymentStatus through the full pipeline.
+          isOrderStaff() ||
+          // Customers may only cancel their own order, and only while it's
+          // still pendingReview — once staff picks it up, it's staff-only.
+          (isOwner(resource.data.customerId) &&
+            resource.data.status == 'pendingReview' &&
+            request.resource.data.status == 'cancelled' &&
+            request.resource.data.paymentStatus == resource.data.paymentStatus)
+        );
+
+      allow delete: if false;
+    }
+
+    match /users/{uid} {
+      // Contains an email address (PII) — only the owner may ever read
+      // their own profile, per the "no mixed content" rule. Staff needing
+      // customer contact info read it off the order itself (denormalized),
+      // not this collection.
       allow read: if isOwner(uid);
-      allow write: if false;
+
+      // Self-registration is always as a plain customer. request.time
+      // pins createdAt so it can't be backdated/forward-dated.
+      allow create: if isOwner(uid) &&
+        isValidUserProfile() &&
+        request.resource.data.role == 'customer' &&
+        request.resource.data.createdAt == request.time;
+
+      // role/email/createdAt are immutable through the client — only
+      // displayName and updatedAt may change. Promotion to a staff role
+      // is a developer-only, direct-Firestore action.
+      allow update: if isOwner(uid) &&
+        isValidUserProfile() &&
+        areImmutableFieldsUnchanged(['role', 'email', 'createdAt']) &&
+        request.resource.data.updatedAt == request.time;
+
+      allow delete: if false;
     }
 
     // Default deny for anything not explicitly matched above.

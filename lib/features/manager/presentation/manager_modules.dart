@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/widgets/module_spec.dart';
 import 'manager_catalog_screen.dart';
+import 'manager_orders_screen.dart';
 import 'manager_packages_screen.dart';
 
 /// Sections available to the System Manager: keeper of the public catalog,
@@ -35,12 +36,13 @@ final List<ModuleSpec> managerModules = [
     description: 'Create and schedule seasonal/campaign bundles (Valentine\'s, elections, etc).',
     screenBuilder: (context, state) => const ManagerPackagesScreen(),
   ),
-  const ModuleSpec(
+  ModuleSpec(
     path: '/manager/orders',
     label: 'Orders',
     icon: Icons.list_alt_outlined,
     selectedIcon: Icons.list_alt,
     description: 'Incoming, in-production and completed orders across all clients.',
+    screenBuilder: (context, state) => const ManagerOrdersScreen(),
   ),
   const ModuleSpec(
     path: '/manager/history',

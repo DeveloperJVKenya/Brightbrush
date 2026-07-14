@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/widgets/module_spec.dart';
+import 'cart_checkout_screen.dart';
 import 'customer_catalog_screen.dart';
+import 'my_orders_screen.dart';
 import 'packages_screen.dart';
 
 /// Sections available to a Customer/Client. Order matters: the first
@@ -30,7 +32,7 @@ final List<ModuleSpec> customerModules = [
         'curated by the System Manager.',
     screenBuilder: (context, state) => const PackagesScreen(),
   ),
-  const ModuleSpec(
+  ModuleSpec(
     path: '/customer/orders',
     label: 'My Orders',
     icon: Icons.receipt_long_outlined,
@@ -38,6 +40,7 @@ final List<ModuleSpec> customerModules = [
     description:
         'Place new bulk or personal orders, and follow each order through design approval, '
         'production and delivery.',
+    screenBuilder: (context, state) => const MyOrdersScreen(),
   ),
   const ModuleSpec(
     path: '/customer/tracking',
@@ -48,12 +51,13 @@ final List<ModuleSpec> customerModules = [
         'Live map view of your delivery once it is out, powered by the in-app Google Maps '
         'tracking integration.',
   ),
-  const ModuleSpec(
+  ModuleSpec(
     path: '/customer/cart',
     label: 'Cart & Checkout',
     icon: Icons.shopping_cart_outlined,
     selectedIcon: Icons.shopping_cart,
-    description: 'Review items, upload artwork/logos, choose quantities and confirm payment.',
+    description: 'Review items, choose quantities and confirm your order.',
+    screenBuilder: (context, state) => const CartCheckoutScreen(),
   ),
   const ModuleSpec(
     path: '/customer/notifications',

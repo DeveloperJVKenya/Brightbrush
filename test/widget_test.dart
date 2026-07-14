@@ -28,10 +28,10 @@ void main() {
     // Splash screen redirects to /login once no role is signed in.
     await tester.pumpAndSettle();
 
-    expect(find.text('Sign in'), findsNWidgets(2)); // headline + disabled submit button
-    expect(find.text('Continue as Customer'), findsOneWidget);
-    expect(find.text('Continue as Delivery Staff'), findsOneWidget);
-    expect(find.text('Continue as System Manager'), findsOneWidget);
-    expect(find.text('Continue as Admin / CEO'), findsOneWidget);
+    expect(find.text('Sign in'), findsNWidgets(2)); // headline + submit button
+    expect(find.text('Continue as Guest Customer'), findsOneWidget);
+    expect(find.text('Continue as Delivery Staff (demo)'), findsOneWidget);
+    expect(find.text('Continue as System Manager (demo)'), findsOneWidget);
+    expect(find.text('Continue as Admin / CEO (demo)'), findsOneWidget);
   });
 }

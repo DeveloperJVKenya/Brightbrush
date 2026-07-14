@@ -22,7 +22,7 @@ import '../firebase/firebase_providers.dart';
 /// so navigation reacts to role/auth changes without rebuilding the router.
 class _RoleRefreshNotifier extends ChangeNotifier {
   _RoleRefreshNotifier(this._ref) {
-    _ref.listen<AppRole?>(currentRoleProvider, (_, _) => notifyListeners());
+    _ref.listen<AsyncValue<AppRole?>>(resolvedRoleProvider, (_, _) => notifyListeners());
   }
 
   final Ref _ref;
@@ -43,15 +43,19 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/splash',
     refreshListenable: refresh,
     redirect: (context, state) async {
-      final role = ref.read(currentRoleProvider);
       final path = state.matchedLocation;
 
       if (path == '/splash') {
         // Firestore/Storage rules require request.auth != null, so every
-        // visitor is signed in anonymously before anything else loads.
+        // visitor is signed in anonymously (as a guest customer) before
+        // anything else loads; resolvedRoleProvider then upgrades that to
+        // a real role once/if a staff account signs in.
         await ref.read(ensureSignedInProvider.future);
+        final role = await ref.read(resolvedRoleProvider.future);
         return role == null ? '/login' : role.homePath;
       }
+
+      final role = ref.read(resolvedRoleProvider).valueOrNull;
 
       if (role == null) {
         return path == '/login' ? null : '/login';
@@ -118,9 +122,10 @@ ShellRoute _roleShellRoute({
             currentPath: state.matchedLocation,
             onDestinationSelected: (path) => context.go(path),
             onOpenSettings: () => context.push('/settings'),
-            onSwitchRole: () {
-              ref.read(currentRoleProvider.notifier).state = null;
-              context.go('/login');
+            onSwitchRole: () async {
+              await ref.read(firebaseAuthProvider).signOut();
+              ref.read(guestEnteredProvider.notifier).state = false;
+              if (context.mounted) context.go('/login');
             },
             child: child,
           );
