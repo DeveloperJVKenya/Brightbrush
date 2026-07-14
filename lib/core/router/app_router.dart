@@ -6,14 +6,17 @@ import '../../features/admin/presentation/admin_modules.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/splash_screen.dart';
 import '../../features/manager/presentation/manager_modules.dart';
+import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/staff/presentation/staff_modules.dart';
 import '../../features/customer/presentation/customer_modules.dart';
+import '../../features/customer/presentation/customer_routes.dart';
 import '../../shared/widgets/adaptive_role_shell.dart';
 import '../../shared/widgets/module_spec.dart';
 import '../../shared/widgets/placeholder_screen.dart';
 import '../../shared/widgets/role_nav_item.dart';
 import '../auth/app_role.dart';
 import '../auth/auth_providers.dart';
+import '../firebase/firebase_providers.dart';
 
 /// Bridges a Riverpod provider to go_router's [Listenable]-based refresh
 /// so navigation reacts to role/auth changes without rebuilding the router.
@@ -39,11 +42,14 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/splash',
     refreshListenable: refresh,
-    redirect: (context, state) {
+    redirect: (context, state) async {
       final role = ref.read(currentRoleProvider);
       final path = state.matchedLocation;
 
       if (path == '/splash') {
+        // Firestore/Storage rules require request.auth != null, so every
+        // visitor is signed in anonymously before anything else loads.
+        await ref.read(ensureSignedInProvider.future);
         return role == null ? '/login' : role.homePath;
       }
 
@@ -62,9 +68,11 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(path: '/splash', builder: (context, state) => const SplashScreen()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
       _roleShellRoute(
         role: AppRole.customer,
         modules: customerModules,
+        extraRoutes: customerExtraRoutes,
       ),
       _roleShellRoute(
         role: AppRole.deliveryStaff,
@@ -83,8 +91,15 @@ final routerProvider = Provider<GoRouter>((ref) {
 });
 
 /// Builds a top-level [ShellRoute] for one role: a persistent
-/// [AdaptiveRoleShell] wrapping a flat set of placeholder module routes.
-ShellRoute _roleShellRoute({required AppRole role, required List<ModuleSpec> modules}) {
+/// [AdaptiveRoleShell] wrapping a flat set of module routes (real screen if
+/// [ModuleSpec.screenBuilder] is set, placeholder otherwise), plus any
+/// [extraRoutes] nested underneath (e.g. an item detail page reached from
+/// within a module rather than the nav rail itself).
+ShellRoute _roleShellRoute({
+  required AppRole role,
+  required List<ModuleSpec> modules,
+  List<RouteBase> extraRoutes = const [],
+}) {
   return ShellRoute(
     builder: (context, state, child) {
       return Consumer(
@@ -102,6 +117,7 @@ ShellRoute _roleShellRoute({required AppRole role, required List<ModuleSpec> mod
             ],
             currentPath: state.matchedLocation,
             onDestinationSelected: (path) => context.go(path),
+            onOpenSettings: () => context.push('/settings'),
             onSwitchRole: () {
               ref.read(currentRoleProvider.notifier).state = null;
               context.go('/login');
@@ -115,12 +131,14 @@ ShellRoute _roleShellRoute({required AppRole role, required List<ModuleSpec> mod
       for (final module in modules)
         GoRoute(
           path: module.path,
-          builder: (context, state) => PlaceholderScreen(
-            title: module.label,
-            description: module.description,
-            icon: module.icon,
-          ),
+          builder: module.screenBuilder ??
+              (context, state) => PlaceholderScreen(
+                    title: module.label,
+                    description: module.description,
+                    icon: module.icon,
+                  ),
         ),
+      ...extraRoutes,
     ],
   );
 }

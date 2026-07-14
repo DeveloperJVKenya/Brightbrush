@@ -29,7 +29,7 @@ class BrandColors {
 class AppTheme {
   AppTheme._();
 
-  static ThemeData light() {
+  static ThemeData light({String? fontFamily}) {
     // Neutral seed (cool blue-gray) keeps surfaces/outlines genuinely
     // neutral instead of red-tinted; brand red is grafted on as the
     // primary accent only.
@@ -51,10 +51,10 @@ class AppTheme {
       outline: const Color(0xFFDAD8D5),
       outlineVariant: const Color(0xFFE7E5E2),
     );
-    return _build(colorScheme, Brightness.light);
+    return _build(colorScheme, Brightness.light, fontFamily);
   }
 
-  static ThemeData dark() {
+  static ThemeData dark({String? fontFamily}) {
     // Cool graphite, not brown: the neutral seed stays neutral in dark
     // brightness too, and the red accent is brightened for contrast
     // instead of relying on the seed's (muddy) dark-red tonal step.
@@ -76,15 +76,16 @@ class AppTheme {
       outline: const Color(0xFF3A3C43),
       outlineVariant: const Color(0xFF2A2C32),
     );
-    return _build(colorScheme, Brightness.dark);
+    return _build(colorScheme, Brightness.dark, fontFamily);
   }
 
-  static ThemeData _build(ColorScheme colorScheme, Brightness brightness) {
+  static ThemeData _build(ColorScheme colorScheme, Brightness brightness, String? fontFamily) {
     final isDark = brightness == Brightness.dark;
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
       colorScheme: colorScheme,
+      fontFamily: fontFamily,
       scaffoldBackgroundColor: colorScheme.surface,
       splashFactory: InkSparkle.splashFactory,
       appBarTheme: AppBarTheme(

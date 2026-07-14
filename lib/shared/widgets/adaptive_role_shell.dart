@@ -20,6 +20,7 @@ class AdaptiveRoleShell extends StatelessWidget {
     required this.currentPath,
     required this.onDestinationSelected,
     required this.onSwitchRole,
+    required this.onOpenSettings,
     required this.child,
   });
 
@@ -28,11 +29,24 @@ class AdaptiveRoleShell extends StatelessWidget {
   final String currentPath;
   final ValueChanged<String> onDestinationSelected;
   final VoidCallback onSwitchRole;
+  final VoidCallback onOpenSettings;
   final Widget child;
 
+  // Picks the item whose path is the *longest* matching prefix, not the
+  // first one found: '/customer' is a prefix of every path under it, so a
+  // naive first-match would always highlight Home instead of e.g. Packages.
   int get _selectedIndex {
-    final index = items.indexWhere((item) => currentPath.startsWith(item.path));
-    return index == -1 ? 0 : index;
+    var bestIndex = 0;
+    var bestLength = -1;
+    for (var i = 0; i < items.length; i++) {
+      final path = items[i].path;
+      final matches = currentPath == path || currentPath.startsWith('$path/');
+      if (matches && path.length > bestLength) {
+        bestIndex = i;
+        bestLength = path.length;
+      }
+    }
+    return bestIndex;
   }
 
   static const double _wideBreakpoint = 900;
@@ -50,6 +64,7 @@ class AdaptiveRoleShell extends StatelessWidget {
             selectedIndex: _selectedIndex,
             onDestinationSelected: (i) => onDestinationSelected(items[i].path),
             onSwitchRole: onSwitchRole,
+            onOpenSettings: onOpenSettings,
             child: child,
           );
         }
@@ -59,6 +74,7 @@ class AdaptiveRoleShell extends StatelessWidget {
           selectedIndex: _selectedIndex,
           onDestinationSelected: (i) => onDestinationSelected(items[i].path),
           onSwitchRole: onSwitchRole,
+          onOpenSettings: onOpenSettings,
           bottomBarItemCount: _bottomBarItemCount,
           child: child,
         );
@@ -89,6 +105,7 @@ class _WideLayout extends StatelessWidget {
     required this.selectedIndex,
     required this.onDestinationSelected,
     required this.onSwitchRole,
+    required this.onOpenSettings,
     required this.child,
   });
 
@@ -97,6 +114,7 @@ class _WideLayout extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
   final VoidCallback onSwitchRole;
+  final VoidCallback onOpenSettings;
   final Widget child;
 
   @override
@@ -118,6 +136,11 @@ class _WideLayout extends StatelessWidget {
         ),
         bottom: const _GradientHairline(),
         actions: [
+          IconButton(
+            tooltip: 'Settings',
+            onPressed: onOpenSettings,
+            icon: const Icon(Icons.settings_outlined),
+          ),
           IconButton(
             tooltip: 'Switch role (demo)',
             onPressed: onSwitchRole,
@@ -289,6 +312,7 @@ class _NarrowLayout extends StatelessWidget {
     required this.selectedIndex,
     required this.onDestinationSelected,
     required this.onSwitchRole,
+    required this.onOpenSettings,
     required this.bottomBarItemCount,
     required this.child,
   });
@@ -298,6 +322,7 @@ class _NarrowLayout extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
   final VoidCallback onSwitchRole;
+  final VoidCallback onOpenSettings;
   final int bottomBarItemCount;
   final Widget child;
 
@@ -318,6 +343,11 @@ class _NarrowLayout extends StatelessWidget {
         ),
         bottom: const _GradientHairline(),
         actions: [
+          IconButton(
+            tooltip: 'Settings',
+            onPressed: onOpenSettings,
+            icon: const Icon(Icons.settings_outlined),
+          ),
           IconButton(
             tooltip: 'Switch role (demo)',
             onPressed: onSwitchRole,

@@ -1,0 +1,240 @@
+rules_version = '2';
+
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: catalog_items
+// Document ID: auto-generated
+// Fields:
+//   - name: string (required, 2-80 chars)
+//   - category: string (required, one of CATEGORIES)
+//   - description: string (required, <= 2000 chars)
+//   - basePrice: number (required, > 0)
+//   - moq: number (required, integer >= 1) -- minimum order quantity
+//   - leadTimeDays: number (required, integer >= 0)
+//   - imageUrls: list<string> (optional, <= 8 items, each a Storage https URL)
+//   - tags: list<string> (optional, <= 15 items, each string <= 24 chars)
+//   - isActive: bool (required)
+//   - isFeatured: bool (required)
+//   - createdBy: string (required, immutable, Firebase Auth uid)
+//   - createdAt: timestamp (required, immutable)
+//   - updatedAt: timestamp (required)
+//
+// Collection: packages
+// Document ID: auto-generated
+// Fields:
+//   - name: string (required, 2-80 chars)
+//   - description: string (required, <= 2000 chars)
+//   - season: string (required, 2-40 chars) -- free-text campaign tag, e.g. "valentines"
+//   - price: number (required, > 0)
+//   - imageUrl: string (optional, Storage https URL)
+//   - itemIds: list<string> (optional, <= 30 items, each string <= 100 chars) -- catalog_items doc IDs
+//   - isActive: bool (required)
+//   - validFrom: timestamp (optional)
+//   - validTo: timestamp (optional)
+//   - createdBy: string (required, immutable, Firebase Auth uid)
+//   - createdAt: timestamp (required, immutable)
+//   - updatedAt: timestamp (required)
+//
+// Collection: staffRoles
+// Document ID: {uid} (the staff member's Firebase Auth uid)
+// Fields:
+//   - role: string (required, one of 'systemManager' | 'admin' | 'deliveryStaff')
+//   - assignedAt: timestamp (required)
+// This collection has NO client write path (see below): it is the seed for
+// future RBAC and is bootstrapped by a developer directly in the Firebase
+// console after a staff member signs in once and their uid is known.
+//
+// ===============================================================
+// Queries the app performs (rules below MUST allow these):
+// ===============================================================
+//   catalog_items: where('isActive', isEqualTo: true).orderBy('createdAt', descending: true)   [customer]
+//   catalog_items: orderBy('createdAt', descending: true)                                        [manager/admin, all items]
+//   packages:      where('isActive', isEqualTo: true).orderBy('createdAt', descending: true)    [customer]
+//   packages:      orderBy('createdAt', descending: true)                                        [manager/admin, all items]
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function validStringLength(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+        request.resource.data[field].size() >= minLen &&
+        request.resource.data[field].size() <= maxLen;
+    }
+
+    function isValidUrl(url) {
+      return url is string && url.matches('^https://.*') && url.size() <= 600;
+    }
+
+    function isPositiveNumber(field) {
+      return request.resource.data[field] is number && request.resource.data[field] > 0;
+    }
+
+    function isNonNegativeInt(field) {
+      return request.resource.data[field] is int && request.resource.data[field] >= 0;
+    }
+
+    // Firestore rules can't loop over a list to check each element's type
+    // and length individually, so this bounds both the item count AND the
+    // total joined length (which also fails closed if any element isn't a
+    // string, since .join() on a non-string element throws and the
+    // containing boolean evaluates to false). At these maxItems/maxItemLen
+    // sizes the total is always small (well under 1KB), which is what
+    // actually matters for the resource-exhaustion concern.
+    function isValidStringList(field, maxItems, maxItemLen) {
+      return request.resource.data[field] is list &&
+        request.resource.data[field].size() <= maxItems &&
+        request.resource.data[field].join(',').size() <= maxItems * (maxItemLen + 1);
+    }
+
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    // A staff member is anyone with a bootstrapped role doc. This collection
+    // can only be written by the developer via the console/Admin SDK, so it
+    // cannot be self-granted by any client.
+    function hasStaffRole(allowedRoles) {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/staffRoles/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/staffRoles/$(request.auth.uid)).data.role in allowedRoles;
+    }
+
+    function isCatalogManager() {
+      return hasStaffRole(['systemManager', 'admin']);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidCategory(value) {
+      return value in [
+        'caps', 'tshirts', 'hoodies', 'twoPiece', 'waterBottles',
+        'cutlery', 'embroidery', 'other'
+      ];
+    }
+
+    function isValidCatalogItem() {
+      let d = request.resource.data;
+      return hasOnlyAllowedFields([
+              'name', 'category', 'description', 'basePrice', 'moq', 'leadTimeDays',
+              'imageUrls', 'tags', 'isActive', 'isFeatured', 'createdBy', 'createdAt', 'updatedAt'
+            ]) &&
+            hasRequiredFields([
+              'name', 'category', 'description', 'basePrice', 'moq', 'leadTimeDays',
+              'isActive', 'isFeatured', 'createdBy', 'createdAt', 'updatedAt'
+            ]) &&
+            validStringLength('name', 2, 80) &&
+            isValidCategory(d.category) &&
+            validStringLength('description', 0, 2000) &&
+            isPositiveNumber('basePrice') && d.basePrice <= 100000000 &&
+            isNonNegativeInt('moq') && d.moq >= 1 && d.moq <= 100000 &&
+            isNonNegativeInt('leadTimeDays') && d.leadTimeDays <= 365 &&
+            d.isActive is bool &&
+            d.isFeatured is bool &&
+            d.createdBy is string && d.createdAt is timestamp && d.updatedAt is timestamp &&
+            (!('imageUrls' in d) || isValidStringList('imageUrls', 8, 600)) &&
+            (!('tags' in d) || isValidStringList('tags', 15, 24));
+    }
+
+    function isValidPackage() {
+      let d = request.resource.data;
+      return hasOnlyAllowedFields([
+              'name', 'description', 'season', 'price', 'imageUrl', 'itemIds',
+              'isActive', 'validFrom', 'validTo', 'createdBy', 'createdAt', 'updatedAt'
+            ]) &&
+            hasRequiredFields([
+              'name', 'description', 'season', 'price', 'isActive',
+              'createdBy', 'createdAt', 'updatedAt'
+            ]) &&
+            validStringLength('name', 2, 80) &&
+            validStringLength('description', 0, 2000) &&
+            validStringLength('season', 2, 40) &&
+            isPositiveNumber('price') && d.price <= 100000000 &&
+            d.isActive is bool &&
+            d.createdBy is string && d.createdAt is timestamp && d.updatedAt is timestamp &&
+            (!('imageUrl' in d) || isValidUrl(d.imageUrl)) &&
+            (!('itemIds' in d) || isValidStringList('itemIds', 30, 100)) &&
+            (!('validFrom' in d) || d.validFrom is timestamp) &&
+            (!('validTo' in d) || d.validTo is timestamp);
+    }
+
+    // ===============================================================
+    // Collections
+    // ===============================================================
+
+    match /catalog_items/{itemId} {
+      // Read requires auth (anonymous sign-in satisfies this); the catalog
+      // has no PII, so this is intentionally permissive across roles. The
+      // client filters isActive for customer-facing views.
+      allow read: if isAuthenticated();
+
+      // PROTOTYPE: writes are gated on a bootstrapped staffRoles doc, but
+      // since real per-user auth/role assignment isn't wired up yet, no
+      // uid holds 'systemManager'/'admin' until you create one manually in
+      // the console. Tighten further (e.g. rate limiting) before a public launch.
+      allow create: if isCatalogManager() &&
+        isValidCatalogItem() &&
+        request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.createdAt == request.time;
+
+      allow update: if isCatalogManager() &&
+        isValidCatalogItem() &&
+        areImmutableFieldsUnchanged(['createdBy', 'createdAt']) &&
+        request.resource.data.updatedAt == request.time;
+
+      allow delete: if isCatalogManager();
+    }
+
+    match /packages/{packageId} {
+      allow read: if isAuthenticated();
+
+      allow create: if isCatalogManager() &&
+        isValidPackage() &&
+        request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.createdAt == request.time;
+
+      allow update: if isCatalogManager() &&
+        isValidPackage() &&
+        areImmutableFieldsUnchanged(['createdBy', 'createdAt']) &&
+        request.resource.data.updatedAt == request.time;
+
+      allow delete: if isCatalogManager();
+    }
+
+    match /staffRoles/{uid} {
+      // A user may check their own role client-side; nobody may write here
+      // from a client. Roles are bootstrapped by the developer via the
+      // Firebase console (Admin SDK bypasses rules).
+      allow read: if isOwner(uid);
+      allow write: if false;
+    }
+
+    // Default deny for anything not explicitly matched above.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

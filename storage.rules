@@ -1,0 +1,55 @@
+rules_version = '2';
+
+// ===============================================================
+// Assumed layout
+// ===============================================================
+// catalog/{itemId}/{fileName}   -- catalog item photos, referenced from
+//                                   catalog_items.imageUrls in Firestore
+// packages/{packageId}/{fileName} -- seasonal package photos, referenced
+//                                     from packages.imageUrl in Firestore
+//
+// Write access mirrors firestore.rules: gated on a staffRoles/{uid} doc in
+// the (named) Firestore database via cross-service rules. PROTOTYPE: this
+// depends on Firebase's Storage->Firestore cross-service rules support for
+// this project; if a deploy ever rejects this syntax, the safe fallback is
+// to gate writes on isAuthenticated() only until that's confirmed available.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function hasStaffRole(allowedRoles) {
+      return isAuthenticated() &&
+        firestore.exists(/databases/brightbrush-main/documents/staffRoles/$(request.auth.uid)) &&
+        firestore.get(/databases/brightbrush-main/documents/staffRoles/$(request.auth.uid)).data.role in allowedRoles;
+    }
+
+    function isCatalogManager() {
+      return hasStaffRole(['systemManager', 'admin']);
+    }
+
+    function isValidImageUpload() {
+      return request.resource.size < 8 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*');
+    }
+
+    match /catalog/{itemId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isCatalogManager() && isValidImageUpload();
+      allow delete: if isCatalogManager();
+    }
+
+    match /packages/{packageId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isCatalogManager() && isValidImageUpload();
+      allow delete: if isCatalogManager();
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

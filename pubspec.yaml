@@ -47,6 +47,16 @@ dependencies:
   firebase_auth: ^6.5.4
   firebase_storage: ^13.4.3
   cloud_functions: ^6.3.3
+  firebase_ai: ^3.5.0
+
+  # Persists Settings (theme mode, font choice) locally per-device so every
+  # role/user gets their own look without needing to be signed in.
+  shared_preferences: ^2.3.4
+
+  # Image picking for manager/admin catalog authoring (Storage uploads).
+  image_picker: ^1.1.2
+
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:
@@ -58,6 +68,10 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+
+  # Lets widget tests override FirebaseAuth with a fake instead of hitting
+  # real Firebase (flutter test has no platform channels for it).
+  firebase_auth_mocks: ^0.15.2
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
