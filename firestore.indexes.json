@@ -1,7 +1,7 @@
 {
   "indexes": [
     {
-      "collectionGroup": "catalog_items",
+      "collectionGroup": "CatalogItems",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "isActive", "order": "ASCENDING" },
@@ -9,7 +9,7 @@
       ]
     },
     {
-      "collectionGroup": "packages",
+      "collectionGroup": "Packages",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "isActive", "order": "ASCENDING" },
@@ -17,11 +17,19 @@
       ]
     },
     {
-      "collectionGroup": "orders",
+      "collectionGroup": "Orders",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "customerId", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "Users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "role", "order": "ASCENDING" },
+        { "fieldPath": "displayName", "order": "ASCENDING" }
       ]
     }
   ],

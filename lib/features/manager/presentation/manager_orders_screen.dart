@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../core/formatting/currency.dart';
 
 import '../../../shared/search/search_utils.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -86,7 +87,6 @@ class _ManagerOrderRow extends ConsumerWidget {
 
   final OrderModel order;
 
-  static final _currency = NumberFormat.currency(symbol: 'UGX ', decimalDigits: 0);
   static final _date = DateFormat('MMM d, y · h:mm a');
 
   @override
@@ -118,7 +118,7 @@ class _ManagerOrderRow extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  _currency.format(order.total),
+                  currencyFormat.format(order.total),
                   style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: theme.colorScheme.primary),
                 ),
               ],

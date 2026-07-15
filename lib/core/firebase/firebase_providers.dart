@@ -4,6 +4,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../logging/app_logger.dart';
+
 /// bright-brush provisions Firestore as a *named* Enterprise-edition
 /// database (not the default one), so every access must go through
 /// `instanceFor(databaseId: ...)` rather than `FirebaseFirestore.instance`.
@@ -17,20 +19,31 @@ final firestoreProvider = Provider<FirebaseFirestore>((ref) {
 
 final firebaseStorageProvider = Provider<FirebaseStorage>((ref) => FirebaseStorage.instance);
 
-/// Live auth state. Firestore/Storage security rules require
-/// `request.auth != null`, so the app signs every visitor in anonymously
-/// (see [ensureSignedInProvider]) even before they pick a demo role.
+/// Live auth state — every real sign-in/sign-out event, logged so a
+/// permission-denied downstream can be traced back to exactly which auth
+/// transition preceded it. Anonymous sign-in is disabled project-wide: every
+/// visitor must authenticate with a real account (customer, staff, or
+/// developer), so `user == null` here always means "show the login screen."
 final authStateProvider = StreamProvider<User?>((ref) {
-  return ref.watch(firebaseAuthProvider).authStateChanges();
+  return ref.watch(firebaseAuthProvider).authStateChanges().map((user) {
+    if (user == null) {
+      appLogger.i('[auth] authStateChanges -> signed out');
+    } else {
+      appLogger.i('[auth] authStateChanges -> uid=${user.uid} anonymous=${user.isAnonymous} email=${user.email}');
+    }
+    return user;
+  });
 });
 
-/// Signs in anonymously if no session exists yet. The splash screen awaits
-/// this before routing anywhere, so every screen can assume `auth.currentUser`
-/// is non-null.
-final ensureSignedInProvider = FutureProvider<User>((ref) async {
-  final auth = ref.watch(firebaseAuthProvider);
-  final existing = auth.currentUser;
-  if (existing != null) return existing;
-  final credential = await auth.signInAnonymously();
-  return credential.user!;
-});
+/// The current signed-in [User], reactively — `null` the instant a
+/// sign-out happens, unlike the old `ensureSignedInProvider` (a
+/// `FutureProvider` that resolved once and then stayed cached with the
+/// *first* uid it ever saw for the rest of the app session, silently
+/// feeding a stale customerId/staffUid into new Firestore writes after any
+/// later sign-in/out — the direct cause of several "permission-denied on
+/// create" reports). Read this with `ref.watch`/`ref.read` right before use;
+/// never cache its value in a field.
+final currentUserProvider = Provider<User?>((ref) => ref.watch(authStateProvider).valueOrNull);
+
+/// Convenience accessor for the common case of just needing the uid.
+final currentUidProvider = Provider<String?>((ref) => ref.watch(currentUserProvider)?.uid);

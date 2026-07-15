@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/firebase/firebase_providers.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../catalog/application/catalog_providers.dart';
 import '../../../catalog/domain/package_model.dart';
 
@@ -43,8 +44,12 @@ class _PackageFormSheetState extends ConsumerState<_PackageFormSheet> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
     try {
-      final uid = ref.read(ensureSignedInProvider).value?.uid ?? '';
-      await ref.read(packagesRepositoryProvider).create(
+      final uid = ref.read(currentUidProvider);
+      if (uid == null) {
+        appLogger.w('[packages] Save attempted with no signed-in uid — aborting before a doomed Firestore write');
+        throw StateError('You need to be signed in to save a package.');
+      }
+      final packageId = await ref.read(packagesRepositoryProvider).create(
             PackageModel(
               id: '',
               name: _name.text.trim(),
@@ -62,8 +67,10 @@ class _PackageFormSheetState extends ConsumerState<_PackageFormSheet> {
             ),
             uid: uid,
           );
+      appLogger.i('[packages] Created package $packageId (createdBy=$uid)');
       if (mounted) Navigator.of(context).pop();
-    } catch (error) {
+    } catch (error, stack) {
+      appLogger.e('[packages] Failed to save package', error: error, stackTrace: stack);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Couldn\'t save: $error'), behavior: SnackBarBehavior.floating),
@@ -112,7 +119,7 @@ class _PackageFormSheetState extends ConsumerState<_PackageFormSheet> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _price,
-                decoration: const InputDecoration(labelText: 'Price (UGX)'),
+                decoration: const InputDecoration(labelText: 'Price (KES)'),
                 keyboardType: TextInputType.number,
                 validator: (v) => num.tryParse(v ?? '') == null ? 'Number' : null,
               ),

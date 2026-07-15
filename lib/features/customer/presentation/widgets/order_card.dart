@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/formatting/currency.dart';
 
 import '../../../../shared/widgets/order_status_timeline.dart';
 import '../../../orders/domain/order_model.dart';
@@ -10,7 +11,6 @@ class OrderCard extends StatelessWidget {
   final OrderModel order;
   final VoidCallback onTap;
 
-  static final _currency = NumberFormat.currency(symbol: 'UGX ', decimalDigits: 0);
   static final _date = DateFormat('MMM d, y');
 
   @override
@@ -42,7 +42,7 @@ class OrderCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                '${order.itemCount} item(s) · ${_currency.format(order.total)}',
+                '${order.itemCount} item(s) · ${currencyFormat.format(order.total)}',
                 style: theme.textTheme.bodyMedium,
               ),
               const SizedBox(height: 14),

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import '../../../core/formatting/currency.dart';
 
 import '../../../core/firebase/firebase_providers.dart';
+import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/catalog_image.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../catalog/application/catalog_providers.dart';
@@ -63,7 +64,6 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
   final _notes = TextEditingController();
   bool _placing = false;
 
-  static final _currency = NumberFormat.currency(symbol: 'UGX ', decimalDigits: 0);
 
   @override
   void dispose() {
@@ -80,7 +80,12 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _placing = true);
     try {
-      final uid = ref.read(ensureSignedInProvider).value?.uid ?? '';
+      final uid = ref.read(currentUidProvider);
+      if (uid == null) {
+        appLogger.w('[checkout] _placeOrder called with no signed-in uid — aborting before a doomed Firestore write');
+        throw StateError('You need to be signed in to place an order.');
+      }
+      appLogger.i('[checkout] Placing order for uid=$uid, ${widget.lines.length} line item group(s), total=$_total');
       final items = [
         for (final entry in widget.lines)
           OrderLineItem(
@@ -103,10 +108,14 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
         total: _total,
         status: OrderStatus.pendingReview,
         paymentStatus: PaymentStatus.unpaid,
+        assignedStaffId: null,
+        deliveryLat: null,
+        deliveryLng: null,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
-      await ref.read(ordersRepositoryProvider).create(order);
+      final orderId = await ref.read(ordersRepositoryProvider).create(order);
+      appLogger.i('[checkout] Order $orderId created for uid=$uid');
       ref.read(cartProvider.notifier).clear();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -117,7 +126,8 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
         );
         context.go('/customer/orders');
       }
-    } catch (error) {
+    } catch (error, stack) {
+      appLogger.e('[checkout] Failed to place order', error: error, stackTrace: stack);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Couldn\'t place order: $error'), behavior: SnackBarBehavior.floating),
@@ -162,7 +172,7 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
                     children: [
                       Text(item.name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
                       Text(
-                        _currency.format(item.basePrice),
+                        currencyFormat.format(item.basePrice),
                         style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                       ),
                     ],
@@ -224,7 +234,7 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
                 Text('Total', style: theme.textTheme.titleMedium),
                 const Spacer(),
                 Text(
-                  _currency.format(_total),
+                  currencyFormat.format(_total),
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w700,
                     color: theme.colorScheme.primary,

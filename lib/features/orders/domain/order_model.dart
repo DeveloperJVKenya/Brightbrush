@@ -47,6 +47,9 @@ class OrderModel {
     required this.total,
     required this.status,
     required this.paymentStatus,
+    required this.assignedStaffId,
+    required this.deliveryLat,
+    required this.deliveryLng,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -62,8 +65,13 @@ class OrderModel {
   final num total;
   final OrderStatus status;
   final PaymentStatus paymentStatus;
+  final String? assignedStaffId;
+  final double? deliveryLat;
+  final double? deliveryLng;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  bool get hasDeliveryCoordinates => deliveryLat != null && deliveryLng != null;
 
   int get itemCount => items.fold(0, (runningTotal, item) => runningTotal + item.quantity);
 
@@ -85,6 +93,9 @@ class OrderModel {
       total: d['total'] as num? ?? 0,
       status: OrderStatus.fromName(d['status'] as String? ?? 'pendingReview'),
       paymentStatus: PaymentStatus.fromName(d['paymentStatus'] as String? ?? 'unpaid'),
+      assignedStaffId: d['assignedStaffId'] as String?,
+      deliveryLat: (d['deliveryLat'] as num?)?.toDouble(),
+      deliveryLng: (d['deliveryLng'] as num?)?.toDouble(),
       createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0),
       updatedAt: (d['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0),
     );
@@ -102,6 +113,11 @@ class OrderModel {
       'total': total,
       'status': OrderStatus.pendingReview.name,
       'paymentStatus': PaymentStatus.unpaid.name,
+      // Explicit null (not omitted): firestore.rules compares
+      // resource.data.assignedStaffId directly when validating a delivery
+      // staff claim, and accessing a genuinely absent map key throws in
+      // rules rather than returning null.
+      'assignedStaffId': null,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     };

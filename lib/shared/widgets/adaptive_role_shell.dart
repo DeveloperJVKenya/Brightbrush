@@ -19,16 +19,23 @@ class AdaptiveRoleShell extends StatelessWidget {
     required this.items,
     required this.currentPath,
     required this.onDestinationSelected,
-    required this.onSwitchRole,
+    required this.onSignOut,
     required this.onOpenSettings,
     required this.child,
+    this.onSwitchView,
   });
 
   final String roleLabel;
   final List<RoleNavItem> items;
   final String currentPath;
   final ValueChanged<String> onDestinationSelected;
-  final VoidCallback onSwitchRole;
+  final VoidCallback onSignOut;
+
+  /// Only non-null for a Developer account currently browsing into this
+  /// role's shell — takes them back to the "view as" picker without signing
+  /// out. Regular staff/customer accounts have a fixed role, so they never
+  /// get this affordance, only [onSignOut].
+  final VoidCallback? onSwitchView;
   final VoidCallback onOpenSettings;
   final Widget child;
 
@@ -63,7 +70,8 @@ class AdaptiveRoleShell extends StatelessWidget {
             items: items,
             selectedIndex: _selectedIndex,
             onDestinationSelected: (i) => onDestinationSelected(items[i].path),
-            onSwitchRole: onSwitchRole,
+            onSignOut: onSignOut,
+            onSwitchView: onSwitchView,
             onOpenSettings: onOpenSettings,
             child: child,
           );
@@ -73,7 +81,8 @@ class AdaptiveRoleShell extends StatelessWidget {
           items: items,
           selectedIndex: _selectedIndex,
           onDestinationSelected: (i) => onDestinationSelected(items[i].path),
-          onSwitchRole: onSwitchRole,
+          onSignOut: onSignOut,
+          onSwitchView: onSwitchView,
           onOpenSettings: onOpenSettings,
           bottomBarItemCount: _bottomBarItemCount,
           child: child,
@@ -104,16 +113,18 @@ class _WideLayout extends StatelessWidget {
     required this.items,
     required this.selectedIndex,
     required this.onDestinationSelected,
-    required this.onSwitchRole,
+    required this.onSignOut,
     required this.onOpenSettings,
     required this.child,
+    this.onSwitchView,
   });
 
   final String roleLabel;
   final List<RoleNavItem> items;
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
-  final VoidCallback onSwitchRole;
+  final VoidCallback onSignOut;
+  final VoidCallback? onSwitchView;
   final VoidCallback onOpenSettings;
   final Widget child;
 
@@ -141,10 +152,16 @@ class _WideLayout extends StatelessWidget {
             onPressed: onOpenSettings,
             icon: const Icon(Icons.settings_outlined),
           ),
+          if (onSwitchView != null)
+            IconButton(
+              tooltip: 'Switch view (Developer)',
+              onPressed: onSwitchView,
+              icon: const Icon(Icons.swap_horiz_rounded),
+            ),
           IconButton(
-            tooltip: 'Switch role (demo)',
-            onPressed: onSwitchRole,
-            icon: const Icon(Icons.swap_horiz_rounded),
+            tooltip: 'Sign out',
+            onPressed: onSignOut,
+            icon: const Icon(Icons.logout_rounded),
           ),
           const SizedBox(width: 8),
         ],
@@ -311,17 +328,19 @@ class _NarrowLayout extends StatelessWidget {
     required this.items,
     required this.selectedIndex,
     required this.onDestinationSelected,
-    required this.onSwitchRole,
+    required this.onSignOut,
     required this.onOpenSettings,
     required this.bottomBarItemCount,
     required this.child,
+    this.onSwitchView,
   });
 
   final String roleLabel;
   final List<RoleNavItem> items;
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
-  final VoidCallback onSwitchRole;
+  final VoidCallback onSignOut;
+  final VoidCallback? onSwitchView;
   final VoidCallback onOpenSettings;
   final int bottomBarItemCount;
   final Widget child;
@@ -348,10 +367,16 @@ class _NarrowLayout extends StatelessWidget {
             onPressed: onOpenSettings,
             icon: const Icon(Icons.settings_outlined),
           ),
+          if (onSwitchView != null)
+            IconButton(
+              tooltip: 'Switch view (Developer)',
+              onPressed: onSwitchView,
+              icon: const Icon(Icons.swap_horiz_rounded),
+            ),
           IconButton(
-            tooltip: 'Switch role (demo)',
-            onPressed: onSwitchRole,
-            icon: const Icon(Icons.swap_horiz_rounded),
+            tooltip: 'Sign out',
+            onPressed: onSignOut,
+            icon: const Icon(Icons.logout_rounded),
           ),
         ],
       ),

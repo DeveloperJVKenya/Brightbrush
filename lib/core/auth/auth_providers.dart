@@ -1,47 +1,83 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/auth/data/user_profile_repository.dart';
+import '../../features/auth/domain/user_profile.dart';
 import '../firebase/firebase_providers.dart';
+import '../logging/app_logger.dart';
 import 'app_role.dart';
 
 final userProfileRepositoryProvider = Provider<UserProfileRepository>((ref) {
   return UserProfileRepository(ref.watch(firestoreProvider));
 });
 
-/// Whether a guest has actually clicked "Continue as Guest Customer".
-///
-/// `ensureSignedInProvider` signs every visitor in anonymously at splash
-/// purely so Firestore/Storage reads satisfy `request.auth != null` — that
-/// technicality shouldn't, on its own, skip the login screen. Only an
-/// explicit guest action resolves an anonymous session to AppRole.customer;
-/// resets on sign-out so the next visit shows login again, same as before.
-final guestEnteredProvider = StateProvider<bool>((ref) => false);
+/// The delivery staff directory — used by Manager's Staff Assignment screen
+/// and Admin's Deliveries screen to show names alongside orders, which only
+/// ever store a staff *uid* (`assignedStaffId`), never a denormalized name.
+final deliveryStaffDirectoryProvider = StreamProvider<List<UserProfile>>((ref) {
+  return ref.watch(userProfileRepositoryProvider).streamByRole(AppRole.deliveryStaff);
+});
+
+/// Every account, every role — the Role Management directory. Firestore
+/// rules restrict the underlying read to Admin/CEO and Developer, so this
+/// only ever resolves data for those two roles; anyone else gets a
+/// permission-denied surfaced as an [AsyncError].
+final allUserProfilesProvider = StreamProvider<List<UserProfile>>((ref) {
+  return ref.watch(userProfileRepositoryProvider).streamAllProfiles();
+});
 
 /// The signed-in role, resolved live from Firebase Auth + Firestore:
 /// - signed out -> null (router sends the user to /login)
-/// - anonymous session (guest browsing/ordering) -> AppRole.customer, no
-///   Firestore lookup needed
 /// - real account -> streams `users/{uid}.role` from Firestore, so a role
 ///   change (or the brief moment between sign-up and profile creation)
 ///   reflects live rather than needing a re-login.
 ///
-/// This replaced an earlier local `StateProvider` demo toggle: that let
-/// any browser tab claim to be Admin/Manager/etc without a matching
-/// Firestore permission, which produced permission-denied errors the
-/// instant a screen tried to read/write something gated by a real staff
-/// role. Every role the UI shows now corresponds to a role Firestore rules
-/// actually agree the signed-in user has.
+/// Anonymous/guest sign-in is intentionally not handled here at all —
+/// anonymous auth is disabled project-wide (disabled in the Identity
+/// Platform config, and the login screen only ever offers real
+/// email/password sign-in/sign-up), so every non-null [User] this ever
+/// sees is a real account with a `users/{uid}` profile.
+///
+/// Deliberately built by *watching* [authStateProvider] rather than doing
+/// `auth.authStateChanges().asyncExpand(...)` inline: `asyncExpand` behaves
+/// like `concatMap`, not `switchMap` — it waits for the current inner stream
+/// to finish before processing the next outer event, instead of cancelling
+/// it. A Firestore `.snapshots()` listener (the inner stream for any real
+/// account below) never finishes on its own, so once any staff account
+/// signed in, that inline version got permanently stuck on that one
+/// listener — sign-out still happened at the Firebase Auth level, but this
+/// provider never noticed, so the resolved role never changed again for the
+/// rest of that page load (switching role looked like a dead button).
+/// Watching [authStateProvider] instead makes Riverpod itself tear down and
+/// rebuild this provider — cancelling the old Firestore listener — every
+/// time the signed-in user actually changes.
 final resolvedRoleProvider = StreamProvider<AppRole?>((ref) {
-  final auth = ref.watch(firebaseAuthProvider);
-  final guestEntered = ref.watch(guestEnteredProvider);
+  final userAsync = ref.watch(authStateProvider);
 
-  return auth.authStateChanges().asyncExpand((user) {
-    if (user == null) return Stream.value(null);
-    if (user.isAnonymous) return Stream.value(guestEntered ? AppRole.customer : null);
-    // Only touches Firestore for a real (non-anonymous) account, so guest
-    // browsing/ordering — and tests that only stub FirebaseAuth — never
-    // need a live Firestore/Firebase.initializeApp() to resolve a role.
-    final repo = ref.read(userProfileRepositoryProvider);
-    return repo.streamProfile(user.uid).map((profile) => profile?.role ?? AppRole.customer);
-  });
+  return userAsync.when(
+    data: (user) {
+      if (user == null) {
+        appLogger.i('[role] no signed-in user -> role=null');
+        return Stream.value(null);
+      }
+      final repo = ref.watch(userProfileRepositoryProvider);
+      return repo.streamProfile(user.uid).map((profile) {
+        final role = profile?.role ?? AppRole.user;
+        appLogger.i('[role] users/${user.uid} -> role=$role (profile ${profile == null ? "missing, defaulted" : "found"})');
+        return role;
+      }).transform(StreamTransformer<AppRole, AppRole?>.fromHandlers(
+        handleError: (error, stack, sink) {
+          appLogger.e('[role] streamProfile(${user.uid}) failed — treating as signed-out so the router falls back to /login',
+              error: error, stackTrace: stack);
+          sink.add(null);
+        },
+      ));
+    },
+    loading: () => const Stream<AppRole?>.empty(),
+    error: (error, stack) {
+      appLogger.e('[role] authStateProvider errored', error: error, stackTrace: stack);
+      return Stream.value(null);
+    },
+  );
 });

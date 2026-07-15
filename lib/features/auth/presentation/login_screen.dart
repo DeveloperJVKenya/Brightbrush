@@ -4,23 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/firebase/firebase_providers.dart';
+import '../../../core/logging/app_logger.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/brand_mark.dart';
-
-/// Fixed demo credentials for the three staff roles, seeded once via the
-/// Firebase Admin API during development. Signing in with these gives a
-/// real persistent Firestore `users/{uid}.role`, unlike the earlier
-/// anonymous-session-only demo mode — which broke (permission-denied on
-/// Manager/Admin screens) the moment a different browser/profile/port
-/// created a fresh anonymous session that nobody had bootstrapped a role
-/// for. These are pilot-only placeholders; replace with real staff
-/// accounts before this goes further than an internal demo.
-const _demoStaffAccounts = [
-  (label: 'System Manager (demo)', email: 'demo.manager@brightbrush.app'),
-  (label: 'Admin / CEO (demo)', email: 'demo.admin@brightbrush.app'),
-  (label: 'Delivery Staff (demo)', email: 'demo.staff@brightbrush.app'),
-];
-const _demoStaffPassword = 'BrightBrush2026!';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -132,9 +118,11 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
       // No explicit navigation: the router listens to resolvedRoleProvider
       // (which watches Firebase auth state) and redirects itself the
       // moment a role resolves.
-    } on FirebaseAuthException catch (e) {
+    } on FirebaseAuthException catch (e, stack) {
+      appLogger.e('[auth] Sign-in/sign-up failed (${e.code})', error: e, stackTrace: stack);
       setState(() => _error = e.message ?? 'Something went wrong (${e.code}).');
-    } catch (error) {
+    } catch (error, stack) {
+      appLogger.e('[auth] Sign-in/sign-up failed with an unexpected error', error: error, stackTrace: stack);
       setState(() => _error = '$error');
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -148,33 +136,19 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
     final password = _password.text;
     await _run(() async {
       if (_isSignUp) {
+        appLogger.i('[auth] Creating account for $email');
         final credential = await auth.createUserWithEmailAndPassword(email: email, password: password);
-        await ref.read(userProfileRepositoryProvider).ensureCustomerProfile(
+        appLogger.i('[auth] Account created uid=${credential.user!.uid}; writing user profile');
+        await ref.read(userProfileRepositoryProvider).ensureUserProfile(
               uid: credential.user!.uid,
               email: email,
               displayName: _displayName.text.trim().isEmpty ? email : _displayName.text.trim(),
             );
       } else {
+        appLogger.i('[auth] Signing in $email');
         await auth.signInWithEmailAndPassword(email: email, password: password);
       }
     });
-  }
-
-  Future<void> _continueAsGuest() async {
-    await _run(() async {
-      final auth = ref.read(firebaseAuthProvider);
-      if (auth.currentUser == null) {
-        await auth.signInAnonymously();
-      }
-      ref.read(guestEnteredProvider.notifier).state = true;
-    });
-  }
-
-  Future<void> _continueAsDemoStaff(String email) async {
-    await _run(() => ref.read(firebaseAuthProvider).signInWithEmailAndPassword(
-          email: email,
-          password: _demoStaffPassword,
-        ));
   }
 
   @override
@@ -235,34 +209,14 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
             const SizedBox(height: 4),
             Text(_error!, style: TextStyle(color: theme.colorScheme.error, fontSize: 12), textAlign: TextAlign.center),
           ],
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(child: Divider(color: theme.colorScheme.outlineVariant)),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text(
-                  'Quick demo access',
-                  style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                ),
-              ),
-              Expanded(child: Divider(color: theme.colorScheme.outlineVariant)),
-            ],
-          ),
-          const SizedBox(height: 14),
-          OutlinedButton.icon(
-            onPressed: _loading ? null : _continueAsGuest,
-            icon: const Icon(Icons.storefront_outlined, size: 18),
-            label: const Align(alignment: Alignment.centerLeft, child: Text('Continue as Guest Customer')),
-          ),
-          const SizedBox(height: 8),
-          for (final account in _demoStaffAccounts) ...[
-            OutlinedButton.icon(
-              onPressed: _loading ? null : () => _continueAsDemoStaff(account.email),
-              icon: const Icon(Icons.badge_outlined, size: 18),
-              label: Align(alignment: Alignment.centerLeft, child: Text('Continue as ${account.label}')),
-            ),
+          if (!_isSignUp) ...[
             const SizedBox(height: 8),
+            Text(
+              'Signing up here always creates a plain User account. Every other '
+              'role is assigned afterward by an Admin/CEO or Developer.',
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              textAlign: TextAlign.center,
+            ),
           ],
         ],
       ),

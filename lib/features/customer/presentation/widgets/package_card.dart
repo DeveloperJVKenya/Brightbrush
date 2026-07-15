@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../../../../core/formatting/currency.dart';
 
 import '../../../../shared/widgets/catalog_image.dart';
 import '../../../catalog/domain/package_model.dart';
@@ -10,7 +10,6 @@ class PackageCard extends StatelessWidget {
   final PackageModel package;
   final VoidCallback onTap;
 
-  static final _currency = NumberFormat.currency(symbol: 'UGX ', decimalDigits: 0);
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +54,7 @@ class PackageCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    _currency.format(package.price),
+                    currencyFormat.format(package.price),
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w700,
                       color: theme.colorScheme.primary,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import '../../../core/formatting/currency.dart';
 
 import '../../../shared/widgets/catalog_image.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -11,7 +11,6 @@ import 'widgets/package_form_sheet.dart';
 class ManagerPackagesScreen extends ConsumerWidget {
   const ManagerPackagesScreen({super.key});
 
-  static final _currency = NumberFormat.currency(symbol: 'UGX ', decimalDigits: 0);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -97,7 +96,7 @@ class _PackageRow extends ConsumerWidget {
                 children: [
                   Text(package.name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
                   Text(
-                    '${package.season} · ${ManagerPackagesScreen._currency.format(package.price)}',
+                    '${package.season} · ${currencyFormat.format(package.price)}',
                     style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
                 ],

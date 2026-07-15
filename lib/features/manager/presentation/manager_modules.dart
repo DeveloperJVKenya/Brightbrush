@@ -4,6 +4,7 @@ import '../../../shared/widgets/module_spec.dart';
 import 'manager_catalog_screen.dart';
 import 'manager_orders_screen.dart';
 import 'manager_packages_screen.dart';
+import 'manager_staff_screen.dart';
 
 /// Sections available to the System Manager: keeper of the public catalog,
 /// packages, orders pipeline and service history.
@@ -58,12 +59,13 @@ final List<ModuleSpec> managerModules = [
     selectedIcon: Icons.inventory,
     description: 'Paint, blanks, thread and other materials — stock levels and reorder points.',
   ),
-  const ModuleSpec(
+  ModuleSpec(
     path: '/manager/staff',
     label: 'Staff Assignment',
     icon: Icons.groups_2_outlined,
     selectedIcon: Icons.groups_2,
-    description: 'Assign production and delivery staff to orders and routes.',
+    description: 'Assign delivery staff to ready orders and see each staff member\'s current workload.',
+    screenBuilder: (context, state) => const ManagerStaffScreen(),
   ),
   const ModuleSpec(
     path: '/manager/profile',

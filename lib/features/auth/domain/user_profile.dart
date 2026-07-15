@@ -31,14 +31,16 @@ class UserProfile {
     );
   }
 
-  /// Self-registration always creates a plain customer profile — matches
+  /// Self-registration always creates a plain User profile — matches
   /// firestore.rules, which only ever allows a client to create its own
-  /// `users/{uid}` doc with role == 'customer'.
-  static Map<String, dynamic> newCustomerProfile({required String email, required String displayName}) {
+  /// `users/{uid}` doc with role == 'user'. Every other role (Delivery
+  /// Staff, System Manager, Admin/CEO, Developer) is assigned afterward by
+  /// an Admin/CEO or Developer via the Role Management screen.
+  static Map<String, dynamic> newUserProfile({required String email, required String displayName}) {
     return {
       'email': email,
       'displayName': displayName,
-      'role': AppRole.customer.name,
+      'role': AppRole.user.name,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     };

@@ -4,7 +4,7 @@ rules_version = '2';
 // Assumed Data Model
 // ===============================================================
 //
-// Collection: catalog_items
+// Collection: CatalogItems
 // Document ID: auto-generated
 // Fields:
 //   - name: string (required, 2-80 chars)
@@ -21,7 +21,7 @@ rules_version = '2';
 //   - createdAt: timestamp (required, immutable)
 //   - updatedAt: timestamp (required)
 //
-// Collection: packages
+// Collection: Packages
 // Document ID: auto-generated
 // Fields:
 //   - name: string (required, 2-80 chars)
@@ -29,7 +29,7 @@ rules_version = '2';
 //   - season: string (required, 2-40 chars) -- free-text campaign tag, e.g. "valentines"
 //   - price: number (required, > 0)
 //   - imageUrl: string (optional, Storage https URL)
-//   - itemIds: list<string> (optional, <= 30 items, each string <= 100 chars) -- catalog_items doc IDs
+//   - itemIds: list<string> (optional, <= 30 items, each string <= 100 chars) -- CatalogItems doc IDs
 //   - isActive: bool (required)
 //   - validFrom: timestamp (optional)
 //   - validTo: timestamp (optional)
@@ -37,7 +37,7 @@ rules_version = '2';
 //   - createdAt: timestamp (required, immutable)
 //   - updatedAt: timestamp (required)
 //
-// Collection: orders
+// Collection: Orders
 // Document ID: auto-generated
 // Fields:
 //   - customerId: string (required, immutable, Firebase Auth uid of the placing customer)
@@ -49,39 +49,54 @@ rules_version = '2';
 //   - subtotal: number (required, immutable, > 0)
 //   - total: number (required, immutable, > 0) -- no delivery fee/tax modeling yet, equals subtotal
 //   - status: string (required, one of ORDER_STATUSES) -- customer can only ever set 'pendingReview' (create)
-//     or move 'pendingReview' -> 'cancelled' (self-cancel); every other transition is staff-only
+//     or move 'pendingReview' -> 'cancelled' (self-cancel). systemManager/admin can move it through the
+//     full pipeline freely. deliveryStaff can only do two exact moves: claim an unassigned
+//     'readyForDelivery' order for themselves (-> 'outForDelivery', setting assignedStaffId to their own
+//     uid), or mark their own 'outForDelivery' order 'completed'.
 //   - paymentStatus: string (required, one of 'unpaid' | 'invoiced' | 'paid') -- this pilot has no payment
-//     gateway; staff mark orders invoiced/paid manually against an offline payment (bank transfer, mobile
-//     money, in person)
+//     gateway; only systemManager/admin mark orders invoiced/paid manually against an offline payment
+//     (bank transfer, mobile money, in person) -- deliveryStaff cannot touch this field.
+//   - assignedStaffId: string (optional, the deliveryStaff uid handling this order)
+//   - deliveryLat/deliveryLng: number (optional, geocoded once from deliveryAddress for the Route Map;
+//     settable by any order-staff role since it's just a map pin, not sensitive)
 //   - createdAt: timestamp (required, immutable)
 //   - updatedAt: timestamp (required)
 // Note: Firestore rules can't loop over `items` to validate each entry's inner fields (itemId/unitPrice/
 // etc.) — only the list's size is bounded here. Treat that as a known prototype limitation.
 //
-// Collection: users
+// Collection: Users
 // Document ID: {uid} (the account's Firebase Auth uid)
 // Fields:
 //   - email: string (required, immutable, valid email)
 //   - displayName: string (required, 1-80 chars)
 //   - role: string (required, immutable via client writes — see below — one of
-//     'customer' | 'systemManager' | 'admin' | 'deliveryStaff')
+//     'user' | 'systemManager' | 'admin' | 'deliveryStaff' | 'developer')
 //   - createdAt: timestamp (required, immutable)
 //   - updatedAt: timestamp (required)
-// A client can only ever self-register as 'customer' (never a staff role) —
-// staff accounts are provisioned by the developer directly against Firestore
-// (Admin SDK/console bypasses rules) after the account is created. Once set,
-// role is immutable through the client update rule, so a customer can never
-// self-promote after registration either.
+// A client can only ever self-register as 'user' (the default, unprivileged
+// role — labeled "User" in the app; never a staff role, and never
+// 'developer') — every other role is assigned afterward by an Admin/CEO or
+// Developer through the Role Management screen (`/admin/settings`), which
+// writes straight to Firestore under the admin/developer branch of the
+// update rule below — never provisioned by hand outside the app anymore.
+// Once set, role is immutable through the *owner's own* update path, so a
+// user can never self-promote — only someone else who already holds
+// Admin/CEO or Developer can change it. 'developer' automatically satisfies
+// every `hasStaffRole(...)` check regardless of which roles it lists — see
+// that function below — so a developer account has the same Firestore
+// access as systemManager + admin + deliveryStaff combined.
 //
 // ===============================================================
 // Queries the app performs (rules below MUST allow these):
 // ===============================================================
-//   catalog_items: where('isActive', isEqualTo: true).orderBy('createdAt', descending: true)   [customer]
-//   catalog_items: orderBy('createdAt', descending: true)                                        [manager/admin, all items]
-//   packages:      where('isActive', isEqualTo: true).orderBy('createdAt', descending: true)    [customer]
-//   packages:      orderBy('createdAt', descending: true)                                        [manager/admin, all items]
-//   orders:        where('customerId', isEqualTo: uid).orderBy('createdAt', descending: true)    [customer, own orders]
-//   orders:        orderBy('createdAt', descending: true)                                         [manager/admin, all orders]
+//   CatalogItems: where('isActive', isEqualTo: true).orderBy('createdAt', descending: true)   [user]
+//   CatalogItems: orderBy('createdAt', descending: true)                                        [manager/admin, all items]
+//   Packages:     where('isActive', isEqualTo: true).orderBy('createdAt', descending: true)    [user]
+//   Packages:     orderBy('createdAt', descending: true)                                        [manager/admin, all items]
+//   Orders:       where('customerId', isEqualTo: uid).orderBy('createdAt', descending: true)    [user, own orders]
+//   Orders:       orderBy('createdAt', descending: true)                                         [manager/admin, all orders]
+//   Users:        where('role', isEqualTo: 'deliveryStaff').orderBy('displayName')                [manager/admin, staff directory]
+//   Users:        orderBy('displayName')                                                          [admin/developer, full directory — Role Management]
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -143,21 +158,68 @@ service cloud.firestore {
 
     // A staff member is anyone whose users/{uid} doc carries one of these
     // roles. Since the create rule below only ever allows a client to set
-    // role == 'customer', and update can't change role at all, no client
-    // can ever grant itself a staff role — only the developer, directly
-    // against Firestore (bypassing rules), can.
+    // role == 'user', and the owner's own update path can't change role at
+    // all, no client can ever grant itself a staff role — only someone
+    // already holding Admin/CEO or Developer can, via the Role Management
+    // screen's admin/developer update path.
+    //
+    // 'developer' always passes regardless of the allowed-roles list: it's
+    // the one role meant to have full cross-role access (the in-app
+    // "view as" picker is purely a navigation affordance built on top of
+    // this — the actual access grant lives here).
     function hasStaffRole(allowedRoles) {
       return isAuthenticated() &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in allowedRoles;
+        exists(/databases/$(database)/documents/Users/$(request.auth.uid)) &&
+        (
+          get(/databases/$(database)/documents/Users/$(request.auth.uid)).data.role in allowedRoles ||
+          get(/databases/$(database)/documents/Users/$(request.auth.uid)).data.role == 'developer'
+        );
     }
 
     function isCatalogManager() {
       return hasStaffRole(['systemManager', 'admin']);
     }
 
+    function isManagerOrAdmin() {
+      return hasStaffRole(['systemManager', 'admin']);
+    }
+
+    // Role Management (viewing/changing anyone's role) is intentionally
+    // narrower than isManagerOrAdmin() — System Manager can see the staff
+    // directory (deliveryStaff profiles, for assignment) but never the full
+    // user directory or role-change capability; only Admin/CEO and
+    // Developer get that.
+    function isAdminOrDeveloper() {
+      return hasStaffRole(['admin']);
+    }
+
+    function isDeliveryStaffRole() {
+      return hasStaffRole(['deliveryStaff']);
+    }
+
     function isOrderStaff() {
       return hasStaffRole(['systemManager', 'admin', 'deliveryStaff']);
+    }
+
+    function isValidLatLng(field, bound) {
+      return request.resource.data[field] is number &&
+        request.resource.data[field] >= -bound && request.resource.data[field] <= bound;
+    }
+
+    // The only two moves a deliveryStaff account may ever make: claim an
+    // unassigned ready order for themselves, or complete their own active
+    // delivery. Nothing else about status/assignment changes for them.
+    function isValidDeliveryClaimOrComplete() {
+      let prevStatus = resource.data.status;
+      let newStatus = request.resource.data.status;
+      let prevAssigned = resource.data.assignedStaffId;
+      let newAssigned = request.resource.data.assignedStaffId;
+
+      return
+        (prevStatus == 'readyForDelivery' && newStatus == 'outForDelivery' &&
+          prevAssigned == null && newAssigned == request.auth.uid) ||
+        (prevStatus == 'outForDelivery' && newStatus == 'completed' &&
+          prevAssigned == request.auth.uid && newAssigned == prevAssigned);
     }
 
     // ===============================================================
@@ -228,7 +290,7 @@ service cloud.firestore {
     }
 
     function isValidRole(value) {
-      return value in ['customer', 'systemManager', 'admin', 'deliveryStaff'];
+      return value in ['user', 'systemManager', 'admin', 'deliveryStaff', 'developer'];
     }
 
     function isValidUserProfile() {
@@ -245,11 +307,13 @@ service cloud.firestore {
       let d = request.resource.data;
       return hasOnlyAllowedFields([
               'customerId', 'contactName', 'contactPhone', 'deliveryAddress', 'notes',
-              'items', 'subtotal', 'total', 'status', 'paymentStatus', 'createdAt', 'updatedAt'
+              'items', 'subtotal', 'total', 'status', 'paymentStatus', 'assignedStaffId',
+              'deliveryLat', 'deliveryLng', 'createdAt', 'updatedAt'
             ]) &&
             hasRequiredFields([
               'customerId', 'contactName', 'contactPhone', 'deliveryAddress',
-              'items', 'subtotal', 'total', 'status', 'paymentStatus', 'createdAt', 'updatedAt'
+              'items', 'subtotal', 'total', 'status', 'paymentStatus', 'assignedStaffId',
+              'createdAt', 'updatedAt'
             ]) &&
             d.customerId is string &&
             validStringLength('contactName', 2, 80) &&
@@ -261,6 +325,9 @@ service cloud.firestore {
             isPositiveNumber('total') && d.total <= 1000000000 &&
             isValidOrderStatus(d.status) &&
             isValidPaymentStatus(d.paymentStatus) &&
+            (d.assignedStaffId == null || d.assignedStaffId is string) &&
+            (!('deliveryLat' in d) || isValidLatLng('deliveryLat', 90)) &&
+            (!('deliveryLng' in d) || isValidLatLng('deliveryLng', 180)) &&
             d.createdAt is timestamp && d.updatedAt is timestamp;
     }
 
@@ -268,16 +335,12 @@ service cloud.firestore {
     // Collections
     // ===============================================================
 
-    match /catalog_items/{itemId} {
+    match /CatalogItems/{itemId} {
       // Read requires auth (anonymous sign-in satisfies this); the catalog
       // has no PII, so this is intentionally permissive across roles. The
       // client filters isActive for customer-facing views.
       allow read: if isAuthenticated();
 
-      // PROTOTYPE: writes are gated on a bootstrapped staffRoles doc, but
-      // since real per-user auth/role assignment isn't wired up yet, no
-      // uid holds 'systemManager'/'admin' until you create one manually in
-      // the console. Tighten further (e.g. rate limiting) before a public launch.
       allow create: if isCatalogManager() &&
         isValidCatalogItem() &&
         request.resource.data.createdBy == request.auth.uid &&
@@ -291,7 +354,7 @@ service cloud.firestore {
       allow delete: if isCatalogManager();
     }
 
-    match /packages/{packageId} {
+    match /Packages/{packageId} {
       allow read: if isAuthenticated();
 
       allow create: if isCatalogManager() &&
@@ -307,7 +370,7 @@ service cloud.firestore {
       allow delete: if isCatalogManager();
     }
 
-    match /orders/{orderId} {
+    match /Orders/{orderId} {
       // A customer sees only their own orders; staff (manager/admin/delivery)
       // see everything — they need the full pipeline to fulfill orders.
       allow read: if isOwner(resource.data.customerId) || isOrderStaff();
@@ -320,11 +383,12 @@ service cloud.firestore {
         isValidOrder() &&
         request.resource.data.status == 'pendingReview' &&
         request.resource.data.paymentStatus == 'unpaid' &&
+        request.resource.data.assignedStaffId == null &&
         request.resource.data.createdAt == request.time;
 
       // Order contents/pricing/contact info are immutable after creation —
-      // regardless of who's updating. The only things anyone may change
-      // post-creation are status and paymentStatus.
+      // regardless of who's updating. What each party may change beyond
+      // that differs a lot, so it's split by who's doing the updating:
       allow update: if isValidOrder() &&
         areImmutableFieldsUnchanged([
           'customerId', 'contactName', 'contactPhone', 'deliveryAddress',
@@ -332,40 +396,62 @@ service cloud.firestore {
         ]) &&
         request.resource.data.updatedAt == request.time &&
         (
-          // Staff can move status/paymentStatus through the full pipeline.
-          isOrderStaff() ||
+          // Manager/admin: full control over status/paymentStatus/assignment.
+          isManagerOrAdmin() ||
+          // Delivery staff: only the exact claim/complete moves, on their
+          // own assignment, and payment status is completely off-limits.
+          (isDeliveryStaffRole() &&
+            isValidDeliveryClaimOrComplete() &&
+            request.resource.data.paymentStatus == resource.data.paymentStatus) ||
           // Customers may only cancel their own order, and only while it's
           // still pendingReview — once staff picks it up, it's staff-only.
           (isOwner(resource.data.customerId) &&
             resource.data.status == 'pendingReview' &&
             request.resource.data.status == 'cancelled' &&
+            request.resource.data.assignedStaffId == resource.data.assignedStaffId &&
             request.resource.data.paymentStatus == resource.data.paymentStatus)
         );
 
       allow delete: if false;
     }
 
-    match /users/{uid} {
-      // Contains an email address (PII) — only the owner may ever read
-      // their own profile, per the "no mixed content" rule. Staff needing
-      // customer contact info read it off the order itself (denormalized),
-      // not this collection.
-      allow read: if isOwner(uid);
+    match /Users/{uid} {
+      // Contains an email address (PII) — normally only the owner may read
+      // their own profile, per the "no mixed content" rule. Two exceptions:
+      // - System Manager/Admin/Developer can read *deliveryStaff* profiles
+      //   specifically, so the Staff Assignment / Deliveries screens can
+      //   list delivery staff by name (plain-user contact info still only
+      //   ever comes off the order itself, denormalized, never here).
+      // - Admin/CEO and Developer can read *any* profile — the full
+      //   directory the Role Management screen lists and edits.
+      allow read: if isOwner(uid) ||
+        isAdminOrDeveloper() ||
+        (isManagerOrAdmin() && resource.data.role == 'deliveryStaff');
 
-      // Self-registration is always as a plain customer. request.time
-      // pins createdAt so it can't be backdated/forward-dated.
+      // Self-registration is always as a plain 'user'. request.time pins
+      // createdAt so it can't be backdated/forward-dated.
       allow create: if isOwner(uid) &&
         isValidUserProfile() &&
-        request.resource.data.role == 'customer' &&
+        request.resource.data.role == 'user' &&
         request.resource.data.createdAt == request.time;
 
-      // role/email/createdAt are immutable through the client — only
-      // displayName and updatedAt may change. Promotion to a staff role
-      // is a developer-only, direct-Firestore action.
-      allow update: if isOwner(uid) &&
-        isValidUserProfile() &&
-        areImmutableFieldsUnchanged(['role', 'email', 'createdAt']) &&
-        request.resource.data.updatedAt == request.time;
+      // Two distinct update paths:
+      // - The owner may update their own displayName/updatedAt — role,
+      //   email, and createdAt are immutable through this path, so nobody
+      //   can self-promote.
+      // - Admin/CEO or Developer (Role Management) may change *someone
+      //   else's* role — never their own, which blocks a careless
+      //   self-demotion/self-promotion loop; email/displayName/createdAt
+      //   stay immutable through this path too, so Role Management can only
+      //   ever change the one field it's for.
+      allow update: if isValidUserProfile() &&
+        request.resource.data.updatedAt == request.time &&
+        (
+          (isOwner(uid) && areImmutableFieldsUnchanged(['role', 'email', 'createdAt'])) ||
+          (isAdminOrDeveloper() &&
+            uid != request.auth.uid &&
+            areImmutableFieldsUnchanged(['email', 'displayName', 'createdAt']))
+        );
 
       allow delete: if false;
     }

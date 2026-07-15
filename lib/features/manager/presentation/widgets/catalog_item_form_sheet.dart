@@ -8,6 +8,7 @@ import '../../../catalog/application/catalog_providers.dart';
 import '../../../catalog/domain/catalog_category.dart';
 import '../../../catalog/domain/catalog_item.dart';
 import '../../../../core/firebase/firebase_providers.dart';
+import '../../../../core/logging/app_logger.dart';
 
 /// Create/edit form for a catalog item. Image upload degrades gracefully:
 /// if Storage isn't activated on the project yet, the item still saves —
@@ -76,7 +77,10 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
 
     var imageUrls = widget.existing?.imageUrls ?? const <String>[];
     final repo = ref.read(catalogRepositoryProvider);
-    final uid = ref.read(ensureSignedInProvider).value?.uid;
+    final uid = ref.read(currentUidProvider);
+    if (uid == null) {
+      appLogger.w('[catalog] Save attempted with no signed-in uid — this will fail Firestore rules (createdBy required)');
+    }
 
     try {
       final base = CatalogItem(
@@ -99,9 +103,11 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
       String itemId;
       if (widget.existing == null) {
         itemId = await repo.create(base, uid: uid ?? '');
+        appLogger.i('[catalog] Created item $itemId (createdBy=$uid)');
       } else {
         itemId = widget.existing!.id;
         await repo.update(base);
+        appLogger.i('[catalog] Updated item $itemId');
       }
 
       if (_pickedImageBytes != null) {
@@ -128,7 +134,8 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
             createdAt: base.createdAt,
             updatedAt: DateTime.now(),
           ));
-        } catch (_) {
+        } catch (error, stack) {
+          appLogger.w('[catalog] Image upload failed for item $itemId — saved without a photo', error: error, stackTrace: stack);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -141,7 +148,8 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
       }
 
       if (mounted) Navigator.of(context).pop();
-    } catch (error) {
+    } catch (error, stack) {
+      appLogger.e('[catalog] Failed to save catalog item', error: error, stackTrace: stack);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Couldn\'t save: $error'), behavior: SnackBarBehavior.floating),
@@ -223,7 +231,7 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
                   Expanded(
                     child: TextFormField(
                       controller: _price,
-                      decoration: const InputDecoration(labelText: 'Base price (UGX)'),
+                      decoration: const InputDecoration(labelText: 'Base price (KES)'),
                       keyboardType: TextInputType.number,
                       validator: (v) => num.tryParse(v ?? '') == null ? 'Number' : null,
                     ),

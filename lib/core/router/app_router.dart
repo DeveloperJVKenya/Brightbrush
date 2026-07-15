@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/admin/presentation/admin_modules.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/splash_screen.dart';
+import '../../features/developer/presentation/developer_home_screen.dart';
 import '../../features/manager/presentation/manager_modules.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/staff/presentation/staff_modules.dart';
@@ -17,6 +18,7 @@ import '../../shared/widgets/role_nav_item.dart';
 import '../auth/app_role.dart';
 import '../auth/auth_providers.dart';
 import '../firebase/firebase_providers.dart';
+import '../logging/app_logger.dart';
 
 /// Bridges a Riverpod provider to go_router's [Listenable]-based refresh
 /// so navigation reacts to role/auth changes without rebuilding the router.
@@ -28,16 +30,17 @@ class _RoleRefreshNotifier extends ChangeNotifier {
   final Ref _ref;
 }
 
+AppRole? _roleFor(String path) {
+  if (path.startsWith('/customer')) return AppRole.user;
+  if (path.startsWith('/staff')) return AppRole.deliveryStaff;
+  if (path.startsWith('/manager')) return AppRole.systemManager;
+  if (path.startsWith('/admin')) return AppRole.admin;
+  if (path.startsWith('/developer')) return AppRole.developer;
+  return null;
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = _RoleRefreshNotifier(ref);
-
-  AppRole? roleFor(String path) {
-    if (path.startsWith('/customer')) return AppRole.customer;
-    if (path.startsWith('/staff')) return AppRole.deliveryStaff;
-    if (path.startsWith('/manager')) return AppRole.systemManager;
-    if (path.startsWith('/admin')) return AppRole.admin;
-    return null;
-  }
 
   return GoRouter(
     initialLocation: '/splash',
@@ -46,12 +49,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       final path = state.matchedLocation;
 
       if (path == '/splash') {
-        // Firestore/Storage rules require request.auth != null, so every
-        // visitor is signed in anonymously (as a guest customer) before
-        // anything else loads; resolvedRoleProvider then upgrades that to
-        // a real role once/if a staff account signs in.
-        await ref.read(ensureSignedInProvider.future);
+        // Anonymous sign-in is disabled project-wide, so there's nothing to
+        // bootstrap here anymore — just wait for the real auth state (if
+        // any) to resolve to a role.
         final role = await ref.read(resolvedRoleProvider.future);
+        appLogger.i('[router] splash resolved role=$role');
         return role == null ? '/login' : role.homePath;
       }
 
@@ -63,8 +65,14 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       if (path == '/login') return role.homePath;
 
-      final requiredRole = roleFor(path);
+      // Developer can freely browse every role's shell — their Firestore
+      // permissions already grant it (see hasStaffRole's developer bypass),
+      // so there's no path this role needs to be redirected away from.
+      if (role == AppRole.developer) return null;
+
+      final requiredRole = _roleFor(path);
       if (requiredRole != null && requiredRole != role) {
+        appLogger.w('[router] role=$role blocked from $path (requires $requiredRole) -> redirecting to ${role.homePath}');
         return role.homePath;
       }
       return null;
@@ -73,8 +81,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/splash', builder: (context, state) => const SplashScreen()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
+      GoRoute(path: '/developer', builder: (context, state) => const DeveloperHomeScreen()),
       _roleShellRoute(
-        role: AppRole.customer,
+        role: AppRole.user,
         modules: customerModules,
         extraRoutes: customerExtraRoutes,
       ),
@@ -108,8 +117,11 @@ ShellRoute _roleShellRoute({
     builder: (context, state, child) {
       return Consumer(
         builder: (context, ref, _) {
+          final actualRole = ref.watch(resolvedRoleProvider).valueOrNull;
+          final isDeveloperViewing = actualRole == AppRole.developer;
+
           return AdaptiveRoleShell(
-            roleLabel: role.label,
+            roleLabel: isDeveloperViewing ? '${role.label} · Developer view' : role.label,
             items: [
               for (final module in modules)
                 RoleNavItem(
@@ -122,10 +134,15 @@ ShellRoute _roleShellRoute({
             currentPath: state.matchedLocation,
             onDestinationSelected: (path) => context.go(path),
             onOpenSettings: () => context.push('/settings'),
-            onSwitchRole: () async {
+            onSwitchView: isDeveloperViewing
+                ? () {
+                    appLogger.i('[developer] Switching view back to picker from ${state.matchedLocation}');
+                    context.go('/developer');
+                  }
+                : null,
+            onSignOut: () async {
+              appLogger.i('[auth] Signing out (role=$actualRole)');
               await ref.read(firebaseAuthProvider).signOut();
-              ref.read(guestEnteredProvider.notifier).state = false;
-              if (context.mounted) context.go('/login');
             },
             child: child,
           );

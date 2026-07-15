@@ -58,6 +58,18 @@ dependencies:
 
   intl: ^0.20.2
 
+  # Route Map for Delivery Staff (embedded Google Map + pins per stop).
+  google_maps_flutter: ^2.9.0
+  google_maps_flutter_web: ^0.5.10
+
+  # Geocoding delivery addresses (free text) into lat/lng for map pins.
+  http: ^1.2.2
+
+  # Structured, leveled console logging (auth flow, Firestore reads/writes,
+  # routing decisions) so permission/role issues are traceable from the
+  # terminal instead of guessed at from a blank screen.
+  logger: ^2.5.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

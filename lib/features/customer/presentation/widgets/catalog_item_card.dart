@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../../../../core/formatting/currency.dart';
 
 import '../../../../shared/widgets/catalog_image.dart';
 import '../../../catalog/domain/catalog_item.dart';
@@ -24,7 +24,6 @@ class _CatalogItemCardState extends State<CatalogItemCard> {
   bool _hovering = false;
   bool _justAdded = false;
 
-  static final _currency = NumberFormat.currency(symbol: 'UGX ', decimalDigits: 0);
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +83,7 @@ class _CatalogItemCardState extends State<CatalogItemCard> {
                         children: [
                           Expanded(
                             child: Text(
-                              _currency.format(item.basePrice),
+                              currencyFormat.format(item.basePrice),
                               style: theme.textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.w700,
                                 color: theme.colorScheme.primary,

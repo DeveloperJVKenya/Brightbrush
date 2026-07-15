@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import '../../../core/formatting/currency.dart';
 
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/order_status_timeline.dart';
@@ -14,7 +14,6 @@ class OrderDetailScreen extends ConsumerWidget {
 
   final String orderId;
 
-  static final _currency = NumberFormat.currency(symbol: 'UGX ', decimalDigits: 0);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -73,9 +72,9 @@ class _OrderDetailBody extends ConsumerWidget {
               for (final item in order.items) ...[
                 ListTile(
                   title: Text(item.name),
-                  subtitle: Text('${item.quantity} × ${OrderDetailScreen._currency.format(item.unitPrice)}'),
+                  subtitle: Text('${item.quantity} × ${currencyFormat.format(item.unitPrice)}'),
                   trailing: Text(
-                    OrderDetailScreen._currency.format(item.lineTotal),
+                    currencyFormat.format(item.lineTotal),
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
@@ -85,7 +84,7 @@ class _OrderDetailBody extends ConsumerWidget {
               ListTile(
                 title: const Text('Total', style: TextStyle(fontWeight: FontWeight.w700)),
                 trailing: Text(
-                  OrderDetailScreen._currency.format(order.total),
+                  currencyFormat.format(order.total),
                   style: TextStyle(fontWeight: FontWeight.w700, color: theme.colorScheme.primary, fontSize: 16),
                 ),
               ),

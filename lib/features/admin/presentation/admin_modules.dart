@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/widgets/module_spec.dart';
+import 'admin_deliveries_screen.dart';
 import 'admin_orders_screen.dart';
+import 'admin_reports_screen.dart';
+import 'role_management_screen.dart';
 
 /// Sections available to the Admin/CEO: full financial and operational
 /// oversight across the whole company.
@@ -35,12 +38,13 @@ final List<ModuleSpec> adminModules = [
     description: 'All company orders — completed, running, and upcoming — across every client.',
     screenBuilder: (context, state) => const AdminOrdersScreen(),
   ),
-  const ModuleSpec(
+  ModuleSpec(
     path: '/admin/deliveries',
     label: 'Deliveries',
     icon: Icons.local_shipping_outlined,
     selectedIcon: Icons.local_shipping,
     description: 'Delivery notices, delivery plans, and live fleet tracking on the map.',
+    screenBuilder: (context, state) => const AdminDeliveriesScreen(),
   ),
   const ModuleSpec(
     path: '/admin/employees',
@@ -70,18 +74,20 @@ final List<ModuleSpec> adminModules = [
     selectedIcon: Icons.campaign,
     description: 'Online brand presence, seasonal campaigns and promotions.',
   ),
-  const ModuleSpec(
+  ModuleSpec(
     path: '/admin/reports',
     label: 'Reports',
     icon: Icons.bar_chart_outlined,
     selectedIcon: Icons.bar_chart,
-    description: 'Analytics and exportable reports across sales, production and delivery.',
+    description: 'Analytics across sales, production and delivery, with a copyable summary.',
+    screenBuilder: (context, state) => const AdminReportsScreen(),
   ),
-  const ModuleSpec(
+  ModuleSpec(
     path: '/admin/settings',
-    label: 'Settings',
-    icon: Icons.settings_outlined,
-    selectedIcon: Icons.settings,
-    description: 'Company profile, user & role management, and system configuration.',
+    label: 'Role Management',
+    icon: Icons.admin_panel_settings_outlined,
+    selectedIcon: Icons.admin_panel_settings,
+    description: 'Every account in the system — assign or change anyone\'s role.',
+    screenBuilder: (context, state) => const RoleManagementScreen(),
   ),
 ];

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import '../../../core/formatting/currency.dart';
 
 import '../../../shared/search/search_utils.dart';
 import '../../../shared/widgets/catalog_image.dart';
@@ -15,7 +15,6 @@ final _managerCatalogSearchProvider = StateProvider<String>((ref) => '');
 class ManagerCatalogScreen extends ConsumerWidget {
   const ManagerCatalogScreen({super.key});
 
-  static final _currency = NumberFormat.currency(symbol: 'UGX ', decimalDigits: 0);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -110,7 +109,7 @@ class _ManagerCatalogRow extends ConsumerWidget {
                 children: [
                   Text(item.name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
                   Text(
-                    '${item.category.label} · ${ManagerCatalogScreen._currency.format(item.basePrice)}',
+                    '${item.category.label} · ${currencyFormat.format(item.basePrice)}',
                     style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
                 ],

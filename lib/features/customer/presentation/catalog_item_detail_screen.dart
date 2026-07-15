@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import '../../../core/formatting/currency.dart';
 
 import '../../../shared/widgets/catalog_image.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -14,7 +14,6 @@ class CatalogItemDetailScreen extends ConsumerWidget {
 
   final String itemId;
 
-  static final _currency = NumberFormat.currency(symbol: 'UGX ', decimalDigits: 0);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -81,7 +80,7 @@ class _DetailBody extends ConsumerWidget {
           Text(item.name, style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           Text(
-            CatalogItemDetailScreen._currency.format(item.basePrice),
+            currencyFormat.format(item.basePrice),
             style: theme.textTheme.titleLarge?.copyWith(
               color: theme.colorScheme.primary,
               fontWeight: FontWeight.w700,

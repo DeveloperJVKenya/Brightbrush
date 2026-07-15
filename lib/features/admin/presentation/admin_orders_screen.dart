@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../core/formatting/currency.dart';
 
 import '../../../shared/widgets/empty_state.dart';
 import '../../orders/application/orders_providers.dart';
@@ -96,8 +97,6 @@ class _SummaryRow extends StatelessWidget {
   final int completed;
   final num completedRevenue;
 
-  static final _currency = NumberFormat.currency(symbol: 'UGX ', decimalDigits: 0);
-
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -111,7 +110,7 @@ class _SummaryRow extends StatelessWidget {
             _StatCard(label: 'Completed', value: '$completed', icon: Icons.check_circle_outline_rounded),
             _StatCard(
               label: 'Completed revenue',
-              value: _currency.format(completedRevenue),
+              value: currencyFormat.format(completedRevenue),
               icon: Icons.account_balance_wallet_outlined,
               accent: true,
             ),
@@ -172,7 +171,6 @@ class _OrdersList extends StatelessWidget {
 
   final List<OrderModel> orders;
 
-  static final _currency = NumberFormat.currency(symbol: 'UGX ', decimalDigits: 0);
   static final _date = DateFormat('MMM d, y');
 
   @override
@@ -201,7 +199,7 @@ class _OrdersList extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  _currency.format(order.total),
+                  currencyFormat.format(order.total),
                   style: TextStyle(fontWeight: FontWeight.w700, color: theme.colorScheme.primary),
                 ),
                 Text(order.paymentStatus.label, style: theme.textTheme.bodySmall),

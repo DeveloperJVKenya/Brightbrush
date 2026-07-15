@@ -4,11 +4,11 @@ rules_version = '2';
 // Assumed layout
 // ===============================================================
 // catalog/{itemId}/{fileName}   -- catalog item photos, referenced from
-//                                   catalog_items.imageUrls in Firestore
+//                                   CatalogItems.imageUrls in Firestore
 // packages/{packageId}/{fileName} -- seasonal package photos, referenced
-//                                     from packages.imageUrl in Firestore
+//                                     from Packages.imageUrl in Firestore
 //
-// Write access mirrors firestore.rules: gated on a staffRoles/{uid} doc in
+// Write access mirrors firestore.rules: gated on a Users/{uid}.role field in
 // the (named) Firestore database via cross-service rules. PROTOTYPE: this
 // depends on Firebase's Storage->Firestore cross-service rules support for
 // this project; if a deploy ever rejects this syntax, the safe fallback is
@@ -21,10 +21,15 @@ service firebase.storage {
       return request.auth != null;
     }
 
+    // 'developer' always passes regardless of the allowed-roles list —
+    // mirrors the same bypass in firestore.rules' hasStaffRole().
     function hasStaffRole(allowedRoles) {
       return isAuthenticated() &&
-        firestore.exists(/databases/brightbrush-main/documents/staffRoles/$(request.auth.uid)) &&
-        firestore.get(/databases/brightbrush-main/documents/staffRoles/$(request.auth.uid)).data.role in allowedRoles;
+        firestore.exists(/databases/brightbrush-main/documents/Users/$(request.auth.uid)) &&
+        (
+          firestore.get(/databases/brightbrush-main/documents/Users/$(request.auth.uid)).data.role in allowedRoles ||
+          firestore.get(/databases/brightbrush-main/documents/Users/$(request.auth.uid)).data.role == 'developer'
+        );
     }
 
     function isCatalogManager() {
