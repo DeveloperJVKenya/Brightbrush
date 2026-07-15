@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/widgets/module_spec.dart';
 import 'manager_catalog_screen.dart';
+import 'manager_dashboard_screen.dart';
 import 'manager_orders_screen.dart';
 import 'manager_packages_screen.dart';
 import 'manager_staff_screen.dart';
@@ -12,12 +13,13 @@ import 'manager_staff_screen.dart';
 /// Not `const`: modules with a real [ModuleSpec.screenBuilder] hold a
 /// closure, which isn't a compile-time constant.
 final List<ModuleSpec> managerModules = [
-  const ModuleSpec(
+  ModuleSpec(
     path: '/manager',
     label: 'Dashboard',
     icon: Icons.dashboard_outlined,
     selectedIcon: Icons.dashboard,
-    description: 'Snapshot of today\'s new orders, production load, and low-stock alerts.',
+    description: 'Snapshot of today\'s new orders, production load, and what needs review.',
+    screenBuilder: (context, state) => const ManagerDashboardScreen(),
   ),
   ModuleSpec(
     path: '/manager/catalog',

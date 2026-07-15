@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/widgets/module_spec.dart';
 import 'admin_deliveries_screen.dart';
+import 'admin_executive_dashboard_screen.dart';
 import 'admin_orders_screen.dart';
 import 'admin_reports_screen.dart';
 import 'role_management_screen.dart';
@@ -12,14 +13,13 @@ import 'role_management_screen.dart';
 /// Not `const`: modules with a real [ModuleSpec.screenBuilder] hold a
 /// closure, which isn't a compile-time constant.
 final List<ModuleSpec> adminModules = [
-  const ModuleSpec(
+  ModuleSpec(
     path: '/admin',
     label: 'Executive Dashboard',
     icon: Icons.insights_outlined,
     selectedIcon: Icons.insights,
-    description:
-        'Revenue, expenses, profit/loss and order pipeline at a glance, with completed, '
-        'running and upcoming orders.',
+    description: 'Revenue and order pipeline at a glance, with completed, running and upcoming orders.',
+    screenBuilder: (context, state) => const AdminExecutiveDashboardScreen(),
   ),
   const ModuleSpec(
     path: '/admin/financials',

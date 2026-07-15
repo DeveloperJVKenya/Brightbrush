@@ -6,6 +6,7 @@ import '../../../core/auth/auth_providers.dart';
 import '../../../core/formatting/currency.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/horizontal_bar_chart.dart';
+import '../../../shared/widgets/stat_card.dart';
 import '../../auth/domain/user_profile.dart';
 import '../../catalog/domain/catalog_category.dart';
 import '../../orders/application/orders_providers.dart';
@@ -110,16 +111,16 @@ class AdminReportsScreen extends ConsumerWidget {
                   spacing: 12,
                   runSpacing: 12,
                   children: [
-                    _MetricCard(label: 'Total order value', value: currencyFormat.format(totalValue), icon: Icons.receipt_long_outlined),
-                    _MetricCard(
+                    StatCard(label: 'Total order value', value: currencyFormat.format(totalValue), icon: Icons.receipt_long_outlined),
+                    StatCard(
                       label: 'Collected',
                       value: currencyFormat.format(collected),
                       icon: Icons.account_balance_wallet_outlined,
                       accent: true,
                     ),
-                    _MetricCard(label: 'Outstanding', value: currencyFormat.format(outstanding), icon: Icons.pending_actions_outlined),
-                    _MetricCard(label: 'In production', value: '$production', icon: Icons.precision_manufacturing_outlined),
-                    _MetricCard(label: 'Ready-for-delivery backlog', value: '$backlog', icon: Icons.inventory_2_outlined),
+                    StatCard(label: 'Outstanding', value: currencyFormat.format(outstanding), icon: Icons.pending_actions_outlined),
+                    StatCard(label: 'In production', value: '$production', icon: Icons.precision_manufacturing_outlined),
+                    StatCard(label: 'Ready-for-delivery backlog', value: '$backlog', icon: Icons.inventory_2_outlined),
                   ],
                 ),
                 const SizedBox(height: 28),
@@ -231,45 +232,3 @@ class _ReportSection extends StatelessWidget {
   }
 }
 
-class _MetricCard extends StatelessWidget {
-  const _MetricCard({required this.label, required this.value, required this.icon, this.accent = false});
-
-  final String label;
-  final String value;
-  final IconData icon;
-  final bool accent;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      width: 200,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: accent ? theme.colorScheme.primaryContainer : theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: accent ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.primary),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: accent ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onSurface,
-            ),
-          ),
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: accent ? theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.8) : theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

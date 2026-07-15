@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../core/formatting/currency.dart';
 
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/stat_card.dart';
 import '../../orders/application/orders_providers.dart';
 import '../../orders/domain/order_model.dart';
 import '../../orders/domain/order_status.dart';
@@ -105,10 +106,10 @@ class _SummaryRow extends StatelessWidget {
           spacing: 12,
           runSpacing: 12,
           children: [
-            _StatCard(label: 'Upcoming', value: '$upcoming', icon: Icons.hourglass_top_rounded),
-            _StatCard(label: 'Running', value: '$running', icon: Icons.precision_manufacturing_outlined),
-            _StatCard(label: 'Completed', value: '$completed', icon: Icons.check_circle_outline_rounded),
-            _StatCard(
+            StatCard(label: 'Upcoming', value: '$upcoming', icon: Icons.hourglass_top_rounded),
+            StatCard(label: 'Running', value: '$running', icon: Icons.precision_manufacturing_outlined),
+            StatCard(label: 'Completed', value: '$completed', icon: Icons.check_circle_outline_rounded),
+            StatCard(
               label: 'Completed revenue',
               value: currencyFormat.format(completedRevenue),
               icon: Icons.account_balance_wallet_outlined,
@@ -117,51 +118,6 @@ class _SummaryRow extends StatelessWidget {
           ],
         );
       },
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  const _StatCard({required this.label, required this.value, required this.icon, this.accent = false});
-
-  final String label;
-  final String value;
-  final IconData icon;
-  final bool accent;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      width: 190,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: accent ? theme.colorScheme.primaryContainer : theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: accent ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.primary),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: accent ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onSurface,
-            ),
-          ),
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: accent
-                  ? theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.8)
-                  : theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
