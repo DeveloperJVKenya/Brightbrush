@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/widgets/announcement_banner.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/live_search_field.dart';
 import '../../../shared/widgets/staggered_entrance.dart';
@@ -56,6 +57,8 @@ class CustomerCatalogScreen extends ConsumerWidget {
                 style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
               const SizedBox(height: 16),
+              const AnnouncementBanner(),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(

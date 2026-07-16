@@ -32,4 +32,15 @@ class CatalogImageUploader {
     final task = await ref.putData(bytes, SettableMetadata(contentType: contentType));
     return task.ref.getDownloadURL();
   }
+
+  Future<String> uploadAnnouncementImage({
+    required String announcementId,
+    required Uint8List bytes,
+    required String contentType,
+  }) async {
+    final path = 'announcements/$announcementId/${DateTime.now().millisecondsSinceEpoch}';
+    final ref = _storage.ref(path);
+    final task = await ref.putData(bytes, SettableMetadata(contentType: contentType));
+    return task.ref.getDownloadURL();
+  }
 }

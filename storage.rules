@@ -36,6 +36,10 @@ service firebase.storage {
       return hasStaffRole(['systemManager', 'admin']);
     }
 
+    function isAdminOrDeveloper() {
+      return hasStaffRole(['admin']);
+    }
+
     function isValidImageUpload() {
       return request.resource.size < 8 * 1024 * 1024 &&
         request.resource.contentType.matches('image/.*');
@@ -51,6 +55,12 @@ service firebase.storage {
       allow read: if isAuthenticated();
       allow write: if isCatalogManager() && isValidImageUpload();
       allow delete: if isCatalogManager();
+    }
+
+    match /announcements/{announcementId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAdminOrDeveloper() && isValidImageUpload();
+      allow delete: if isAdminOrDeveloper();
     }
 
     match /{allPaths=**} {

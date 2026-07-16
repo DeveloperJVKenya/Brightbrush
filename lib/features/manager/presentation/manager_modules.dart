@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/widgets/module_spec.dart';
+import '../../../shared/widgets/profile_screen.dart';
+import '../../inventory/presentation/inventory_screen.dart';
 import 'manager_catalog_screen.dart';
 import 'manager_dashboard_screen.dart';
+import 'manager_history_screen.dart';
 import 'manager_orders_screen.dart';
 import 'manager_packages_screen.dart';
 import 'manager_staff_screen.dart';
@@ -47,19 +50,21 @@ final List<ModuleSpec> managerModules = [
     description: 'Incoming, in-production and completed orders across all clients.',
     screenBuilder: (context, state) => const ManagerOrdersScreen(),
   ),
-  const ModuleSpec(
+  ModuleSpec(
     path: '/manager/history',
     label: 'Service History',
     icon: Icons.fact_check_outlined,
     selectedIcon: Icons.fact_check,
     description: 'Archive of completed jobs for reference, reprints and client history lookups.',
+    screenBuilder: (context, state) => const ManagerHistoryScreen(),
   ),
-  const ModuleSpec(
+  ModuleSpec(
     path: '/manager/inventory',
     label: 'Inventory',
     icon: Icons.inventory_outlined,
     selectedIcon: Icons.inventory,
     description: 'Paint, blanks, thread and other materials — stock levels and reorder points.',
+    screenBuilder: (context, state) => const InventoryScreen(),
   ),
   ModuleSpec(
     path: '/manager/staff',
@@ -69,11 +74,12 @@ final List<ModuleSpec> managerModules = [
     description: 'Assign delivery staff to ready orders and see each staff member\'s current workload.',
     screenBuilder: (context, state) => const ManagerStaffScreen(),
   ),
-  const ModuleSpec(
+  ModuleSpec(
     path: '/manager/profile',
     label: 'Profile',
     icon: Icons.person_outline,
     selectedIcon: Icons.person,
     description: 'Your account and notification preferences.',
+    screenBuilder: (context, state) => const ProfileScreen(),
   ),
 ];

@@ -12,6 +12,16 @@ final userProfileRepositoryProvider = Provider<UserProfileRepository>((ref) {
   return UserProfileRepository(ref.watch(firestoreProvider));
 });
 
+/// The signed-in account's own profile document (displayName/email/role) —
+/// used by the shared Profile screen. Watches [currentUidProvider] (not a
+/// manual subscription) so it tears down and resubscribes cleanly on every
+/// auth transition, same reasoning as [resolvedRoleProvider].
+final myProfileProvider = StreamProvider<UserProfile?>((ref) {
+  final uid = ref.watch(currentUidProvider);
+  if (uid == null) return Stream.value(null);
+  return ref.watch(userProfileRepositoryProvider).streamProfile(uid);
+});
+
 /// The delivery staff directory — used by Manager's Staff Assignment screen
 /// and Admin's Deliveries screen to show names alongside orders, which only
 /// ever store a staff *uid* (`assignedStaffId`), never a denormalized name.

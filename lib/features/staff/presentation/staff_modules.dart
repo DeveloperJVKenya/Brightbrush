@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/widgets/module_spec.dart';
+import '../../../shared/widgets/profile_screen.dart';
 import 'delivery_history_screen.dart';
 import 'my_deliveries_screen.dart';
 import 'route_map_screen.dart';
@@ -36,11 +37,12 @@ final List<ModuleSpec> staffModules = [
     description: 'Completed deliveries, delivery notes and signatures.',
     screenBuilder: (context, state) => const DeliveryHistoryScreen(),
   ),
-  const ModuleSpec(
+  ModuleSpec(
     path: '/staff/profile',
     label: 'Profile',
     icon: Icons.person_outline,
     selectedIcon: Icons.person,
     description: 'Your account, vehicle info, and availability status.',
+    screenBuilder: (context, state) => const ProfileScreen(),
   ),
 ];

@@ -22,20 +22,32 @@ final catalogImageUploaderProvider = Provider<CatalogImageUploader>((ref) {
 });
 
 /// Customer-facing stream: active items only, live-updating.
+///
+/// Watches [currentUidProvider] (not just the repository) so that any auth
+/// transition — sign-in, sign-out, switching accounts — tears down and
+/// resubscribes the underlying `.snapshots()` stream. Without this, a
+/// transient `permission-denied` (e.g. a query firing a beat before the
+/// auth token finishes attaching right after sign-in) terminates the stream
+/// permanently and Riverpod caches that error forever, since nothing would
+/// otherwise ever rebuild this provider for the rest of the app session.
 final activeCatalogItemsProvider = StreamProvider<List<CatalogItem>>((ref) {
+  ref.watch(currentUidProvider);
   return ref.watch(catalogRepositoryProvider).streamActive();
 });
 
 /// Manager/Admin authoring stream: every item regardless of isActive.
 final allCatalogItemsProvider = StreamProvider<List<CatalogItem>>((ref) {
+  ref.watch(currentUidProvider);
   return ref.watch(catalogRepositoryProvider).streamAll();
 });
 
 final activePackagesProvider = StreamProvider<List<PackageModel>>((ref) {
+  ref.watch(currentUidProvider);
   return ref.watch(packagesRepositoryProvider).streamActive();
 });
 
 final allPackagesProvider = StreamProvider<List<PackageModel>>((ref) {
+  ref.watch(currentUidProvider);
   return ref.watch(packagesRepositoryProvider).streamAll();
 });
 

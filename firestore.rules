@@ -331,6 +331,100 @@ service cloud.firestore {
             d.createdAt is timestamp && d.updatedAt is timestamp;
     }
 
+    function isValidInventoryMaterial() {
+      let d = request.resource.data;
+      return hasOnlyAllowedFields([
+              'name', 'category', 'unit', 'quantityOnHand', 'reorderPoint',
+              'supplierName', 'supplierContact', 'notes', 'createdBy', 'createdAt', 'updatedAt'
+            ]) &&
+            hasRequiredFields([
+              'name', 'category', 'unit', 'quantityOnHand', 'reorderPoint',
+              'createdBy', 'createdAt', 'updatedAt'
+            ]) &&
+            validStringLength('name', 2, 80) &&
+            validStringLength('category', 2, 40) &&
+            validStringLength('unit', 1, 20) &&
+            isNonNegativeInt('quantityOnHand') && d.quantityOnHand <= 10000000 &&
+            isNonNegativeInt('reorderPoint') && d.reorderPoint <= 10000000 &&
+            d.createdBy is string && d.createdAt is timestamp && d.updatedAt is timestamp &&
+            (!('supplierName' in d) || validStringLength('supplierName', 0, 120)) &&
+            (!('supplierContact' in d) || validStringLength('supplierContact', 0, 120)) &&
+            (!('notes' in d) || validStringLength('notes', 0, 1000));
+    }
+
+    function isValidAssetCategory(value) {
+      return value in ['machine', 'vehicle', 'equipment', 'other'];
+    }
+
+    function isValidAssetCondition(value) {
+      return value in ['operational', 'needsRepair', 'retired'];
+    }
+
+    function isValidCompanyAsset() {
+      let d = request.resource.data;
+      return hasOnlyAllowedFields([
+              'name', 'category', 'condition', 'purchaseDate', 'notes', 'createdBy', 'createdAt', 'updatedAt'
+            ]) &&
+            hasRequiredFields(['name', 'category', 'condition', 'createdBy', 'createdAt', 'updatedAt']) &&
+            validStringLength('name', 2, 80) &&
+            isValidAssetCategory(d.category) &&
+            isValidAssetCondition(d.condition) &&
+            d.createdBy is string && d.createdAt is timestamp && d.updatedAt is timestamp &&
+            (!('purchaseDate' in d) || d.purchaseDate is timestamp) &&
+            (!('notes' in d) || validStringLength('notes', 0, 1000));
+    }
+
+    function isValidExpenseCategory(value) {
+      return value in ['materials', 'utilities', 'wages', 'delivery', 'misc'];
+    }
+
+    function isValidExpense() {
+      let d = request.resource.data;
+      return hasOnlyAllowedFields(['category', 'amount', 'note', 'date', 'createdBy', 'createdAt', 'updatedAt']) &&
+            hasRequiredFields(['category', 'amount', 'date', 'createdBy', 'createdAt', 'updatedAt']) &&
+            isValidExpenseCategory(d.category) &&
+            isPositiveNumber('amount') && d.amount <= 1000000000 &&
+            d.date is timestamp &&
+            d.createdBy is string && d.createdAt is timestamp && d.updatedAt is timestamp &&
+            (!('note' in d) || validStringLength('note', 0, 1000));
+    }
+
+    function isValidAnnouncement() {
+      let d = request.resource.data;
+      return hasOnlyAllowedFields([
+              'title', 'message', 'imageUrl', 'isActive', 'validFrom', 'validTo',
+              'createdBy', 'createdAt', 'updatedAt'
+            ]) &&
+            hasRequiredFields(['title', 'message', 'isActive', 'createdBy', 'createdAt', 'updatedAt']) &&
+            validStringLength('title', 2, 100) &&
+            validStringLength('message', 2, 1000) &&
+            d.isActive is bool &&
+            d.createdBy is string && d.createdAt is timestamp && d.updatedAt is timestamp &&
+            (!('imageUrl' in d) || isValidUrl(d.imageUrl)) &&
+            (!('validFrom' in d) || d.validFrom is timestamp) &&
+            (!('validTo' in d) || d.validTo is timestamp);
+    }
+
+    function isValidTicketStatus(value) {
+      return value in ['open', 'inProgress', 'resolved'];
+    }
+
+    function isValidSupportTicket() {
+      let d = request.resource.data;
+      return hasOnlyAllowedFields([
+              'subject', 'message', 'customerId', 'customerName', 'status', 'response',
+              'createdAt', 'updatedAt'
+            ]) &&
+            hasRequiredFields(['subject', 'message', 'customerId', 'customerName', 'status', 'createdAt', 'updatedAt']) &&
+            validStringLength('subject', 2, 120) &&
+            validStringLength('message', 2, 2000) &&
+            d.customerId is string &&
+            validStringLength('customerName', 1, 80) &&
+            isValidTicketStatus(d.status) &&
+            d.createdAt is timestamp && d.updatedAt is timestamp &&
+            (!('response' in d) || validStringLength('response', 0, 2000));
+    }
+
     // ===============================================================
     // Collections
     // ===============================================================
@@ -452,6 +546,104 @@ service cloud.firestore {
             uid != request.auth.uid &&
             areImmutableFieldsUnchanged(['email', 'displayName', 'createdAt']))
         );
+
+      allow delete: if false;
+    }
+
+    match /InventoryMaterials/{materialId} {
+      // Stock levels and supplier contacts are internal ops data — never
+      // customer-facing — so unlike Catalog/Packages this is gated to
+      // System Manager/Admin/Developer for read too, not just write.
+      allow read: if isManagerOrAdmin();
+
+      allow create: if isManagerOrAdmin() &&
+        isValidInventoryMaterial() &&
+        request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.createdAt == request.time;
+
+      allow update: if isManagerOrAdmin() &&
+        isValidInventoryMaterial() &&
+        areImmutableFieldsUnchanged(['createdBy', 'createdAt']) &&
+        request.resource.data.updatedAt == request.time;
+
+      allow delete: if isManagerOrAdmin();
+    }
+
+    match /CompanyAssets/{assetId} {
+      // Admin/CEO-level only — System Manager doesn't manage company
+      // machines/equipment records.
+      allow read: if isAdminOrDeveloper();
+
+      allow create: if isAdminOrDeveloper() &&
+        isValidCompanyAsset() &&
+        request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.createdAt == request.time;
+
+      allow update: if isAdminOrDeveloper() &&
+        isValidCompanyAsset() &&
+        areImmutableFieldsUnchanged(['createdBy', 'createdAt']) &&
+        request.resource.data.updatedAt == request.time;
+
+      allow delete: if isAdminOrDeveloper();
+    }
+
+    match /Expenses/{expenseId} {
+      // Revenue/expense data is CEO-level, same tier as Role Management —
+      // System Manager never sees the P&L.
+      allow read: if isAdminOrDeveloper();
+
+      allow create: if isAdminOrDeveloper() &&
+        isValidExpense() &&
+        request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.createdAt == request.time;
+
+      allow update: if isAdminOrDeveloper() &&
+        isValidExpense() &&
+        areImmutableFieldsUnchanged(['createdBy', 'createdAt']) &&
+        request.resource.data.updatedAt == request.time;
+
+      allow delete: if isAdminOrDeveloper();
+    }
+
+    match /Announcements/{announcementId} {
+      // Read is permissive like Catalog/Packages — every signed-in role
+      // (including plain 'user') sees active announcements on their Home/
+      // Notifications feed. Authoring is Admin/CEO-level ("Marketing").
+      allow read: if isAuthenticated();
+
+      allow create: if isAdminOrDeveloper() &&
+        isValidAnnouncement() &&
+        request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.createdAt == request.time;
+
+      allow update: if isAdminOrDeveloper() &&
+        isValidAnnouncement() &&
+        areImmutableFieldsUnchanged(['createdBy', 'createdAt']) &&
+        request.resource.data.updatedAt == request.time;
+
+      allow delete: if isAdminOrDeveloper();
+    }
+
+    match /SupportTickets/{ticketId} {
+      // A customer sees only their own tickets; Admin/CEO/Developer see and
+      // manage every ticket (the Support Inbox).
+      allow read: if isOwner(resource.data.customerId) || isAdminOrDeveloper();
+
+      // Anyone signed in can raise a ticket about their own account; it
+      // always starts 'open' with no staff response yet.
+      allow create: if isAuthenticated() &&
+        request.resource.data.customerId == request.auth.uid &&
+        isValidSupportTicket() &&
+        request.resource.data.status == 'open' &&
+        !('response' in request.resource.data) &&
+        request.resource.data.createdAt == request.time;
+
+      // Only staff triage a ticket (status/response) — the raiser can never
+      // edit their own ticket after submitting it.
+      allow update: if isAdminOrDeveloper() &&
+        isValidSupportTicket() &&
+        areImmutableFieldsUnchanged(['customerId', 'customerName', 'subject', 'message', 'createdAt']) &&
+        request.resource.data.updatedAt == request.time;
 
       allow delete: if false;
     }

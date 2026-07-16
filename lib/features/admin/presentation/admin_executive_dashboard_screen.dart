@@ -97,6 +97,7 @@ class AdminExecutiveDashboardScreen extends ConsumerWidget {
                     _QuickLink(label: 'Deliveries', icon: Icons.local_shipping_outlined, onTap: () => context.go('/admin/deliveries')),
                     _QuickLink(label: 'Reports', icon: Icons.bar_chart_outlined, onTap: () => context.go('/admin/reports')),
                     _QuickLink(label: 'Role Management', icon: Icons.admin_panel_settings_outlined, onTap: () => context.go('/admin/settings')),
+                    _QuickLink(label: 'Support Inbox', icon: Icons.support_agent_outlined, onTap: () => context.go('/admin/support')),
                   ],
                 ),
               ],

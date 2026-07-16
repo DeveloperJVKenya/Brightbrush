@@ -31,6 +31,22 @@
         { "fieldPath": "role", "order": "ASCENDING" },
         { "fieldPath": "displayName", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "Announcements",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isActive", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "SupportTickets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "customerId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

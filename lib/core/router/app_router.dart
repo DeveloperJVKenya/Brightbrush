@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/admin/presentation/admin_modules.dart';
+import '../../features/admin/presentation/admin_routes.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/splash_screen.dart';
 import '../../features/developer/presentation/developer_home_screen.dart';
@@ -98,6 +99,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       _roleShellRoute(
         role: AppRole.admin,
         modules: adminModules,
+        extraRoutes: adminExtraRoutes,
       ),
     ],
   );

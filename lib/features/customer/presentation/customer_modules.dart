@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/widgets/module_spec.dart';
+import '../../../shared/widgets/profile_screen.dart';
 import 'cart_checkout_screen.dart';
 import 'customer_catalog_screen.dart';
+import 'customer_notifications_screen.dart';
+import 'customer_support_screen.dart';
+import 'customer_tracking_screen.dart';
 import 'my_orders_screen.dart';
 import 'packages_screen.dart';
 
@@ -42,7 +46,7 @@ final List<ModuleSpec> customerModules = [
         'production and delivery.',
     screenBuilder: (context, state) => const MyOrdersScreen(),
   ),
-  const ModuleSpec(
+  ModuleSpec(
     path: '/customer/tracking',
     label: 'Track Delivery',
     icon: Icons.local_shipping_outlined,
@@ -50,6 +54,7 @@ final List<ModuleSpec> customerModules = [
     description:
         'Live map view of your delivery once it is out, powered by the in-app Google Maps '
         'tracking integration.',
+    screenBuilder: (context, state) => const CustomerTrackingScreen(),
   ),
   ModuleSpec(
     path: '/customer/cart',
@@ -59,25 +64,28 @@ final List<ModuleSpec> customerModules = [
     description: 'Review items, choose quantities and confirm your order.',
     screenBuilder: (context, state) => const CartCheckoutScreen(),
   ),
-  const ModuleSpec(
+  ModuleSpec(
     path: '/customer/notifications',
     label: 'Notifications',
     icon: Icons.notifications_outlined,
     selectedIcon: Icons.notifications,
     description: 'Order status changes, delivery updates and seasonal offers.',
+    screenBuilder: (context, state) => const CustomerNotificationsScreen(),
   ),
-  const ModuleSpec(
+  ModuleSpec(
     path: '/customer/support',
     label: 'Support',
     icon: Icons.support_agent_outlined,
     selectedIcon: Icons.support_agent,
     description: 'Chat with BrightBrush about an order, a design, or a complaint.',
+    screenBuilder: (context, state) => const CustomerSupportScreen(),
   ),
-  const ModuleSpec(
+  ModuleSpec(
     path: '/customer/profile',
     label: 'Profile',
     icon: Icons.person_outline,
     selectedIcon: Icons.person,
     description: 'Account details, saved addresses, and order history.',
+    screenBuilder: (context, state) => const ProfileScreen(),
   ),
 ];

@@ -75,6 +75,23 @@ class UserProfileRepository {
     }
   }
 
+  /// Self-service: the owner updating their own display name from the
+  /// Profile screen. firestore.rules' owner-update path allows this while
+  /// keeping role/email/createdAt immutable.
+  Future<void> updateDisplayName({required String uid, required String displayName}) async {
+    appLogger.i('[users] updateDisplayName(uid=$uid, displayName=$displayName)');
+    try {
+      await _doc(uid).update({
+        'displayName': displayName,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      appLogger.i('[users] displayName updated uid=$uid');
+    } catch (error, stack) {
+      appLogger.e('[users] updateDisplayName(uid=$uid) failed', error: error, stackTrace: stack);
+      rethrow;
+    }
+  }
+
   /// Role Management: Admin/CEO or Developer assigning a role to some other
   /// account. firestore.rules blocks this for `uid == request.auth.uid` —
   /// you can't change your own role through this path, only someone else's.
