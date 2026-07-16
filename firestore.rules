@@ -454,6 +454,26 @@ service cloud.firestore {
             (!('response' in d) || validStringLength('response', 0, 2000));
     }
 
+    // Note: can't loop over `roles` to check each entry is a real AppRole
+    // name (same limitation documented on isValidOrder() above) — bounded
+    // by size/length only. Authored exclusively by Admin/CEO/Developer via
+    // the Guide Editor, so this is an acceptable prototype-level gap, not a
+    // client-facing one.
+    function isValidGuideArticle() {
+      let d = request.resource.data;
+      return hasOnlyAllowedFields([
+              'question', 'answer', 'roles', 'section', 'keywords',
+              'createdBy', 'createdAt', 'updatedAt'
+            ]) &&
+            hasRequiredFields(['question', 'answer', 'roles', 'createdBy', 'createdAt', 'updatedAt']) &&
+            validStringLength('question', 2, 200) &&
+            validStringLength('answer', 2, 4000) &&
+            isValidStringList('roles', 5, 20) &&
+            d.createdBy is string && d.createdAt is timestamp && d.updatedAt is timestamp &&
+            (!('section' in d) || validStringLength('section', 0, 60)) &&
+            (!('keywords' in d) || isValidStringList('keywords', 15, 30));
+    }
+
     // ===============================================================
     // Collections
     // ===============================================================
@@ -682,6 +702,25 @@ service cloud.firestore {
         request.resource.data.updatedAt == request.time;
 
       allow delete: if false;
+    }
+
+    match /GuideArticles/{articleId} {
+      // Every signed-in role reads the guide (filtered client-side to their
+      // own role's articles); only Admin/CEO/Developer maintain content —
+      // same authoring tier as Announcements/Financials.
+      allow read: if isAuthenticated();
+
+      allow create: if isAdminOrDeveloper() &&
+        isValidGuideArticle() &&
+        request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.createdAt == request.time;
+
+      allow update: if isAdminOrDeveloper() &&
+        isValidGuideArticle() &&
+        areImmutableFieldsUnchanged(['createdBy', 'createdAt']) &&
+        request.resource.data.updatedAt == request.time;
+
+      allow delete: if isAdminOrDeveloper();
     }
 
     // Default deny for anything not explicitly matched above.

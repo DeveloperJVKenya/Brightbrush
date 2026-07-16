@@ -73,9 +73,25 @@ class AdminFinancialsScreen extends ConsumerWidget {
                 spacing: 12,
                 runSpacing: 12,
                 children: [
-                  StatCard(label: 'Collected', value: currencyFormat.format(collected), icon: Icons.account_balance_wallet_outlined, accent: true),
-                  StatCard(label: 'Total expenses', value: currencyFormat.format(totalExpenses), icon: Icons.receipt_long_outlined),
-                  StatCard(label: 'Net', value: currencyFormat.format(net), icon: Icons.trending_up_rounded),
+                  StatCard(
+                    label: 'Collected',
+                    value: currencyFormat.format(collected),
+                    icon: Icons.account_balance_wallet_outlined,
+                    accent: true,
+                    hint: 'Revenue actually marked paid, across all non-cancelled orders.',
+                  ),
+                  StatCard(
+                    label: 'Total expenses',
+                    value: currencyFormat.format(totalExpenses),
+                    icon: Icons.receipt_long_outlined,
+                    hint: 'Sum of every logged expense below, all-time.',
+                  ),
+                  StatCard(
+                    label: 'Net',
+                    value: currencyFormat.format(net),
+                    icon: Icons.trending_up_rounded,
+                    hint: 'Collected revenue minus total expenses.',
+                  ),
                 ],
               ),
               const SizedBox(height: 28),

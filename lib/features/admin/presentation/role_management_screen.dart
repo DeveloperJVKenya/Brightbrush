@@ -162,10 +162,7 @@ class _AccountRow extends StatelessWidget {
               ),
             ] else if (profile.uid == foundingDeveloperUid) ...[
               const SizedBox(width: 4),
-              Tooltip(
-                message: 'The founding developer\'s role is permanently fixed',
-                child: Icon(Icons.lock_outline_rounded, size: 18, color: theme.colorScheme.onSurfaceVariant),
-              ),
+              Icon(Icons.lock_outline_rounded, size: 18, color: theme.colorScheme.onSurfaceVariant),
             ],
           ],
         ),

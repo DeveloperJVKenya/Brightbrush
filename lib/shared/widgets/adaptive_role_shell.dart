@@ -21,6 +21,7 @@ class AdaptiveRoleShell extends StatelessWidget {
     required this.onDestinationSelected,
     required this.onSignOut,
     required this.onOpenSettings,
+    required this.onOpenHelp,
     required this.child,
     this.onSwitchView,
   });
@@ -37,6 +38,7 @@ class AdaptiveRoleShell extends StatelessWidget {
   /// get this affordance, only [onSignOut].
   final VoidCallback? onSwitchView;
   final VoidCallback onOpenSettings;
+  final VoidCallback onOpenHelp;
   final Widget child;
 
   // Picks the item whose path is the *longest* matching prefix, not the
@@ -73,6 +75,7 @@ class AdaptiveRoleShell extends StatelessWidget {
             onSignOut: onSignOut,
             onSwitchView: onSwitchView,
             onOpenSettings: onOpenSettings,
+            onOpenHelp: onOpenHelp,
             child: child,
           );
         }
@@ -84,6 +87,7 @@ class AdaptiveRoleShell extends StatelessWidget {
           onSignOut: onSignOut,
           onSwitchView: onSwitchView,
           onOpenSettings: onOpenSettings,
+          onOpenHelp: onOpenHelp,
           bottomBarItemCount: _bottomBarItemCount,
           child: child,
         );
@@ -100,7 +104,10 @@ class _GradientHairline extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(height: 2, decoration: const BoxDecoration(gradient: BrandColors.brandGradient));
+    return Container(
+      height: 2,
+      decoration: const BoxDecoration(gradient: BrandColors.brandGradient),
+    );
   }
 
   @override
@@ -115,6 +122,7 @@ class _WideLayout extends StatelessWidget {
     required this.onDestinationSelected,
     required this.onSignOut,
     required this.onOpenSettings,
+    required this.onOpenHelp,
     required this.child,
     this.onSwitchView,
   });
@@ -126,6 +134,7 @@ class _WideLayout extends StatelessWidget {
   final VoidCallback onSignOut;
   final VoidCallback? onSwitchView;
   final VoidCallback onOpenSettings;
+  final VoidCallback onOpenHelp;
   final Widget child;
 
   @override
@@ -139,7 +148,11 @@ class _WideLayout extends StatelessWidget {
             const BrandMark(size: 30),
             const SizedBox(width: 12),
             Flexible(
-              child: Text('BrightBrush Creations', overflow: TextOverflow.ellipsis, maxLines: 1),
+              child: Text(
+                'BrightBrush Creations',
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
             ),
             const SizedBox(width: 10),
             _RolePill(label: roleLabel),
@@ -147,6 +160,11 @@ class _WideLayout extends StatelessWidget {
         ),
         bottom: const _GradientHairline(),
         actions: [
+          IconButton(
+            tooltip: 'Guide',
+            onPressed: onOpenHelp,
+            icon: const Icon(Icons.help_outline_rounded),
+          ),
           IconButton(
             tooltip: 'Settings',
             onPressed: onOpenSettings,
@@ -211,7 +229,9 @@ class _SideRail extends StatelessWidget {
       width: extended ? 232 : 88,
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLowest,
-        border: Border(right: BorderSide(color: theme.colorScheme.outlineVariant)),
+        border: Border(
+          right: BorderSide(color: theme.colorScheme.outlineVariant),
+        ),
       ),
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
@@ -221,70 +241,83 @@ class _SideRail extends StatelessWidget {
           final selected = index == selectedIndex;
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 3),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: () => onSelected(index),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  padding: EdgeInsets.symmetric(horizontal: extended ? 14 : 0, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: selected ? theme.colorScheme.primaryContainer : Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: extended
-                      ? Row(
-                          children: [
-                            Icon(
-                              selected ? item.selectedIcon : item.icon,
-                              size: 22,
-                              color: selected
-                                  ? theme.colorScheme.onPrimaryContainer
-                                  : theme.colorScheme.onSurfaceVariant,
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Text(
-                                item.label,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 13.5,
-                                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                                  color: selected
-                                      ? theme.colorScheme.onPrimaryContainer
-                                      : theme.colorScheme.onSurface,
-                                ),
-                              ),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              selected ? item.selectedIcon : item.icon,
-                              size: 22,
-                              color: selected
-                                  ? theme.colorScheme.onPrimaryContainer
-                                  : theme.colorScheme.onSurfaceVariant,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              item.label,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 10.5,
-                                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+            child: Tooltip(
+              message: item.description,
+              waitDuration: const Duration(milliseconds: 400),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => onSelected(index),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: extended ? 14 : 0,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? theme.colorScheme.primaryContainer
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: extended
+                        ? Row(
+                            children: [
+                              Icon(
+                                selected ? item.selectedIcon : item.icon,
+                                size: 22,
                                 color: selected
                                     ? theme.colorScheme.onPrimaryContainer
                                     : theme.colorScheme.onSurfaceVariant,
                               ),
-                            ),
-                          ],
-                        ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Text(
+                                  item.label,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: selected
+                                        ? FontWeight.w600
+                                        : FontWeight.w500,
+                                    color: selected
+                                        ? theme.colorScheme.onPrimaryContainer
+                                        : theme.colorScheme.onSurface,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                        : Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                selected ? item.selectedIcon : item.icon,
+                                size: 22,
+                                color: selected
+                                    ? theme.colorScheme.onPrimaryContainer
+                                    : theme.colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                item.label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: selected
+                                      ? FontWeight.w600
+                                      : FontWeight.w500,
+                                  color: selected
+                                      ? theme.colorScheme.onPrimaryContainer
+                                      : theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
                 ),
               ),
             ),
@@ -330,6 +363,7 @@ class _NarrowLayout extends StatelessWidget {
     required this.onDestinationSelected,
     required this.onSignOut,
     required this.onOpenSettings,
+    required this.onOpenHelp,
     required this.bottomBarItemCount,
     required this.child,
     this.onSwitchView,
@@ -342,6 +376,7 @@ class _NarrowLayout extends StatelessWidget {
   final VoidCallback onSignOut;
   final VoidCallback? onSwitchView;
   final VoidCallback onOpenSettings;
+  final VoidCallback onOpenHelp;
   final int bottomBarItemCount;
   final Widget child;
 
@@ -357,11 +392,22 @@ class _NarrowLayout extends StatelessWidget {
           children: [
             const BrandMark(size: 28),
             const SizedBox(width: 10),
-            Flexible(child: Text(roleLabel, overflow: TextOverflow.ellipsis, maxLines: 1)),
+            Flexible(
+              child: Text(
+                roleLabel,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ),
           ],
         ),
         bottom: const _GradientHairline(),
         actions: [
+          IconButton(
+            tooltip: 'Guide',
+            onPressed: onOpenHelp,
+            icon: const Icon(Icons.help_outline_rounded),
+          ),
           IconButton(
             tooltip: 'Settings',
             onPressed: onOpenSettings,
@@ -388,7 +434,9 @@ class _NarrowLayout extends StatelessWidget {
                   padding: EdgeInsets.zero,
                   children: [
                     DrawerHeader(
-                      decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerLow),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerLow,
+                      ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
@@ -406,16 +454,23 @@ class _NarrowLayout extends StatelessWidget {
                       ),
                     ),
                     for (final item in overflowItems)
-                      ListTile(
-                        leading: Icon(item.icon),
-                        title: Text(item.label),
-                        selected: items.indexOf(item) == selectedIndex,
-                        selectedTileColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        onTap: () {
-                          Navigator.of(context).pop();
-                          onDestinationSelected(items.indexOf(item));
-                        },
+                      Tooltip(
+                        message: item.description,
+                        waitDuration: const Duration(milliseconds: 400),
+                        child: ListTile(
+                          leading: Icon(item.icon),
+                          title: Text(item.label),
+                          selected: items.indexOf(item) == selectedIndex,
+                          selectedTileColor: theme.colorScheme.primaryContainer
+                              .withValues(alpha: 0.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            onDestinationSelected(items.indexOf(item));
+                          },
+                        ),
                       ),
                   ],
                 ),
@@ -431,6 +486,7 @@ class _NarrowLayout extends StatelessWidget {
               icon: Icon(item.icon),
               selectedIcon: Icon(item.selectedIcon),
               label: item.label,
+              tooltip: item.description,
             ),
         ],
       ),

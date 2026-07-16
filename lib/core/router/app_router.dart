@@ -7,6 +7,7 @@ import '../../features/admin/presentation/admin_routes.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/splash_screen.dart';
 import '../../features/developer/presentation/developer_home_screen.dart';
+import '../../features/guide/presentation/guide_screen.dart';
 import '../../features/manager/presentation/manager_modules.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/staff/presentation/staff_modules.dart';
@@ -82,6 +83,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/splash', builder: (context, state) => const SplashScreen()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
+      GoRoute(path: '/help', builder: (context, state) => const GuideScreen()),
       GoRoute(path: '/developer', builder: (context, state) => const DeveloperHomeScreen()),
       _roleShellRoute(
         role: AppRole.user,
@@ -131,11 +133,13 @@ ShellRoute _roleShellRoute({
                   label: module.label,
                   icon: module.icon,
                   selectedIcon: module.selectedIcon,
+                  description: module.description,
                 ),
             ],
             currentPath: state.matchedLocation,
             onDestinationSelected: (path) => context.go(path),
             onOpenSettings: () => context.push('/settings'),
+            onOpenHelp: () => context.push('/help'),
             onSwitchView: isDeveloperViewing
                 ? () {
                     appLogger.i('[developer] Switching view back to picker from ${state.matchedLocation}');

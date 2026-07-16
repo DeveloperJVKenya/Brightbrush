@@ -5,17 +5,21 @@ import 'package:flutter/material.dart';
 /// Deliveries). [accent] highlights the one number on a row worth calling
 /// out (e.g. revenue collected, orders awaiting review).
 class StatCard extends StatelessWidget {
-  const StatCard({super.key, required this.label, required this.value, required this.icon, this.accent = false});
+  const StatCard({super.key, required this.label, required this.value, required this.icon, this.accent = false, this.hint});
 
   final String label;
   final String value;
   final IconData icon;
   final bool accent;
 
+  /// Optional hover explanation of what this figure means — shown as a
+  /// tooltip when provided.
+  final String? hint;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
+    final card = Container(
       width: 190,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -44,5 +48,6 @@ class StatCard extends StatelessWidget {
         ],
       ),
     );
+    return hint == null ? card : Tooltip(message: hint, waitDuration: const Duration(milliseconds: 400), child: card);
   }
 }
