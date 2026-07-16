@@ -13,6 +13,7 @@ class BrightBrushApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeProvider);
     final font = ref.watch(appFontProvider);
+    final textScale = ref.watch(textScaleProvider);
 
     return MaterialApp.router(
       title: 'BrightBrush Creations',
@@ -21,6 +22,13 @@ class BrightBrushApp extends ConsumerWidget {
       theme: AppTheme.light(fontFamily: font.fontFamily),
       darkTheme: AppTheme.dark(fontFamily: font.fontFamily),
       routerConfig: router,
+      builder: (context, child) {
+        return MediaQuery.withClampedTextScaling(
+          minScaleFactor: textScale,
+          maxScaleFactor: textScale,
+          child: child!,
+        );
+      },
     );
   }
 }

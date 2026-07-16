@@ -10,6 +10,11 @@ class UserProfile {
     required this.role,
     required this.createdAt,
     required this.updatedAt,
+    required this.phone,
+    required this.photoUrl,
+    required this.dailyWage,
+    required this.vehiclePlate,
+    required this.availability,
   });
 
   final String uid;
@@ -18,6 +23,17 @@ class UserProfile {
   final AppRole role;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String phone;
+  final String? photoUrl;
+
+  /// Daily pay rate for manual-worker roles — set by Admin/CEO/Developer
+  /// only, never self-editable (see firestore.rules' owner-path immutable
+  /// fields for `Users`).
+  final num? dailyWage;
+
+  /// Delivery Staff-only self-reported fields.
+  final String vehiclePlate;
+  final bool availability;
 
   factory UserProfile.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data() ?? {};
@@ -28,6 +44,11 @@ class UserProfile {
       role: AppRole.fromRoleName(d['role'] as String?),
       createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0),
       updatedAt: (d['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0),
+      phone: d['phone'] as String? ?? '',
+      photoUrl: d['photoUrl'] as String?,
+      dailyWage: d['dailyWage'] as num?,
+      vehiclePlate: d['vehiclePlate'] as String? ?? '',
+      availability: d['availability'] as bool? ?? true,
     );
   }
 

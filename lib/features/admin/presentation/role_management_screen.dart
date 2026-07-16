@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/app_role.dart';
 import '../../../core/auth/auth_providers.dart';
+import '../../../core/auth/founding_developer.dart';
 import '../../../core/firebase/firebase_providers.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../shared/search/search_utils.dart';
@@ -152,12 +153,18 @@ class _AccountRow extends StatelessWidget {
                 ),
               ),
             ),
-            if (!isSelf) ...[
+            if (!isSelf && profile.uid != foundingDeveloperUid) ...[
               const SizedBox(width: 4),
               IconButton(
                 tooltip: 'Change role',
                 icon: const Icon(Icons.edit_outlined),
                 onPressed: () => _showRolePicker(context, profile),
+              ),
+            ] else if (profile.uid == foundingDeveloperUid) ...[
+              const SizedBox(width: 4),
+              Tooltip(
+                message: 'The founding developer\'s role is permanently fixed',
+                child: Icon(Icons.lock_outline_rounded, size: 18, color: theme.colorScheme.onSurfaceVariant),
               ),
             ],
           ],
@@ -181,6 +188,8 @@ class _AccountRow extends StatelessWidget {
       builder: (context) {
         return Consumer(
           builder: (context, ref, _) {
+            final myUid = ref.watch(currentUidProvider);
+            final canGrantDeveloper = myUid == foundingDeveloperUid;
             return SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
@@ -194,6 +203,7 @@ class _AccountRow extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     for (final role in AppRole.values)
+                      if (role != AppRole.developer || canGrantDeveloper)
                       ListTile(
                         contentPadding: EdgeInsets.zero,
                         leading: Icon(

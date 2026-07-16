@@ -73,6 +73,12 @@ rules_version = '2';
 //     'user' | 'systemManager' | 'admin' | 'deliveryStaff' | 'developer')
 //   - createdAt: timestamp (required, immutable)
 //   - updatedAt: timestamp (required)
+//   - phone: string (optional, owner-editable)
+//   - photoUrl: string (optional, Storage https URL, owner-editable)
+//   - dailyWage: number (optional, >= 0 — daily pay rate for manual-worker
+//     roles; NOT owner-editable, only Admin/CEO/Developer can set it)
+//   - vehiclePlate: string (optional, Delivery Staff, owner-editable)
+//   - availability: bool (optional, Delivery Staff, owner-editable)
 // A client can only ever self-register as 'user' (the default, unprivileged
 // role — labeled "User" in the app; never a staff role, and never
 // 'developer') — every other role is assigned afterward by an Admin/CEO or
@@ -85,6 +91,13 @@ rules_version = '2';
 // every `hasStaffRole(...)` check regardless of which roles it lists — see
 // that function below — so a developer account has the same Firestore
 // access as systemManager + admin + deliveryStaff combined.
+//
+// Exactly one uid (see isFoundingDeveloper()) is the founding developer —
+// the account that started this system. Only that uid may ever grant the
+// 'developer' role to someone else, and that uid's own role can never be
+// changed by anyone, including itself. Every other role change (including
+// promoting/demoting a delegated developer to/from any non-developer role)
+// still just needs isAdminOrDeveloper().
 //
 // ===============================================================
 // Queries the app performs (rules below MUST allow these):
@@ -193,6 +206,14 @@ service cloud.firestore {
       return hasStaffRole(['admin']);
     }
 
+    // The account that started this system — see
+    // lib/core/auth/founding_developer.dart. Only this uid may ever grant
+    // the 'developer' role to someone else, and this uid's own role can
+    // never be changed by anyone, including itself.
+    function isFoundingDeveloper() {
+      return isAuthenticated() && request.auth.uid == 'ZQ1sVcS9YfbmyLv8m8gBdFiiVD83';
+    }
+
     function isDeliveryStaffRole() {
       return hasStaffRole(['deliveryStaff']);
     }
@@ -295,12 +316,20 @@ service cloud.firestore {
 
     function isValidUserProfile() {
       let d = request.resource.data;
-      return hasOnlyAllowedFields(['email', 'displayName', 'role', 'createdAt', 'updatedAt']) &&
+      return hasOnlyAllowedFields([
+              'email', 'displayName', 'role', 'createdAt', 'updatedAt',
+              'phone', 'photoUrl', 'dailyWage', 'vehiclePlate', 'availability'
+            ]) &&
         hasRequiredFields(['email', 'displayName', 'role', 'createdAt', 'updatedAt']) &&
         d.email is string && d.email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$') &&
         validStringLength('displayName', 1, 80) &&
         isValidRole(d.role) &&
-        d.createdAt is timestamp && d.updatedAt is timestamp;
+        d.createdAt is timestamp && d.updatedAt is timestamp &&
+        (!('phone' in d) || validStringLength('phone', 0, 30)) &&
+        (!('photoUrl' in d) || isValidUrl(d.photoUrl)) &&
+        (!('dailyWage' in d) || (d.dailyWage is number && d.dailyWage >= 0 && d.dailyWage <= 1000000)) &&
+        (!('vehiclePlate' in d) || validStringLength('vehiclePlate', 0, 20)) &&
+        (!('availability' in d) || d.availability is bool);
     }
 
     function isValidOrder() {
@@ -530,21 +559,28 @@ service cloud.firestore {
         request.resource.data.createdAt == request.time;
 
       // Two distinct update paths:
-      // - The owner may update their own displayName/updatedAt — role,
-      //   email, and createdAt are immutable through this path, so nobody
-      //   can self-promote.
+      // - The owner may update their own displayName/phone/photoUrl/
+      //   vehiclePlate/availability/updatedAt — role, email, createdAt, and
+      //   dailyWage are immutable through this path, so nobody can
+      //   self-promote or set their own pay.
       // - Admin/CEO or Developer (Role Management) may change *someone
-      //   else's* role — never their own, which blocks a careless
-      //   self-demotion/self-promotion loop; email/displayName/createdAt
-      //   stay immutable through this path too, so Role Management can only
-      //   ever change the one field it's for.
+      //   else's* role/dailyWage/phone/photoUrl/vehiclePlate/availability —
+      //   never their own, which blocks a careless self-demotion/
+      //   self-promotion loop; email/displayName/createdAt stay immutable
+      //   through this path too.
+      //   The founding developer's own document is completely frozen on
+      //   this path (nobody, including another developer, can change it),
+      //   and granting 'developer' to anyone else requires being the
+      //   founding developer specifically — see isFoundingDeveloper().
       allow update: if isValidUserProfile() &&
         request.resource.data.updatedAt == request.time &&
         (
-          (isOwner(uid) && areImmutableFieldsUnchanged(['role', 'email', 'createdAt'])) ||
+          (isOwner(uid) && areImmutableFieldsUnchanged(['role', 'email', 'createdAt', 'dailyWage'])) ||
           (isAdminOrDeveloper() &&
             uid != request.auth.uid &&
-            areImmutableFieldsUnchanged(['email', 'displayName', 'createdAt']))
+            uid != 'ZQ1sVcS9YfbmyLv8m8gBdFiiVD83' &&
+            areImmutableFieldsUnchanged(['email', 'displayName', 'createdAt']) &&
+            (resource.data.role == request.resource.data.role || request.resource.data.role != 'developer' || isFoundingDeveloper()))
         );
 
       allow delete: if false;

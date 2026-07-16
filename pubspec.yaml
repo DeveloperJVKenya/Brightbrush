@@ -69,6 +69,8 @@ dependencies:
   # routing decisions) so permission/role issues are traceable from the
   # terminal instead of guessed at from a blank screen.
   logger: ^2.5.0
+  package_info_plus: ^10.2.1
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:

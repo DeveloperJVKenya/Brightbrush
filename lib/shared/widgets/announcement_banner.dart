@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/settings/settings_providers.dart';
 import '../../features/marketing/application/marketing_providers.dart';
 import '../../features/marketing/domain/announcement_model.dart';
 
 /// Compact strip of active Marketing announcements, shown above the
 /// catalog on the customer Home. Renders nothing while loading, on error,
-/// or when there's simply nothing active — this is a bonus, not a
-/// blocking element.
+/// when there's simply nothing active, or when the user has turned off
+/// in-app notifications in Settings — this is a bonus, not a blocking
+/// element.
 class AnnouncementBanner extends ConsumerWidget {
   const AnnouncementBanner({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (!ref.watch(inAppNotificationsEnabledProvider)) return const SizedBox.shrink();
     final announcementsAsync = ref.watch(activeAnnouncementsProvider);
     final announcements = announcementsAsync.valueOrNull ?? const <AnnouncementModel>[];
     if (announcements.isEmpty) return const SizedBox.shrink();

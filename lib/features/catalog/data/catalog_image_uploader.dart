@@ -33,6 +33,17 @@ class CatalogImageUploader {
     return task.ref.getDownloadURL();
   }
 
+  Future<String> uploadProfilePhoto({
+    required String uid,
+    required Uint8List bytes,
+    required String contentType,
+  }) async {
+    final path = 'profiles/$uid/${DateTime.now().millisecondsSinceEpoch}';
+    final ref = _storage.ref(path);
+    final task = await ref.putData(bytes, SettableMetadata(contentType: contentType));
+    return task.ref.getDownloadURL();
+  }
+
   Future<String> uploadAnnouncementImage({
     required String announcementId,
     required Uint8List bytes,

@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/auth/app_role.dart';
+import '../../../core/auth/auth_providers.dart';
 import '../../../core/settings/app_font.dart';
 import '../../../core/settings/settings_providers.dart';
 
@@ -15,6 +20,10 @@ class SettingsScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final themeMode = ref.watch(themeModeProvider);
     final font = ref.watch(appFontProvider);
+    final textScale = ref.watch(textScaleProvider);
+    final reduceMotion = ref.watch(reduceMotionProvider);
+    final inAppNotifications = ref.watch(inAppNotificationsEnabledProvider);
+    final role = ref.watch(resolvedRoleProvider).valueOrNull;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -91,30 +100,111 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 20),
-          _SectionHeader(title: 'More', icon: Icons.tune_outlined),
+          _SectionHeader(title: 'Accessibility', icon: Icons.accessibility_new_outlined),
+          const SizedBox(height: 12),
+          Card(
+            margin: EdgeInsets.zero,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Text size', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Applies across the whole app, independent of your device\'s own text size.',
+                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                  Row(
+                    children: [
+                      const Text('A', style: TextStyle(fontSize: 13)),
+                      Expanded(
+                        child: Slider(
+                          value: textScale,
+                          min: TextScaleController.min,
+                          max: TextScaleController.max,
+                          divisions: 9,
+                          label: '${(textScale * 100).round()}%',
+                          onChanged: (v) => ref.read(textScaleProvider.notifier).set(v),
+                        ),
+                      ),
+                      const Text('A', style: TextStyle(fontSize: 22)),
+                    ],
+                  ),
+                  const Divider(height: 24),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Reduce motion'),
+                    subtitle: const Text('Skip entrance/stagger animations on lists and grids.'),
+                    value: reduceMotion,
+                    onChanged: (v) => ref.read(reduceMotionProvider.notifier).set(v),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          _SectionHeader(title: 'Notifications', icon: Icons.notifications_outlined),
+          const SizedBox(height: 12),
+          Card(
+            margin: EdgeInsets.zero,
+            child: SwitchListTile(
+              title: const Text('In-app notifications'),
+              subtitle: const Text('Show the announcement banner on Home. This doesn\'t send push alerts.'),
+              value: inAppNotifications,
+              onChanged: (v) => ref.read(inAppNotificationsEnabledProvider.notifier).set(v),
+            ),
+          ),
+          const SizedBox(height: 20),
+          _SectionHeader(title: 'About & support', icon: Icons.info_outline),
           const SizedBox(height: 12),
           Card(
             margin: EdgeInsets.zero,
             child: Column(
-              children: const [
+              children: [
+                const _AppVersionTile(),
+                const Divider(height: 1),
                 ListTile(
-                  leading: Icon(Icons.notifications_outlined),
-                  title: Text('Notifications'),
-                  subtitle: Text('Coming soon'),
-                  enabled: false,
-                ),
-                Divider(height: 1),
-                ListTile(
-                  leading: Icon(Icons.language_outlined),
-                  title: Text('Language'),
-                  subtitle: Text('Coming soon'),
-                  enabled: false,
+                  leading: const Icon(Icons.support_agent_outlined),
+                  title: const Text('Contact support'),
+                  subtitle: const Text('Get help with an order, a design, or anything else.'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _openSupport(context, role),
                 ),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  void _openSupport(BuildContext context, AppRole? role) {
+    // Only the customer role has an in-app Support screen; every other
+    // role falls back to email, since Support tickets are customer-facing.
+    if (role == AppRole.user) {
+      context.go('/customer/support');
+    } else {
+      launchUrl(Uri.parse('mailto:support@brightbrushcreations.com'));
+    }
+  }
+}
+
+class _AppVersionTile extends StatelessWidget {
+  const _AppVersionTile();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<PackageInfo>(
+      future: PackageInfo.fromPlatform(),
+      builder: (context, snapshot) {
+        final info = snapshot.data;
+        return ListTile(
+          leading: const Icon(Icons.apps_outlined),
+          title: const Text('BrightBrush Creations'),
+          subtitle: Text(info == null ? 'Loading version…' : 'Version ${info.version} (${info.buildNumber})'),
+        );
+      },
     );
   }
 }

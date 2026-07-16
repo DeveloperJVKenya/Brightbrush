@@ -92,6 +92,49 @@ class UserProfileRepository {
     }
   }
 
+  /// Self-service: the owner updating their own phone/photo/vehicle/
+  /// availability from the Profile screen. Any subset of these may be
+  /// passed — omitted fields are left untouched.
+  Future<void> updateSelfProfile({
+    required String uid,
+    String? phone,
+    String? photoUrl,
+    String? vehiclePlate,
+    bool? availability,
+  }) async {
+    appLogger.i('[users] updateSelfProfile(uid=$uid)');
+    try {
+      await _doc(uid).update({
+        'phone': ?phone,
+        'photoUrl': ?photoUrl,
+        'vehiclePlate': ?vehiclePlate,
+        'availability': ?availability,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      appLogger.i('[users] self profile updated uid=$uid');
+    } catch (error, stack) {
+      appLogger.e('[users] updateSelfProfile(uid=$uid) failed', error: error, stackTrace: stack);
+      rethrow;
+    }
+  }
+
+  /// Admin/CEO/Developer only — sets a manual-worker's daily pay rate.
+  /// firestore.rules blocks this on the owner's own update path entirely,
+  /// so a staff member can never set their own wage.
+  Future<void> updateDailyWage({required String uid, required num dailyWage}) async {
+    appLogger.i('[users] updateDailyWage(uid=$uid, dailyWage=$dailyWage)');
+    try {
+      await _doc(uid).update({
+        'dailyWage': dailyWage,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      appLogger.i('[users] dailyWage updated uid=$uid');
+    } catch (error, stack) {
+      appLogger.e('[users] updateDailyWage(uid=$uid) failed', error: error, stackTrace: stack);
+      rethrow;
+    }
+  }
+
   /// Role Management: Admin/CEO or Developer assigning a role to some other
   /// account. firestore.rules blocks this for `uid == request.auth.uid` —
   /// you can't change your own role through this path, only someone else's.

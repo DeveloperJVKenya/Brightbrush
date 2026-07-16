@@ -21,6 +21,10 @@ service firebase.storage {
       return request.auth != null;
     }
 
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
     // 'developer' always passes regardless of the allowed-roles list —
     // mirrors the same bypass in firestore.rules' hasStaffRole().
     function hasStaffRole(allowedRoles) {
@@ -61,6 +65,12 @@ service firebase.storage {
       allow read: if isAuthenticated();
       allow write: if isAdminOrDeveloper() && isValidImageUpload();
       allow delete: if isAdminOrDeveloper();
+    }
+
+    match /profiles/{uid}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(uid) && isValidImageUpload();
+      allow delete: if isOwner(uid);
     }
 
     match /{allPaths=**} {
