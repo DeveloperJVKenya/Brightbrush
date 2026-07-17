@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -70,7 +72,7 @@ class _AiSearchDialogState extends ConsumerState<AiSearchDialog> {
         ],
       ),
       content: SizedBox(
-        width: 420,
+        width: math.min(420, MediaQuery.sizeOf(context).width * 0.9),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,

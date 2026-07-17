@@ -13,6 +13,7 @@ Future<void> showGuideArticleFormSheet(BuildContext context, WidgetRef ref, {Gui
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
+    constraints: const BoxConstraints(maxWidth: 560),
     builder: (context) => _GuideArticleFormSheet(existing: existing),
   );
 }

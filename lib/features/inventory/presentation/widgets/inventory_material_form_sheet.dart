@@ -12,6 +12,7 @@ Future<void> showInventoryMaterialFormSheet(BuildContext context, WidgetRef ref,
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
+    constraints: const BoxConstraints(maxWidth: 560),
     builder: (context) => _InventoryMaterialFormSheet(existing: existing),
   );
 }
@@ -116,6 +117,7 @@ class _InventoryMaterialFormSheetState extends ConsumerState<_InventoryMaterialF
               const SizedBox(height: 16),
               TextFormField(
                 controller: _name,
+                autofocus: true,
                 decoration: const InputDecoration(labelText: 'Name'),
                 validator: (v) => (v == null || v.trim().length < 2) ? 'Enter a name (2+ chars)' : null,
               ),
@@ -141,7 +143,12 @@ class _InventoryMaterialFormSheetState extends ConsumerState<_InventoryMaterialF
                       controller: _quantity,
                       decoration: const InputDecoration(labelText: 'Qty on hand'),
                       keyboardType: TextInputType.number,
-                      validator: (v) => int.tryParse(v ?? '') == null ? 'Whole number' : null,
+                      validator: (v) {
+                        final n = int.tryParse(v ?? '');
+                        if (n == null) return 'Whole number';
+                        if (n < 0) return 'Can\'t be negative';
+                        return null;
+                      },
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -150,7 +157,12 @@ class _InventoryMaterialFormSheetState extends ConsumerState<_InventoryMaterialF
                       controller: _reorderPoint,
                       decoration: const InputDecoration(labelText: 'Reorder at'),
                       keyboardType: TextInputType.number,
-                      validator: (v) => int.tryParse(v ?? '') == null ? 'Whole number' : null,
+                      validator: (v) {
+                        final n = int.tryParse(v ?? '');
+                        if (n == null) return 'Whole number';
+                        if (n < 0) return 'Can\'t be negative';
+                        return null;
+                      },
                     ),
                   ),
                 ],

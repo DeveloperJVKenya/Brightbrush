@@ -16,6 +16,7 @@ void _showPackageSheet(BuildContext context, PackageModel package) {
     context: context,
     showDragHandle: true,
     isScrollControlled: true,
+    constraints: const BoxConstraints(maxWidth: 560),
     builder: (context) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),

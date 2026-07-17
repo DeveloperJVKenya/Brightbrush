@@ -113,6 +113,7 @@ class _AssignableCardState extends ConsumerState<_AssignableCard> {
     final picked = await showModalBottomSheet<UserProfile>(
       context: context,
       showDragHandle: true,
+      constraints: const BoxConstraints(maxWidth: 560),
       builder: (context) {
         return SafeArea(
           child: Padding(

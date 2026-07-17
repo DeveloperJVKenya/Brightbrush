@@ -19,6 +19,7 @@ Future<void> showCatalogItemFormSheet(BuildContext context, WidgetRef ref, {Cata
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
+    constraints: const BoxConstraints(maxWidth: 560),
     builder: (context) => _CatalogItemFormSheet(existing: existing),
   );
 }
@@ -207,6 +208,7 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _name,
+                autofocus: true,
                 decoration: const InputDecoration(labelText: 'Name'),
                 validator: (v) => (v == null || v.trim().length < 2) ? 'Enter a name (2+ chars)' : null,
               ),
@@ -234,7 +236,12 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
                       controller: _price,
                       decoration: const InputDecoration(labelText: 'Base price (KES)'),
                       keyboardType: TextInputType.number,
-                      validator: (v) => num.tryParse(v ?? '') == null ? 'Number' : null,
+                      validator: (v) {
+                        final n = num.tryParse(v ?? '');
+                        if (n == null) return 'Number';
+                        if (n <= 0) return 'Must be > 0';
+                        return null;
+                      },
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -243,7 +250,12 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
                       controller: _moq,
                       decoration: const InputDecoration(labelText: 'MOQ'),
                       keyboardType: TextInputType.number,
-                      validator: (v) => int.tryParse(v ?? '') == null ? 'Whole number' : null,
+                      validator: (v) {
+                        final n = int.tryParse(v ?? '');
+                        if (n == null) return 'Whole number';
+                        if (n < 1) return 'Must be at least 1';
+                        return null;
+                      },
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -252,7 +264,12 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
                       controller: _leadTime,
                       decoration: const InputDecoration(labelText: 'Lead days'),
                       keyboardType: TextInputType.number,
-                      validator: (v) => int.tryParse(v ?? '') == null ? 'Whole number' : null,
+                      validator: (v) {
+                        final n = int.tryParse(v ?? '');
+                        if (n == null) return 'Whole number';
+                        if (n < 0) return 'Can\'t be negative';
+                        return null;
+                      },
                     ),
                   ),
                 ],

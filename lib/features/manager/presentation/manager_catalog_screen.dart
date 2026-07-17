@@ -84,13 +84,55 @@ class ManagerCatalogScreen extends ConsumerWidget {
   }
 }
 
-class _ManagerCatalogRow extends ConsumerWidget {
+class _ManagerCatalogRow extends ConsumerStatefulWidget {
   const _ManagerCatalogRow({required this.item});
 
   final CatalogItem item;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ManagerCatalogRow> createState() => _ManagerCatalogRowState();
+}
+
+class _ManagerCatalogRowState extends ConsumerState<_ManagerCatalogRow> {
+  bool _busy = false;
+
+  CatalogItem get item => widget.item;
+
+  Future<void> _setActive(bool value) async {
+    setState(() => _busy = true);
+    try {
+      await ref.read(catalogRepositoryProvider).update(
+            CatalogItem(
+              id: item.id,
+              name: item.name,
+              category: item.category,
+              description: item.description,
+              basePrice: item.basePrice,
+              moq: item.moq,
+              leadTimeDays: item.leadTimeDays,
+              imageUrls: item.imageUrls,
+              tags: item.tags,
+              isActive: value,
+              isFeatured: item.isFeatured,
+              createdBy: item.createdBy,
+              createdAt: item.createdAt,
+              updatedAt: DateTime.now(),
+            ),
+          );
+    } catch (error, stack) {
+      appLogger.e('[catalog] Failed to toggle active for item ${item.id}', error: error, stackTrace: stack);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Couldn\'t update: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
       margin: EdgeInsets.zero,
@@ -120,29 +162,16 @@ class _ManagerCatalogRow extends ConsumerWidget {
                 ],
               ),
             ),
-            Switch(
-              value: item.isActive,
-              onChanged: (value) {
-                ref.read(catalogRepositoryProvider).update(
-                      CatalogItem(
-                        id: item.id,
-                        name: item.name,
-                        category: item.category,
-                        description: item.description,
-                        basePrice: item.basePrice,
-                        moq: item.moq,
-                        leadTimeDays: item.leadTimeDays,
-                        imageUrls: item.imageUrls,
-                        tags: item.tags,
-                        isActive: value,
-                        isFeatured: item.isFeatured,
-                        createdBy: item.createdBy,
-                        createdAt: item.createdAt,
-                        updatedAt: DateTime.now(),
-                      ),
-                    );
-              },
-            ),
+            if (_busy)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12),
+                child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+              )
+            else
+              Switch(
+                value: item.isActive,
+                onChanged: _setActive,
+              ),
             IconButton(
               tooltip: 'Edit',
               icon: const Icon(Icons.edit_outlined),

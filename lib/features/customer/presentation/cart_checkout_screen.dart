@@ -303,12 +303,14 @@ class _QuantityStepper extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
+          tooltip: 'Decrease quantity',
           visualDensity: VisualDensity.compact,
           icon: const Icon(Icons.remove_circle_outline_rounded),
           onPressed: () => onChanged(quantity - 1),
         ),
         Text('$quantity', style: const TextStyle(fontWeight: FontWeight.w600)),
         IconButton(
+          tooltip: 'Increase quantity',
           visualDensity: VisualDensity.compact,
           icon: const Icon(Icons.add_circle_outline_rounded),
           onPressed: () => onChanged(quantity + 1),

@@ -12,6 +12,7 @@ Future<void> showExpenseFormSheet(BuildContext context, WidgetRef ref, {ExpenseM
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
+    constraints: const BoxConstraints(maxWidth: 560),
     builder: (context) => _ExpenseFormSheet(existing: existing),
   );
 }
@@ -119,9 +120,15 @@ class _ExpenseFormSheetState extends ConsumerState<_ExpenseFormSheet> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _amount,
+                autofocus: true,
                 decoration: const InputDecoration(labelText: 'Amount (KES)'),
                 keyboardType: TextInputType.number,
-                validator: (v) => num.tryParse(v ?? '') == null ? 'Number' : null,
+                validator: (v) {
+                  final n = num.tryParse(v ?? '');
+                  if (n == null) return 'Number';
+                  if (n <= 0) return 'Must be greater than 0';
+                  return null;
+                },
               ),
               const SizedBox(height: 12),
               ListTile(

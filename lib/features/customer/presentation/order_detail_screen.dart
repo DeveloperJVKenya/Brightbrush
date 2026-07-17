@@ -23,7 +23,11 @@ class OrderDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(icon: const Icon(Icons.arrow_back_rounded), onPressed: () => context.pop()),
+        leading: IconButton(
+          tooltip: 'Back',
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => context.pop(),
+        ),
         title: const Text('Order details'),
       ),
       body: ordersAsync.when(
@@ -54,20 +58,78 @@ class _OrderDetailBody extends ConsumerWidget {
 
   final OrderModel order;
 
+  static const _wideBreakpoint = 900.0;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
-        Card(
-          margin: EdgeInsets.zero,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: OrderStatusTimeline(status: order.status),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= _wideBreakpoint;
+        if (!isWide) {
+          return ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+              _StatusCard(order: order),
+              const SizedBox(height: 16),
+              _ItemsSection(order: order),
+              const SizedBox(height: 16),
+              _DeliverySection(order: order, ref: ref),
+            ],
+          );
+        }
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1100),
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                _StatusCard(order: order),
+                const SizedBox(height: 16),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(flex: 3, child: _ItemsSection(order: order)),
+                    const SizedBox(width: 20),
+                    Expanded(flex: 2, child: _DeliverySection(order: order, ref: ref)),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
+        );
+      },
+    );
+  }
+}
+
+class _StatusCard extends StatelessWidget {
+  const _StatusCard({required this.order});
+
+  final OrderModel order;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: OrderStatusTimeline(status: order.status),
+      ),
+    );
+  }
+}
+
+class _ItemsSection extends StatelessWidget {
+  const _ItemsSection({required this.order});
+
+  final OrderModel order;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         Text('Items', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
         Card(
@@ -96,7 +158,23 @@ class _OrderDetailBody extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(height: 16),
+      ],
+    );
+  }
+}
+
+class _DeliverySection extends StatelessWidget {
+  const _DeliverySection({required this.order, required this.ref});
+
+  final OrderModel order;
+  final WidgetRef ref;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         Text('Delivery', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
         Card(

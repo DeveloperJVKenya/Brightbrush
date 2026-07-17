@@ -129,38 +129,40 @@ class AdminReportsScreen extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 28),
-                _ReportSection(
-                  title: 'Orders by status',
-                  child: HorizontalBarChart(
-                    data: [
-                      for (final status in OrderStatus.values)
-                        BarDatum(label: status.label, value: statusCounts[status]!, valueLabel: '${statusCounts[status]}'),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                _ReportSection(
-                  title: 'Top categories by revenue',
-                  child: topCategories.isEmpty
-                      ? Text('No sales yet.', style: theme.textTheme.bodyMedium)
-                      : HorizontalBarChart(
-                          data: [
-                            for (final entry in topCategories.take(6))
-                              BarDatum(label: entry.key.label, value: entry.value, valueLabel: currencyFormat.format(entry.value)),
-                          ],
-                        ),
-                ),
-                const SizedBox(height: 24),
-                _ReportSection(
-                  title: 'Delivery performance',
-                  child: deliveryPerformance.isEmpty
-                      ? Text('No completed deliveries yet.', style: theme.textTheme.bodyMedium)
-                      : HorizontalBarChart(
-                          data: [
-                            for (final entry in deliveryPerformance)
-                              BarDatum(label: entry.key, value: entry.value, valueLabel: '${entry.value} delivered'),
-                          ],
-                        ),
+                _ReportsGrid(
+                  sections: [
+                    _ReportSection(
+                      title: 'Orders by status',
+                      child: HorizontalBarChart(
+                        data: [
+                          for (final status in OrderStatus.values)
+                            BarDatum(label: status.label, value: statusCounts[status]!, valueLabel: '${statusCounts[status]}'),
+                        ],
+                      ),
+                    ),
+                    _ReportSection(
+                      title: 'Top categories by revenue',
+                      child: topCategories.isEmpty
+                          ? Text('No sales yet.', style: theme.textTheme.bodyMedium)
+                          : HorizontalBarChart(
+                              data: [
+                                for (final entry in topCategories.take(6))
+                                  BarDatum(label: entry.key.label, value: entry.value, valueLabel: currencyFormat.format(entry.value)),
+                              ],
+                            ),
+                    ),
+                    _ReportSection(
+                      title: 'Delivery performance',
+                      child: deliveryPerformance.isEmpty
+                          ? Text('No completed deliveries yet.', style: theme.textTheme.bodyMedium)
+                          : HorizontalBarChart(
+                              data: [
+                                for (final entry in deliveryPerformance)
+                                  BarDatum(label: entry.key, value: entry.value, valueLabel: '${entry.value} delivered'),
+                              ],
+                            ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -204,6 +206,45 @@ class AdminReportsScreen extends ConsumerWidget {
     Clipboard.setData(ClipboardData(text: buffer.toString()));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Report summary copied to clipboard'), behavior: SnackBarBehavior.floating),
+    );
+  }
+}
+
+/// Lays report sections two-up on wide screens (desktop/tablet landscape)
+/// instead of one long vertical scroll; falls back to a single column when
+/// there isn't room for two side by side.
+class _ReportsGrid extends StatelessWidget {
+  const _ReportsGrid({required this.sections});
+
+  final List<Widget> sections;
+
+  static const _twoColumnBreakpoint = 900.0;
+  static const _spacing = 20.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < _twoColumnBreakpoint) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final section in sections) ...[
+                section,
+                if (section != sections.last) const SizedBox(height: 24),
+              ],
+            ],
+          );
+        }
+        final columnWidth = (constraints.maxWidth - _spacing) / 2;
+        return Wrap(
+          spacing: _spacing,
+          runSpacing: 24,
+          children: [
+            for (final section in sections) SizedBox(width: columnWidth, child: section),
+          ],
+        );
+      },
     );
   }
 }

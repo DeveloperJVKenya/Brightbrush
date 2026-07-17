@@ -134,6 +134,7 @@ class AdminDeliveriesScreen extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
+      constraints: const BoxConstraints(maxWidth: 560),
       builder: (context) {
         final theme = Theme.of(context);
         return Padding(

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/errors/user_facing_error.dart';
 import '../../../core/formatting/currency.dart';
+import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/horizontal_bar_chart.dart';
 import '../../../shared/widgets/stat_card.dart';
@@ -28,10 +30,14 @@ class AdminFinancialsScreen extends ConsumerWidget {
       return const Center(child: CircularProgressIndicator());
     }
     if (ordersAsync.hasError) {
-      return EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load orders', message: '${ordersAsync.error}');
+      appLogger.e('[financials] Failed to load orders', error: ordersAsync.error, stackTrace: ordersAsync.stackTrace);
+      return EmptyState(
+          icon: Icons.cloud_off_rounded, title: 'Couldn\'t load orders', message: friendlyError(ordersAsync.error!));
     }
     if (expensesAsync.hasError) {
-      return EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load expenses', message: '${expensesAsync.error}');
+      appLogger.e('[financials] Failed to load expenses', error: expensesAsync.error, stackTrace: expensesAsync.stackTrace);
+      return EmptyState(
+          icon: Icons.cloud_off_rounded, title: 'Couldn\'t load expenses', message: friendlyError(expensesAsync.error!));
     }
 
     final orders = ordersAsync.requireValue;
@@ -151,7 +157,22 @@ class _ExpenseRow extends ConsumerWidget {
             IconButton(
               tooltip: 'Delete',
               icon: const Icon(Icons.delete_outline),
-              onPressed: () => ref.read(expensesRepositoryProvider).delete(expense.id),
+              onPressed: () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Delete expense?'),
+                    content: Text('This ${expense.category.label} expense will be removed permanently.'),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                      FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
+                    ],
+                  ),
+                );
+                if (confirmed == true) {
+                  await ref.read(expensesRepositoryProvider).delete(expense.id);
+                }
+              },
             ),
           ],
         ),

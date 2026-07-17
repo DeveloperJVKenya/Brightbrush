@@ -12,6 +12,7 @@ Future<void> showAssetFormSheet(BuildContext context, WidgetRef ref, {CompanyAss
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
+    constraints: const BoxConstraints(maxWidth: 560),
     builder: (context) => _AssetFormSheet(existing: existing),
   );
 }
@@ -114,6 +115,7 @@ class _AssetFormSheetState extends ConsumerState<_AssetFormSheet> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _name,
+                autofocus: true,
                 decoration: const InputDecoration(labelText: 'Name'),
                 validator: (v) => (v == null || v.trim().length < 2) ? 'Enter a name (2+ chars)' : null,
               ),

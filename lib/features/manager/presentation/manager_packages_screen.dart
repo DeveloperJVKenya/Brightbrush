@@ -71,13 +71,54 @@ class ManagerPackagesScreen extends ConsumerWidget {
   }
 }
 
-class _PackageRow extends ConsumerWidget {
+class _PackageRow extends ConsumerStatefulWidget {
   const _PackageRow({required this.package});
 
   final PackageModel package;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_PackageRow> createState() => _PackageRowState();
+}
+
+class _PackageRowState extends ConsumerState<_PackageRow> {
+  bool _busy = false;
+
+  PackageModel get package => widget.package;
+
+  Future<void> _setActive(bool value) async {
+    setState(() => _busy = true);
+    try {
+      await ref.read(packagesRepositoryProvider).update(
+            PackageModel(
+              id: package.id,
+              name: package.name,
+              description: package.description,
+              season: package.season,
+              price: package.price,
+              imageUrl: package.imageUrl,
+              itemIds: package.itemIds,
+              isActive: value,
+              validFrom: package.validFrom,
+              validTo: package.validTo,
+              createdBy: package.createdBy,
+              createdAt: package.createdAt,
+              updatedAt: DateTime.now(),
+            ),
+          );
+    } catch (error, stack) {
+      appLogger.e('[packages] Failed to toggle active for package ${package.id}', error: error, stackTrace: stack);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Couldn\'t update: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
       margin: EdgeInsets.zero,
@@ -107,28 +148,16 @@ class _PackageRow extends ConsumerWidget {
                 ],
               ),
             ),
-            Switch(
-              value: package.isActive,
-              onChanged: (value) {
-                ref.read(packagesRepositoryProvider).update(
-                      PackageModel(
-                        id: package.id,
-                        name: package.name,
-                        description: package.description,
-                        season: package.season,
-                        price: package.price,
-                        imageUrl: package.imageUrl,
-                        itemIds: package.itemIds,
-                        isActive: value,
-                        validFrom: package.validFrom,
-                        validTo: package.validTo,
-                        createdBy: package.createdBy,
-                        createdAt: package.createdAt,
-                        updatedAt: DateTime.now(),
-                      ),
-                    );
-              },
-            ),
+            if (_busy)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12),
+                child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+              )
+            else
+              Switch(
+                value: package.isActive,
+                onChanged: _setActive,
+              ),
             IconButton(
               tooltip: 'Delete',
               icon: const Icon(Icons.delete_outline_rounded),

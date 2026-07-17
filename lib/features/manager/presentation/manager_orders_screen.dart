@@ -87,15 +87,61 @@ class ManagerOrdersScreen extends ConsumerWidget {
   }
 }
 
-class _ManagerOrderRow extends ConsumerWidget {
+class _ManagerOrderRow extends ConsumerStatefulWidget {
   const _ManagerOrderRow({required this.order});
 
   final OrderModel order;
 
+  @override
+  ConsumerState<_ManagerOrderRow> createState() => _ManagerOrderRowState();
+}
+
+class _ManagerOrderRowState extends ConsumerState<_ManagerOrderRow> {
   static final _date = DateFormat('MMM d, y · h:mm a');
 
+  bool _busy = false;
+
+  OrderModel get order => widget.order;
+
+  Future<void> _updateStatus(OrderStatus value) async {
+    setState(() => _busy = true);
+    try {
+      await ref.read(ordersRepositoryProvider).updateStatus(order.id, value);
+    } catch (error, stack) {
+      appLogger.e('[orders] Failed to update status for order ${order.id}', error: error, stackTrace: stack);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Couldn\'t update status: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _cyclePaymentStatus() async {
+    final next = switch (order.paymentStatus) {
+      PaymentStatus.unpaid => PaymentStatus.invoiced,
+      PaymentStatus.invoiced => PaymentStatus.paid,
+      PaymentStatus.paid => PaymentStatus.unpaid,
+    };
+    setState(() => _busy = true);
+    try {
+      await ref.read(ordersRepositoryProvider).updatePaymentStatus(order.id, next);
+    } catch (error, stack) {
+      appLogger.e('[orders] Failed to update payment status for order ${order.id}', error: error, stackTrace: stack);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Couldn\'t update payment: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
       margin: EdgeInsets.zero,
@@ -150,31 +196,28 @@ class _ManagerOrderRow extends ConsumerWidget {
                     for (final status in OrderStatus.values)
                       DropdownMenuItem(value: status, child: Text(status.label)),
                   ],
-                  onChanged: (value) {
-                    if (value != null) {
-                      ref.read(ordersRepositoryProvider).updateStatus(order.id, value);
-                    }
-                  },
+                  onChanged: _busy
+                      ? null
+                      : (value) {
+                          if (value != null) _updateStatus(value);
+                        },
                 ),
                 ChoiceChip(
                   label: Text('Payment: ${order.paymentStatus.label}'),
                   selected: order.paymentStatus.name != 'unpaid',
-                  onSelected: (_) => _cyclePaymentStatus(ref),
+                  onSelected: _busy ? null : (_) => _cyclePaymentStatus(),
                 ),
+                if (_busy)
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
               ],
             ),
           ],
         ),
       ),
     );
-  }
-
-  void _cyclePaymentStatus(WidgetRef ref) {
-    final next = switch (order.paymentStatus) {
-      PaymentStatus.unpaid => PaymentStatus.invoiced,
-      PaymentStatus.invoiced => PaymentStatus.paid,
-      PaymentStatus.paid => PaymentStatus.unpaid,
-    };
-    ref.read(ordersRepositoryProvider).updatePaymentStatus(order.id, next);
   }
 }

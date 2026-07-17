@@ -186,6 +186,7 @@ class _AccountRow extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
+      constraints: const BoxConstraints(maxWidth: 560),
       builder: (context) {
         return Consumer(
           builder: (context, ref, _) {

@@ -19,6 +19,7 @@ Future<void> showAnnouncementFormSheet(BuildContext context, WidgetRef ref, {Ann
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
+    constraints: const BoxConstraints(maxWidth: 560),
     builder: (context) => _AnnouncementFormSheet(existing: existing),
   );
 }
@@ -177,6 +178,7 @@ class _AnnouncementFormSheetState extends ConsumerState<_AnnouncementFormSheet> 
               const SizedBox(height: 16),
               TextFormField(
                 controller: _title,
+                autofocus: true,
                 decoration: const InputDecoration(labelText: 'Title'),
                 validator: (v) => (v == null || v.trim().length < 2) ? 'Enter a title (2+ chars)' : null,
               ),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/errors/user_facing_error.dart';
+import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../marketing/application/marketing_providers.dart';
 import '../../orders/application/orders_providers.dart';
@@ -35,10 +37,17 @@ class CustomerNotificationsScreen extends ConsumerWidget {
       return const Center(child: CircularProgressIndicator());
     }
     if (ordersAsync.hasError) {
-      return EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load notifications', message: '${ordersAsync.error}');
+      appLogger.e('[notifications] Failed to load orders', error: ordersAsync.error, stackTrace: ordersAsync.stackTrace);
+      return EmptyState(
+          icon: Icons.cloud_off_rounded, title: 'Couldn\'t load notifications', message: friendlyError(ordersAsync.error!));
     }
     if (announcementsAsync.hasError) {
-      return EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load notifications', message: '${announcementsAsync.error}');
+      appLogger.e('[notifications] Failed to load announcements',
+          error: announcementsAsync.error, stackTrace: announcementsAsync.stackTrace);
+      return EmptyState(
+          icon: Icons.cloud_off_rounded,
+          title: 'Couldn\'t load notifications',
+          message: friendlyError(announcementsAsync.error!));
     }
 
     final orders = ordersAsync.requireValue;

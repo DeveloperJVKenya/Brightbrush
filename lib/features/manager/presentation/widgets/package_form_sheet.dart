@@ -12,6 +12,7 @@ Future<void> showPackageFormSheet(BuildContext context, WidgetRef ref) {
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
+    constraints: const BoxConstraints(maxWidth: 560),
     builder: (context) => const _PackageFormSheet(),
   );
 }
@@ -102,6 +103,7 @@ class _PackageFormSheetState extends ConsumerState<_PackageFormSheet> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _name,
+                autofocus: true,
                 decoration: const InputDecoration(labelText: 'Name'),
                 validator: (v) => (v == null || v.trim().length < 2) ? 'Enter a name (2+ chars)' : null,
               ),
@@ -122,7 +124,12 @@ class _PackageFormSheetState extends ConsumerState<_PackageFormSheet> {
                 controller: _price,
                 decoration: const InputDecoration(labelText: 'Price (KES)'),
                 keyboardType: TextInputType.number,
-                validator: (v) => num.tryParse(v ?? '') == null ? 'Number' : null,
+                validator: (v) {
+                  final n = num.tryParse(v ?? '');
+                  if (n == null) return 'Number';
+                  if (n <= 0) return 'Must be greater than 0';
+                  return null;
+                },
               ),
               const SizedBox(height: 8),
               SwitchListTile(

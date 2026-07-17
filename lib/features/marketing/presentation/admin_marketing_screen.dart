@@ -116,7 +116,22 @@ class _AnnouncementRow extends ConsumerWidget {
             IconButton(
               tooltip: 'Delete',
               icon: const Icon(Icons.delete_outline),
-              onPressed: () => ref.read(announcementsRepositoryProvider).delete(announcement.id),
+              onPressed: () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Delete announcement?'),
+                    content: Text('"${announcement.title}" will be removed permanently.'),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                      FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
+                    ],
+                  ),
+                );
+                if (confirmed == true) {
+                  await ref.read(announcementsRepositoryProvider).delete(announcement.id);
+                }
+              },
             ),
           ],
         ),

@@ -20,8 +20,9 @@ class AnnouncementBanner extends ConsumerWidget {
     final announcements = announcementsAsync.valueOrNull ?? const <AnnouncementModel>[];
     if (announcements.isEmpty) return const SizedBox.shrink();
 
+    final textScale = MediaQuery.textScalerOf(context).scale(1.0);
     return SizedBox(
-      height: 78,
+      height: 78 * textScale.clamp(1.0, 1.6),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: announcements.length,

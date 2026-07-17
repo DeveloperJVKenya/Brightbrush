@@ -74,6 +74,7 @@ class _LiveSearchFieldState extends State<LiveSearchField> {
             child: _hasText
                 ? IconButton(
                     key: const ValueKey('clear'),
+                    tooltip: 'Clear search',
                     icon: const Icon(Icons.close_rounded),
                     onPressed: () => _controller.clear(),
                   )

@@ -11,6 +11,7 @@ Future<void> showTicketTriageSheet(BuildContext context, WidgetRef ref, SupportT
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
+    constraints: const BoxConstraints(maxWidth: 560),
     builder: (context) => _TicketTriageSheet(ticket: ticket),
   );
 }
@@ -25,6 +26,7 @@ class _TicketTriageSheet extends ConsumerStatefulWidget {
 }
 
 class _TicketTriageSheetState extends ConsumerState<_TicketTriageSheet> {
+  final _formKey = GlobalKey<FormState>();
   late final _response = TextEditingController(text: widget.ticket.response ?? '');
   late TicketStatus _status = widget.ticket.status;
   bool _saving = false;
@@ -36,6 +38,7 @@ class _TicketTriageSheetState extends ConsumerState<_TicketTriageSheet> {
   }
 
   Future<void> _save() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _saving = true);
     try {
       await ref.read(supportTicketsRepositoryProvider).triage(SupportTicket(
@@ -69,7 +72,9 @@ class _TicketTriageSheetState extends ConsumerState<_TicketTriageSheet> {
     return Padding(
       padding: EdgeInsets.only(left: 20, right: 20, top: 4, bottom: MediaQuery.viewInsetsOf(context).bottom + 24),
       child: SingleChildScrollView(
-        child: Column(
+        child: Form(
+          key: _formKey,
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(widget.ticket.subject, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
@@ -90,10 +95,16 @@ class _TicketTriageSheetState extends ConsumerState<_TicketTriageSheet> {
               onChanged: (value) => setState(() => _status = value ?? _status),
             ),
             const SizedBox(height: 12),
-            TextField(
+            TextFormField(
               controller: _response,
               decoration: const InputDecoration(labelText: 'Response to customer'),
               maxLines: 4,
+              validator: (v) {
+                if (_status == TicketStatus.resolved && (v == null || v.trim().isEmpty)) {
+                  return 'Add a response before marking this resolved';
+                }
+                return null;
+              },
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -106,6 +117,7 @@ class _TicketTriageSheetState extends ConsumerState<_TicketTriageSheet> {
               ),
             ),
           ],
+          ),
         ),
       ),
     );
