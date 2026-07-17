@@ -20,9 +20,19 @@ class OrderStatusTimeline extends StatelessWidget {
         label: 'Order status: cancelled',
         child: Row(
           children: [
-            Icon(Icons.cancel_rounded, color: theme.colorScheme.error, size: 20),
+            Icon(
+              Icons.cancel_rounded,
+              color: theme.colorScheme.error,
+              size: 20,
+            ),
             const SizedBox(width: 8),
-            Text('Cancelled', style: TextStyle(color: theme.colorScheme.error, fontWeight: FontWeight.w600)),
+            Text(
+              'Cancelled',
+              style: TextStyle(
+                color: theme.colorScheme.error,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
         ),
       );
@@ -31,7 +41,8 @@ class OrderStatusTimeline extends StatelessWidget {
     final currentIndex = OrderStatus.pipeline.indexOf(status);
 
     return Semantics(
-      label: 'Order status: ${OrderStatus.pipeline[currentIndex].label}, '
+      label:
+          'Order status: ${OrderStatus.pipeline[currentIndex].label}, '
           'step ${currentIndex + 1} of ${OrderStatus.pipeline.length}',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -40,14 +51,19 @@ class OrderStatusTimeline extends StatelessWidget {
             child: Row(
               children: [
                 for (var i = 0; i < OrderStatus.pipeline.length; i++) ...[
-                  _StepDot(reached: i <= currentIndex, current: i == currentIndex),
+                  _StepDot(
+                    reached: i <= currentIndex,
+                    current: i == currentIndex,
+                  ),
                   if (i != OrderStatus.pipeline.length - 1)
                     Expanded(
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 300),
                         height: 3,
                         margin: const EdgeInsets.symmetric(horizontal: 2),
-                        color: i < currentIndex ? theme.colorScheme.primary : theme.colorScheme.outlineVariant,
+                        color: i < currentIndex
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.outlineVariant,
                       ),
                     ),
                 ],
@@ -57,7 +73,10 @@ class OrderStatusTimeline extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             OrderStatus.pipeline[currentIndex].label,
-            style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700, color: theme.colorScheme.primary),
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: theme.colorScheme.primary,
+            ),
           ),
         ],
       ),
@@ -81,7 +100,10 @@ class _StepDot extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: reached ? scheme.primary : scheme.surfaceContainerHigh,
-        border: Border.all(color: reached ? scheme.primary : scheme.outlineVariant, width: 2),
+        border: Border.all(
+          color: reached ? scheme.primary : scheme.outlineVariant,
+          width: 2,
+        ),
       ),
     );
   }

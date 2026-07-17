@@ -5,7 +5,14 @@ import 'package:flutter/material.dart';
 /// Deliveries). [accent] highlights the one number on a row worth calling
 /// out (e.g. revenue collected, orders awaiting review).
 class StatCard extends StatelessWidget {
-  const StatCard({super.key, required this.label, required this.value, required this.icon, this.accent = false, this.hint});
+  const StatCard({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.icon,
+    this.accent = false,
+    this.hint,
+  });
 
   final String label;
   final String value;
@@ -23,14 +30,22 @@ class StatCard extends StatelessWidget {
       width: 190,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: accent ? theme.colorScheme.primaryContainer : theme.colorScheme.surfaceContainerLow,
+        color: accent
+            ? theme.colorScheme.primaryContainer
+            : theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: accent ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.primary),
+          Icon(
+            icon,
+            size: 18,
+            color: accent
+                ? theme.colorScheme.onPrimaryContainer
+                : theme.colorScheme.primary,
+          ),
           const SizedBox(height: 8),
           Text(
             value,
@@ -38,7 +53,9 @@ class StatCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w700,
-              color: accent ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onSurface,
+              color: accent
+                  ? theme.colorScheme.onPrimaryContainer
+                  : theme.colorScheme.onSurface,
             ),
           ),
           Text(
@@ -46,12 +63,20 @@ class StatCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: accent ? theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.8) : theme.colorScheme.onSurfaceVariant,
+              color: accent
+                  ? theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.8)
+                  : theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ],
       ),
     );
-    return hint == null ? card : Tooltip(message: hint, waitDuration: const Duration(milliseconds: 400), child: card);
+    return hint == null
+        ? card
+        : Tooltip(
+            message: hint,
+            waitDuration: const Duration(milliseconds: 400),
+            child: card,
+          );
   }
 }

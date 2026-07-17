@@ -38,23 +38,36 @@ class _AiSearchDialogState extends ConsumerState<AiSearchDialog> {
       _error = null;
     });
     try {
-      final suggestion = await ref.read(aiCatalogSearchServiceProvider).suggest(request);
-      ref.read(catalogCategoryFilterProvider.notifier).state = suggestion.category;
-      ref.read(catalogSearchQueryProvider.notifier).state = suggestion.keywords.join(' ');
+      final suggestion = await ref
+          .read(aiCatalogSearchServiceProvider)
+          .suggest(request);
+      ref.read(catalogCategoryFilterProvider.notifier).state =
+          suggestion.category;
+      ref.read(catalogSearchQueryProvider.notifier).state = suggestion.keywords
+          .join(' ');
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              suggestion.rationale.isEmpty ? 'Filters updated.' : suggestion.rationale,
+              suggestion.rationale.isEmpty
+                  ? 'Filters updated.'
+                  : suggestion.rationale,
             ),
             behavior: SnackBarBehavior.floating,
           ),
         );
       }
     } catch (error, stack) {
-      appLogger.e('[ai-search] Failed to reach AI catalog search', error: error, stackTrace: stack);
-      setState(() => _error = 'Couldn\'t reach the AI assistant: ${friendlyError(error)}');
+      appLogger.e(
+        '[ai-search] Failed to reach AI catalog search',
+        error: error,
+        stackTrace: stack,
+      );
+      setState(
+        () => _error =
+            'Couldn\'t reach the AI assistant: ${friendlyError(error)}',
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -80,29 +93,47 @@ class _AiSearchDialogState extends ConsumerState<AiSearchDialog> {
             Text(
               'Describe the occasion or item in your own words — e.g. "something for a corporate '
               'summer picnic, 60 people" — and we\'ll set the right filters.',
-              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 14),
-            TextField(
-              controller: _controller,
-              autofocus: true,
-              maxLines: 3,
-              decoration: const InputDecoration(hintText: 'What are you branding, and for what?'),
-              onSubmitted: (_) => _ask(),
+            Semantics(
+              label: 'What are you branding, and for what?',
+              textField: true,
+              child: TextField(
+                controller: _controller,
+                autofocus: true,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  hintText: 'What are you branding, and for what?',
+                ),
+                onSubmitted: (_) => _ask(),
+              ),
             ),
             if (_error != null) ...[
               const SizedBox(height: 8),
-              Text(_error!, style: TextStyle(color: theme.colorScheme.error, fontSize: 12)),
+              Text(
+                _error!,
+                style: TextStyle(color: theme.colorScheme.error, fontSize: 12),
+              ),
             ],
           ],
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
         FilledButton.icon(
           onPressed: _loading ? null : _ask,
           icon: _loading
-              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : const Icon(Icons.auto_awesome_rounded, size: 18),
           label: const Text('Ask'),
         ),

@@ -17,7 +17,9 @@ String friendlyError(Object error) {
       has('connection')) {
     return 'Please check your internet connection and try again.';
   }
-  if (has('permission-denied') || has('permission_denied') || has('permission denied')) {
+  if (has('permission-denied') ||
+      has('permission_denied') ||
+      has('permission denied')) {
     return 'You don\'t have permission to do this. Contact an admin if you think this is a mistake.';
   }
   if (has('vertexai') ||

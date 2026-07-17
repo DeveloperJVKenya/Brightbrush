@@ -38,20 +38,36 @@ final allOrdersProvider = StreamProvider<List<OrderModel>>((ref) {
 });
 
 /// Ready for delivery, nobody's claimed it yet — the Delivery Staff queue.
-final availableForDeliveryProvider = Provider<AsyncValue<List<OrderModel>>>((ref) {
-  return ref.watch(allOrdersProvider).whenData(
+final availableForDeliveryProvider = Provider<AsyncValue<List<OrderModel>>>((
+  ref,
+) {
+  return ref
+      .watch(allOrdersProvider)
+      .whenData(
         (orders) => orders
-            .where((o) => o.status == OrderStatus.readyForDelivery && o.assignedStaffId == null)
+            .where(
+              (o) =>
+                  o.status == OrderStatus.readyForDelivery &&
+                  o.assignedStaffId == null,
+            )
             .toList(),
       );
 });
 
 /// This delivery staff member's in-progress deliveries.
-final myActiveDeliveriesProvider = Provider<AsyncValue<List<OrderModel>>>((ref) {
+final myActiveDeliveriesProvider = Provider<AsyncValue<List<OrderModel>>>((
+  ref,
+) {
   final uid = ref.watch(currentUidProvider);
-  return ref.watch(allOrdersProvider).whenData(
+  return ref
+      .watch(allOrdersProvider)
+      .whenData(
         (orders) => orders
-            .where((o) => o.status == OrderStatus.outForDelivery && o.assignedStaffId == uid)
+            .where(
+              (o) =>
+                  o.status == OrderStatus.outForDelivery &&
+                  o.assignedStaffId == uid,
+            )
             .toList(),
       );
 });
@@ -59,7 +75,14 @@ final myActiveDeliveriesProvider = Provider<AsyncValue<List<OrderModel>>>((ref) 
 /// This delivery staff member's completed delivery history.
 final myDeliveryHistoryProvider = Provider<AsyncValue<List<OrderModel>>>((ref) {
   final uid = ref.watch(currentUidProvider);
-  return ref.watch(allOrdersProvider).whenData(
-        (orders) => orders.where((o) => o.status == OrderStatus.completed && o.assignedStaffId == uid).toList(),
+  return ref
+      .watch(allOrdersProvider)
+      .whenData(
+        (orders) => orders
+            .where(
+              (o) =>
+                  o.status == OrderStatus.completed && o.assignedStaffId == uid,
+            )
+            .toList(),
       );
 });

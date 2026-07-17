@@ -34,38 +34,66 @@ class InventoryScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Inventory', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+              Text(
+                'Inventory',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               const SizedBox(height: 4),
               Text(
                 'Materials, stock levels and reorder points.',
-                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 16),
               LiveSearchField(
                 hintText: 'Search by name, category, or supplier',
-                onChanged: (v) => ref.read(inventorySearchQueryProvider.notifier).state = v,
+                onChanged: (v) =>
+                    ref.read(inventorySearchQueryProvider.notifier).state = v,
               ),
               const SizedBox(height: 12),
               FilterChip(
                 label: const Text('Low stock only'),
                 selected: lowStockOnly,
-                avatar: lowStockOnly ? null : const Icon(Icons.warning_amber_rounded, size: 18),
-                onSelected: (v) => ref.read(lowStockOnlyProvider.notifier).state = v,
+                avatar: lowStockOnly
+                    ? null
+                    : const Icon(Icons.warning_amber_rounded, size: 18),
+                onSelected: (v) =>
+                    ref.read(lowStockOnlyProvider.notifier).state = v,
               ),
               const SizedBox(height: 16),
               Expanded(
                 child: filtered.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+                  ),
                   error: (error, stack) {
-                    appLogger.e('[inventory] Failed to load inventory', error: error, stackTrace: stack);
+                    appLogger.e(
+                      '[inventory] Failed to load inventory',
+                      error: error,
+                      stackTrace: stack,
+                    );
                     return EmptyState(
-                        icon: Icons.cloud_off_rounded, title: 'Couldn\'t load inventory', message: friendlyError(error));
+                      icon: Icons.cloud_off_rounded,
+                      title: 'Couldn\'t load inventory',
+                      message: friendlyError(error),
+                      action: TextButton.icon(
+                        onPressed: () =>
+                            ref.invalidate(filteredInventoryMaterialsProvider),
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('Retry'),
+                      ),
+                    );
                   },
                   data: (materials) {
                     if (materials.isEmpty) {
                       return EmptyState(
                         icon: Icons.inventory_2_outlined,
-                        title: lowStockOnly ? 'Nothing low on stock' : 'No materials yet',
+                        title: lowStockOnly
+                            ? 'Nothing low on stock'
+                            : 'No materials yet',
                         message: lowStockOnly
                             ? 'Everything is above its reorder point.'
                             : 'Add paint, blanks, thread and other materials to track stock.',
@@ -74,8 +102,10 @@ class InventoryScreen extends ConsumerWidget {
                     return ListView.separated(
                       padding: const EdgeInsets.only(bottom: 100),
                       itemCount: materials.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) => _MaterialRow(material: materials[index]),
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 10),
+                      itemBuilder: (context, index) =>
+                          _MaterialRow(material: materials[index]),
                     );
                   },
                 ),
@@ -98,7 +128,10 @@ class _MaterialRow extends ConsumerWidget {
     return Card(
       margin: EdgeInsets.zero,
       child: ListTile(
-        title: Text(material.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+        title: Text(
+          material.name,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
         subtitle: Text(
           [
             material.category,
@@ -111,13 +144,19 @@ class _MaterialRow extends ConsumerWidget {
             StatCard(
               label: 'On hand',
               value: '${material.quantityOnHand} ${material.unit}',
-              icon: material.isLowStock ? Icons.warning_amber_rounded : Icons.inventory_2_outlined,
+              icon: material.isLowStock
+                  ? Icons.warning_amber_rounded
+                  : Icons.inventory_2_outlined,
               accent: material.isLowStock,
             ),
             IconButton(
               tooltip: 'Edit',
               icon: const Icon(Icons.edit_outlined),
-              onPressed: () => showInventoryMaterialFormSheet(context, ref, existing: material),
+              onPressed: () => showInventoryMaterialFormSheet(
+                context,
+                ref,
+                existing: material,
+              ),
             ),
             IconButton(
               tooltip: 'Delete',
@@ -137,8 +176,14 @@ class _MaterialRow extends ConsumerWidget {
         title: const Text('Delete material?'),
         content: Text('This removes "${material.name}" from inventory.'),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Delete')),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
         ],
       ),
     );

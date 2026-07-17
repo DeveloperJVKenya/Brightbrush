@@ -11,13 +11,20 @@ import '../logging/app_logger.dart';
 /// `instanceFor(databaseId: ...)` rather than `FirebaseFirestore.instance`.
 const String firestoreDatabaseId = 'brightbrush-main';
 
-final firebaseAuthProvider = Provider<FirebaseAuth>((ref) => FirebaseAuth.instance);
+final firebaseAuthProvider = Provider<FirebaseAuth>(
+  (ref) => FirebaseAuth.instance,
+);
 
 final firestoreProvider = Provider<FirebaseFirestore>((ref) {
-  return FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: firestoreDatabaseId);
+  return FirebaseFirestore.instanceFor(
+    app: Firebase.app(),
+    databaseId: firestoreDatabaseId,
+  );
 });
 
-final firebaseStorageProvider = Provider<FirebaseStorage>((ref) => FirebaseStorage.instance);
+final firebaseStorageProvider = Provider<FirebaseStorage>(
+  (ref) => FirebaseStorage.instance,
+);
 
 /// Live auth state — every real sign-in/sign-out event, logged so a
 /// permission-denied downstream can be traced back to exactly which auth
@@ -29,7 +36,9 @@ final authStateProvider = StreamProvider<User?>((ref) {
     if (user == null) {
       appLogger.i('[auth] authStateChanges -> signed out');
     } else {
-      appLogger.i('[auth] authStateChanges -> uid=${user.uid} anonymous=${user.isAnonymous} email=${user.email}');
+      appLogger.i(
+        '[auth] authStateChanges -> uid=${user.uid} anonymous=${user.isAnonymous} email=${user.email}',
+      );
     }
     return user;
   });
@@ -43,7 +52,11 @@ final authStateProvider = StreamProvider<User?>((ref) {
 /// later sign-in/out — the direct cause of several "permission-denied on
 /// create" reports). Read this with `ref.watch`/`ref.read` right before use;
 /// never cache its value in a field.
-final currentUserProvider = Provider<User?>((ref) => ref.watch(authStateProvider).valueOrNull);
+final currentUserProvider = Provider<User?>(
+  (ref) => ref.watch(authStateProvider).valueOrNull,
+);
 
 /// Convenience accessor for the common case of just needing the uid.
-final currentUidProvider = Provider<String?>((ref) => ref.watch(currentUserProvider)?.uid);
+final currentUidProvider = Provider<String?>(
+  (ref) => ref.watch(currentUserProvider)?.uid,
+);

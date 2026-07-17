@@ -79,7 +79,11 @@ class AppTheme {
     return _build(colorScheme, Brightness.dark, fontFamily);
   }
 
-  static ThemeData _build(ColorScheme colorScheme, Brightness brightness, String? fontFamily) {
+  static ThemeData _build(
+    ColorScheme colorScheme,
+    Brightness brightness,
+    String? fontFamily,
+  ) {
     final isDark = brightness == Brightness.dark;
     return ThemeData(
       useMaterial3: true,
@@ -106,33 +110,43 @@ class AppTheme {
       navigationRailTheme: NavigationRailThemeData(
         backgroundColor: colorScheme.surfaceContainerLowest,
         indicatorColor: colorScheme.primaryContainer,
-        indicatorShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        indicatorShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
         selectedIconTheme: IconThemeData(color: colorScheme.onPrimaryContainer),
         unselectedIconTheme: IconThemeData(color: colorScheme.onSurfaceVariant),
         selectedLabelTextStyle: TextStyle(
           color: colorScheme.onSurface,
           fontWeight: FontWeight.w600,
         ),
-        unselectedLabelTextStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+        unselectedLabelTextStyle: TextStyle(
+          color: colorScheme.onSurfaceVariant,
+        ),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: colorScheme.surfaceContainerLowest,
         surfaceTintColor: Colors.transparent,
         indicatorColor: colorScheme.primaryContainer,
-        indicatorShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        indicatorShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
         elevation: 0,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
           return TextStyle(
             fontSize: 12,
             fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-            color: selected ? colorScheme.onSurface : colorScheme.onSurfaceVariant,
+            color: selected
+                ? colorScheme.onSurface
+                : colorScheme.onSurfaceVariant,
           );
         }),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
           return IconThemeData(
-            color: selected ? colorScheme.onPrimaryContainer : colorScheme.onSurfaceVariant,
+            color: selected
+                ? colorScheme.onPrimaryContainer
+                : colorScheme.onSurfaceVariant,
           );
         }),
       ),
@@ -146,7 +160,9 @@ class AppTheme {
           foregroundColor: colorScheme.onPrimary,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -154,13 +170,18 @@ class AppTheme {
           foregroundColor: colorScheme.onSurface,
           side: BorderSide(color: colorScheme.outline),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       ),
       chipTheme: ChipThemeData(
         backgroundColor: colorScheme.surfaceContainer,
         side: BorderSide(color: colorScheme.outlineVariant),
-        labelStyle: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12),
+        labelStyle: TextStyle(
+          color: colorScheme.onSurfaceVariant,
+          fontSize: 12,
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       cardTheme: CardThemeData(
@@ -172,10 +193,15 @@ class AppTheme {
           side: BorderSide(color: colorScheme.outlineVariant),
         ),
       ),
-      dividerTheme: DividerThemeData(color: colorScheme.outlineVariant, space: 1),
+      dividerTheme: DividerThemeData(
+        color: colorScheme.outlineVariant,
+        space: 1,
+      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isDark ? colorScheme.surfaceContainer : colorScheme.surfaceContainerLowest,
+        fillColor: isDark
+            ? colorScheme.surfaceContainer
+            : colorScheme.surfaceContainerLowest,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colorScheme.outline),

@@ -20,10 +20,25 @@ class AdminOrdersScreen extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return ordersAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(
+        child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+      ),
       error: (error, stack) {
-        appLogger.e('[orders] Failed to load orders overview', error: error, stackTrace: stack);
-        return EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load orders', message: friendlyError(error));
+        appLogger.e(
+          '[orders] Failed to load orders overview',
+          error: error,
+          stackTrace: stack,
+        );
+        return EmptyState(
+          icon: Icons.cloud_off_rounded,
+          title: 'Couldn\'t load orders',
+          message: friendlyError(error),
+          action: TextButton.icon(
+            onPressed: () => ref.invalidate(allOrdersProvider),
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Retry'),
+          ),
+        );
       },
       data: (orders) {
         final byBucket = <OrderLifecycleBucket, List<OrderModel>>{
@@ -32,7 +47,8 @@ class AdminOrdersScreen extends ConsumerWidget {
         for (final order in orders) {
           byBucket[order.status.lifecycleBucket]!.add(order);
         }
-        final completedRevenue = byBucket[OrderLifecycleBucket.completed]!.fold<num>(0, (s, o) => s + o.total);
+        final completedRevenue = byBucket[OrderLifecycleBucket.completed]!
+            .fold<num>(0, (s, o) => s + o.total);
 
         return DefaultTabController(
           length: 4,
@@ -44,18 +60,26 @@ class AdminOrdersScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Orders overview',
-                          style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+                      Text(
+                        'Orders overview',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                       const SizedBox(height: 4),
                       Text(
                         'Completed, running, and upcoming orders across the whole company.',
-                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       _SummaryRow(
-                        upcoming: byBucket[OrderLifecycleBucket.upcoming]!.length,
+                        upcoming:
+                            byBucket[OrderLifecycleBucket.upcoming]!.length,
                         running: byBucket[OrderLifecycleBucket.running]!.length,
-                        completed: byBucket[OrderLifecycleBucket.completed]!.length,
+                        completed:
+                            byBucket[OrderLifecycleBucket.completed]!.length,
                         completedRevenue: completedRevenue,
                       ),
                     ],
@@ -64,19 +88,39 @@ class AdminOrdersScreen extends ConsumerWidget {
                 const SizedBox(height: 12),
                 TabBar(
                   tabs: [
-                    Tab(text: 'Upcoming (${byBucket[OrderLifecycleBucket.upcoming]!.length})'),
-                    Tab(text: 'Running (${byBucket[OrderLifecycleBucket.running]!.length})'),
-                    Tab(text: 'Completed (${byBucket[OrderLifecycleBucket.completed]!.length})'),
-                    Tab(text: 'Cancelled (${byBucket[OrderLifecycleBucket.cancelled]!.length})'),
+                    Tab(
+                      text:
+                          'Upcoming (${byBucket[OrderLifecycleBucket.upcoming]!.length})',
+                    ),
+                    Tab(
+                      text:
+                          'Running (${byBucket[OrderLifecycleBucket.running]!.length})',
+                    ),
+                    Tab(
+                      text:
+                          'Completed (${byBucket[OrderLifecycleBucket.completed]!.length})',
+                    ),
+                    Tab(
+                      text:
+                          'Cancelled (${byBucket[OrderLifecycleBucket.cancelled]!.length})',
+                    ),
                   ],
                 ),
                 Expanded(
                   child: TabBarView(
                     children: [
-                      _OrdersList(orders: byBucket[OrderLifecycleBucket.upcoming]!),
-                      _OrdersList(orders: byBucket[OrderLifecycleBucket.running]!),
-                      _OrdersList(orders: byBucket[OrderLifecycleBucket.completed]!),
-                      _OrdersList(orders: byBucket[OrderLifecycleBucket.cancelled]!),
+                      _OrdersList(
+                        orders: byBucket[OrderLifecycleBucket.upcoming]!,
+                      ),
+                      _OrdersList(
+                        orders: byBucket[OrderLifecycleBucket.running]!,
+                      ),
+                      _OrdersList(
+                        orders: byBucket[OrderLifecycleBucket.completed]!,
+                      ),
+                      _OrdersList(
+                        orders: byBucket[OrderLifecycleBucket.cancelled]!,
+                      ),
                     ],
                   ),
                 ),
@@ -110,9 +154,21 @@ class _SummaryRow extends StatelessWidget {
           spacing: 12,
           runSpacing: 12,
           children: [
-            StatCard(label: 'Upcoming', value: '$upcoming', icon: Icons.hourglass_top_rounded),
-            StatCard(label: 'Running', value: '$running', icon: Icons.precision_manufacturing_outlined),
-            StatCard(label: 'Completed', value: '$completed', icon: Icons.check_circle_outline_rounded),
+            StatCard(
+              label: 'Upcoming',
+              value: '$upcoming',
+              icon: Icons.hourglass_top_rounded,
+            ),
+            StatCard(
+              label: 'Running',
+              value: '$running',
+              icon: Icons.precision_manufacturing_outlined,
+            ),
+            StatCard(
+              label: 'Completed',
+              value: '$completed',
+              icon: Icons.check_circle_outline_rounded,
+            ),
             StatCard(
               label: 'Completed revenue',
               value: currencyFormat.format(completedRevenue),
@@ -152,17 +208,28 @@ class _OrdersList extends StatelessWidget {
         return Card(
           margin: EdgeInsets.zero,
           child: ListTile(
-            title: Text(order.contactName, style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Text('${order.itemCount} item(s) · ${_date.format(order.createdAt)} · ${order.status.label}'),
+            title: Text(
+              order.contactName,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              '${order.itemCount} item(s) · ${_date.format(order.createdAt)} · ${order.status.label}',
+            ),
             trailing: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
                   currencyFormat.format(order.total),
-                  style: TextStyle(fontWeight: FontWeight.w700, color: theme.colorScheme.primary),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.primary,
+                  ),
                 ),
-                Text(order.paymentStatus.label, style: theme.textTheme.bodySmall),
+                Text(
+                  order.paymentStatus.label,
+                  style: theme.textTheme.bodySmall,
+                ),
               ],
             ),
           ),

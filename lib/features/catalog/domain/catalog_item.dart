@@ -40,7 +40,9 @@ class CatalogItem {
   /// style keyword tucked into the description.
   List<String> get searchFields => [name, category.label, description, ...tags];
 
-  factory CatalogItem.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory CatalogItem.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final d = doc.data() ?? {};
     return CatalogItem(
       id: doc.id,
@@ -55,8 +57,12 @@ class CatalogItem {
       isActive: d['isActive'] as bool? ?? false,
       isFeatured: d['isFeatured'] as bool? ?? false,
       createdBy: d['createdBy'] as String? ?? '',
-      createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0),
-      updatedAt: (d['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0),
+      createdAt:
+          (d['createdAt'] as Timestamp?)?.toDate() ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      updatedAt:
+          (d['updatedAt'] as Timestamp?)?.toDate() ??
+          DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
 

@@ -19,19 +19,36 @@ class CustomerTrackingScreen extends ConsumerWidget {
     final ordersAsync = ref.watch(myOrdersProvider);
 
     return ordersAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(
+        child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+      ),
       error: (error, stack) {
-        appLogger.e('[tracking] Failed to load orders', error: error, stackTrace: stack);
+        appLogger.e(
+          '[tracking] Failed to load orders',
+          error: error,
+          stackTrace: stack,
+        );
         return EmptyState(
-            icon: Icons.cloud_off_rounded, title: 'Couldn\'t load your orders', message: friendlyError(error));
+          icon: Icons.cloud_off_rounded,
+          title: 'Couldn\'t load your orders',
+          message: friendlyError(error),
+          action: TextButton.icon(
+            onPressed: () => ref.invalidate(myOrdersProvider),
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Retry'),
+          ),
+        );
       },
       data: (orders) {
-        final outForDelivery = orders.where((o) => o.status == OrderStatus.outForDelivery).toList();
+        final outForDelivery = orders
+            .where((o) => o.status == OrderStatus.outForDelivery)
+            .toList();
         return LiveOrdersMap(
           orders: outForDelivery,
           emptyIcon: Icons.local_shipping_outlined,
           emptyTitle: 'Nothing out for delivery',
-          emptyMessage: 'Once an order is out for delivery, track it live here.',
+          emptyMessage:
+              'Once an order is out for delivery, track it live here.',
         );
       },
     );

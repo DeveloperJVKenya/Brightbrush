@@ -17,7 +17,6 @@ final _managerCatalogSearchProvider = StateProvider<String>((ref) => '');
 class ManagerCatalogScreen extends ConsumerWidget {
   const ManagerCatalogScreen({super.key});
 
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
@@ -36,32 +35,61 @@ class ManagerCatalogScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Catalog', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+              Text(
+                'Catalog',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               const SizedBox(height: 4),
               Text(
                 'Everything customers can browse — including drafts (inactive) not yet visible to them.',
-                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 16),
               LiveSearchField(
                 hintText: 'Search your catalog',
-                onChanged: (v) => ref.read(_managerCatalogSearchProvider.notifier).state = v,
+                onChanged: (v) =>
+                    ref.read(_managerCatalogSearchProvider.notifier).state = v,
               ),
               const SizedBox(height: 12),
               Expanded(
                 child: itemsAsync.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+                  ),
                   error: (error, stack) {
-                    appLogger.e('[catalog] Failed to load catalog', error: error, stackTrace: stack);
+                    appLogger.e(
+                      '[catalog] Failed to load catalog',
+                      error: error,
+                      stackTrace: stack,
+                    );
                     return EmptyState(
-                        icon: Icons.cloud_off_rounded, title: 'Couldn\'t load catalog', message: friendlyError(error));
+                      icon: Icons.cloud_off_rounded,
+                      title: 'Couldn\'t load catalog',
+                      message: friendlyError(error),
+                      action: TextButton.icon(
+                        onPressed: () =>
+                            ref.invalidate(allCatalogItemsProvider),
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('Retry'),
+                      ),
+                    );
                   },
                   data: (items) {
-                    final filtered = filterBySearch(items, query, (i) => i.searchFields);
+                    final filtered = filterBySearch(
+                      items,
+                      query,
+                      (i) => i.searchFields,
+                    );
                     if (filtered.isEmpty) {
                       return EmptyState(
                         icon: Icons.inventory_2_outlined,
-                        title: items.isEmpty ? 'No catalog items yet' : 'No matches',
+                        title: items.isEmpty
+                            ? 'No catalog items yet'
+                            : 'No matches',
                         message: items.isEmpty
                             ? 'Tap "Add item" to create the first branding item customers will see.'
                             : 'Try a different search term.',
@@ -70,8 +98,10 @@ class ManagerCatalogScreen extends ConsumerWidget {
                     return ListView.separated(
                       padding: const EdgeInsets.only(bottom: 88),
                       itemCount: filtered.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) => _ManagerCatalogRow(item: filtered[index]),
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 10),
+                      itemBuilder: (context, index) =>
+                          _ManagerCatalogRow(item: filtered[index]),
                     );
                   },
                 ),
@@ -101,7 +131,9 @@ class _ManagerCatalogRowState extends ConsumerState<_ManagerCatalogRow> {
   Future<void> _setActive(bool value) async {
     setState(() => _busy = true);
     try {
-      await ref.read(catalogRepositoryProvider).update(
+      await ref
+          .read(catalogRepositoryProvider)
+          .update(
             CatalogItem(
               id: item.id,
               name: item.name,
@@ -120,10 +152,17 @@ class _ManagerCatalogRowState extends ConsumerState<_ManagerCatalogRow> {
             ),
           );
     } catch (error, stack) {
-      appLogger.e('[catalog] Failed to toggle active for item ${item.id}', error: error, stackTrace: stack);
+      appLogger.e(
+        '[catalog] Failed to toggle active for item ${item.id}',
+        error: error,
+        stackTrace: stack,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t update: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('Couldn\'t update: ${friendlyError(error)}'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -154,10 +193,17 @@ class _ManagerCatalogRowState extends ConsumerState<_ManagerCatalogRow> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(item.name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                  Text(
+                    item.name,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   Text(
                     '${item.category.label} · ${currencyFormat.format(item.basePrice)}',
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -165,17 +211,19 @@ class _ManagerCatalogRowState extends ConsumerState<_ManagerCatalogRow> {
             if (_busy)
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12),
-                child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
               )
             else
-              Switch(
-                value: item.isActive,
-                onChanged: _setActive,
-              ),
+              Switch(value: item.isActive, onChanged: _setActive),
             IconButton(
               tooltip: 'Edit',
               icon: const Icon(Icons.edit_outlined),
-              onPressed: () => showCatalogItemFormSheet(context, ref, existing: item),
+              onPressed: () =>
+                  showCatalogItemFormSheet(context, ref, existing: item),
             ),
             IconButton(
               tooltip: 'Delete',
@@ -185,10 +233,18 @@ class _ManagerCatalogRowState extends ConsumerState<_ManagerCatalogRow> {
                   context: context,
                   builder: (context) => AlertDialog(
                     title: const Text('Delete item?'),
-                    content: Text('"${item.name}" will be removed permanently.'),
+                    content: Text(
+                      '"${item.name}" will be removed permanently.',
+                    ),
                     actions: [
-                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                      FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancel'),
+                      ),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Delete'),
+                      ),
                     ],
                   ),
                 );

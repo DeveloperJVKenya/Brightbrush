@@ -9,7 +9,8 @@ class GuideArticlesRepository {
 
   final FirebaseFirestore _db;
 
-  CollectionReference<Map<String, dynamic>> get _articles => _db.collection('GuideArticles');
+  CollectionReference<Map<String, dynamic>> get _articles =>
+      _db.collection('GuideArticles');
 
   /// Every article, newest first — the Guide Editor authoring view.
   Stream<List<GuideArticle>> streamAll() {
@@ -18,7 +19,11 @@ class GuideArticlesRepository {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snap) => snap.docs.map(GuideArticle.fromFirestore).toList())
-        .transform(logStreamErrors('[guide] streamAll() failed — likely signed in as a role without isAdminOrDeveloper()'));
+        .transform(
+          logStreamErrors(
+            '[guide] streamAll() failed — likely signed in as a role without isAdminOrDeveloper()',
+          ),
+        );
   }
 
   /// Articles targeting a given role — the Guide screen everyone reads.
@@ -33,13 +38,19 @@ class GuideArticlesRepository {
   }
 
   Future<String> create(GuideArticle article, {required String uid}) async {
-    appLogger.i('[guide] create() question="${article.question}" createdBy=$uid');
+    appLogger.i(
+      '[guide] create() question="${article.question}" createdBy=$uid',
+    );
     try {
       final doc = await _articles.add(article.toFirestoreCreate(uid: uid));
       appLogger.i('[guide] created ${doc.id}');
       return doc.id;
     } catch (error, stack) {
-      appLogger.e('[guide] create() failed for question="${article.question}"', error: error, stackTrace: stack);
+      appLogger.e(
+        '[guide] create() failed for question="${article.question}"',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }
@@ -49,7 +60,11 @@ class GuideArticlesRepository {
     try {
       await _articles.doc(article.id).update(article.toFirestoreUpdate());
     } catch (error, stack) {
-      appLogger.e('[guide] update(${article.id}) failed', error: error, stackTrace: stack);
+      appLogger.e(
+        '[guide] update(${article.id}) failed',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }
@@ -59,7 +74,11 @@ class GuideArticlesRepository {
     try {
       await _articles.doc(id).delete();
     } catch (error, stack) {
-      appLogger.e('[guide] delete($id) failed', error: error, stackTrace: stack);
+      appLogger.e(
+        '[guide] delete($id) failed',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }

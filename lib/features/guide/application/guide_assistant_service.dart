@@ -38,7 +38,11 @@ class GuideAssistantService {
       }
       return text;
     } catch (error, stack) {
-      appLogger.e('[guide] ask() failed for role=${role.name}', error: error, stackTrace: stack);
+      appLogger.e(
+        '[guide] ask() failed for role=${role.name}',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }
@@ -49,12 +53,17 @@ class GuideAssistantService {
       AppRole.deliveryStaff => staffModules,
       AppRole.systemManager => managerModules,
       AppRole.admin => adminModules,
-      AppRole.developer => adminModules, // widest real feature set to ground against
+      AppRole.developer =>
+        adminModules, // widest real feature set to ground against
     };
-    final sectionList = modules.map((m) => '- ${m.label} (${m.path}): ${m.description}').join('\n');
+    final sectionList = modules
+        .map((m) => '- ${m.label} (${m.path}): ${m.description}')
+        .join('\n');
     final articleList = knownArticles.isEmpty
         ? '(none yet)'
-        : knownArticles.map((a) => 'Q: ${a.question}\nA: ${a.answer}').join('\n\n');
+        : knownArticles
+              .map((a) => 'Q: ${a.question}\nA: ${a.answer}')
+              .join('\n\n');
 
     return '''
 You are the in-app Guide assistant for BrightBrush Creations, a branding/merchandising order-management system. You are answering a signed-in user with the role "${role.label}".
@@ -75,4 +84,6 @@ Rules you must always follow:
   }
 }
 
-final guideAssistantServiceProvider = Provider<GuideAssistantService>((ref) => GuideAssistantService());
+final guideAssistantServiceProvider = Provider<GuideAssistantService>(
+  (ref) => GuideAssistantService(),
+);

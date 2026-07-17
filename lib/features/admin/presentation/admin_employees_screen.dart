@@ -29,11 +29,25 @@ class AdminEmployeesScreen extends ConsumerWidget {
 
     return SafeArea(
       child: profilesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(
+          child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+        ),
         error: (error, stack) {
-          appLogger.e('[employees] Failed to load employees', error: error, stackTrace: stack);
+          appLogger.e(
+            '[employees] Failed to load employees',
+            error: error,
+            stackTrace: stack,
+          );
           return EmptyState(
-              icon: Icons.cloud_off_rounded, title: 'Couldn\'t load employees', message: friendlyError(error));
+            icon: Icons.cloud_off_rounded,
+            title: 'Couldn\'t load employees',
+            message: friendlyError(error),
+            action: TextButton.icon(
+              onPressed: () => ref.invalidate(allUserProfilesProvider),
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Retry'),
+            ),
+          );
         },
         data: (profiles) {
           final staff = profiles.where((p) => p.role != AppRole.user).toList()
@@ -45,60 +59,126 @@ class AdminEmployeesScreen extends ConsumerWidget {
 
           return SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1100),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Employees', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Every staff account, by role. Roles are assigned in Role Management.',
-                            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Employees',
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Every staff account, by role. Roles are assigned in Role Management.',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: () => context.go('/admin/settings'),
+                          icon: const Icon(
+                            Icons.admin_panel_settings_outlined,
+                            size: 18,
+                          ),
+                          label: const Text('Role Management'),
+                        ),
+                      ],
                     ),
-                    OutlinedButton.icon(
-                      onPressed: () => context.go('/admin/settings'),
-                      icon: const Icon(Icons.admin_panel_settings_outlined, size: 18),
-                      label: const Text('Role Management'),
+                    const SizedBox(height: 20),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        for (final role in [
+                          AppRole.systemManager,
+                          AppRole.admin,
+                          AppRole.deliveryStaff,
+                          AppRole.developer,
+                        ])
+                          StatCard(
+                            label: role.label,
+                            value: '${byRole[role]?.length ?? 0}',
+                            icon: Icons.badge_outlined,
+                          ),
+                      ],
                     ),
+                    const SizedBox(height: 24),
+                    if (staff.isEmpty)
+                      const EmptyState(
+                        icon: Icons.badge_outlined,
+                        title: 'No staff accounts yet',
+                        message:
+                            'Assign a role to an account from Role Management to see it here.',
+                      )
+                    else
+                      for (final role in byRole.keys) ...[
+                        Text(
+                          role.label,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        _TwoColumnRows(
+                          rows: [
+                            for (final person in byRole[role]!)
+                              _EmployeeRow(person: person),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                   ],
                 ),
-                const SizedBox(height: 20),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    for (final role in [AppRole.systemManager, AppRole.admin, AppRole.deliveryStaff, AppRole.developer])
-                      StatCard(label: role.label, value: '${byRole[role]?.length ?? 0}', icon: Icons.badge_outlined),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                if (staff.isEmpty)
-                  const EmptyState(
-                    icon: Icons.badge_outlined,
-                    title: 'No staff accounts yet',
-                    message: 'Assign a role to an account from Role Management to see it here.',
-                  )
-                else
-                  for (final role in byRole.keys) ...[
-                    Text(role.label, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 8),
-                    for (final person in byRole[role]!) _EmployeeRow(person: person),
-                    const SizedBox(height: 16),
-                  ],
-              ],
+              ),
             ),
           );
         },
       ),
+    );
+  }
+}
+
+/// Lays a list of row widgets two-up on wide screens instead of one
+/// full-width column stretching edge to edge; falls back to a single
+/// column on narrow screens.
+class _TwoColumnRows extends StatelessWidget {
+  const _TwoColumnRows({required this.rows});
+
+  final List<Widget> rows;
+
+  static const _twoColumnBreakpoint = 700.0;
+  static const _spacing = 12.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < _twoColumnBreakpoint) {
+          return Column(children: rows);
+        }
+        final columnWidth = (constraints.maxWidth - _spacing) / 2;
+        return Wrap(
+          spacing: _spacing,
+          runSpacing: 0,
+          children: [
+            for (final row in rows) SizedBox(width: columnWidth, child: row),
+          ],
+        );
+      },
     );
   }
 }
@@ -116,21 +196,47 @@ class _EmployeeRowState extends ConsumerState<_EmployeeRow> {
   bool _loggingPay = false;
 
   Future<void> _editWage() async {
-    final controller = TextEditingController(text: widget.person.dailyWage?.toString() ?? '');
+    final controller = TextEditingController(
+      text: widget.person.dailyWage?.toString() ?? '',
+    );
+    final formKey = GlobalKey<FormState>();
+    String? validate(String? v) {
+      final n = num.tryParse((v ?? '').trim());
+      if (n == null) return 'Enter a number';
+      if (n < 0) return 'Can\'t be negative';
+      return null;
+    }
+
+    void submit(BuildContext context) {
+      if (formKey.currentState?.validate() ?? false) {
+        Navigator.of(context).pop(num.tryParse(controller.text.trim()));
+      }
+    }
+
     final result = await showDialog<num>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Daily wage — ${widget.person.displayName}'),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(labelText: 'Amount (KES per day)'),
-          autofocus: true,
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'Amount (KES per day)',
+            ),
+            autofocus: true,
+            validator: validate,
+            onFieldSubmitted: (_) => submit(context),
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
-            onPressed: () => Navigator.of(context).pop(num.tryParse(controller.text.trim())),
+            onPressed: () => submit(context),
             child: const Text('Save'),
           ),
         ],
@@ -138,12 +244,20 @@ class _EmployeeRowState extends ConsumerState<_EmployeeRow> {
     );
     if (result == null) return;
     try {
-      await ref.read(userProfileRepositoryProvider).updateDailyWage(uid: widget.person.uid, dailyWage: result);
+      await ref
+          .read(userProfileRepositoryProvider)
+          .updateDailyWage(uid: widget.person.uid, dailyWage: result);
     } catch (error) {
-      appLogger.e('[employees] Failed to update dailyWage for ${widget.person.uid}', error: error);
+      appLogger.e(
+        '[employees] Failed to update dailyWage for ${widget.person.uid}',
+        error: error,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t save: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('Couldn\'t save: ${friendlyError(error)}'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     }
@@ -155,12 +269,15 @@ class _EmployeeRowState extends ConsumerState<_EmployeeRow> {
     setState(() => _loggingPay = true);
     try {
       final uid = ref.read(currentUidProvider);
-      await ref.read(expensesRepositoryProvider).create(
+      await ref
+          .read(expensesRepositoryProvider)
+          .create(
             ExpenseModel(
               id: '',
               category: ExpenseCategory.wages,
               amount: wage,
-              note: 'Daily wage — ${widget.person.displayName.isEmpty ? widget.person.email : widget.person.displayName}',
+              note:
+                  'Daily wage — ${widget.person.displayName.isEmpty ? widget.person.email : widget.person.displayName}',
               date: DateTime.now(),
               createdBy: uid ?? '',
               createdAt: DateTime.now(),
@@ -170,14 +287,23 @@ class _EmployeeRowState extends ConsumerState<_EmployeeRow> {
           );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Logged in Financials'), behavior: SnackBarBehavior.floating),
+          const SnackBar(
+            content: Text('Logged in Financials'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } catch (error) {
-      appLogger.e('[employees] Failed to log daily pay for ${widget.person.uid}', error: error);
+      appLogger.e(
+        '[employees] Failed to log daily pay for ${widget.person.uid}',
+        error: error,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t log pay: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('Couldn\'t log pay: ${friendlyError(error)}'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -193,16 +319,32 @@ class _EmployeeRowState extends ConsumerState<_EmployeeRow> {
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: CircleAvatar(
-          child: Text(widget.person.displayName.isNotEmpty ? widget.person.displayName[0].toUpperCase() : '?'),
+          child: Text(
+            widget.person.displayName.isNotEmpty
+                ? widget.person.displayName[0].toUpperCase()
+                : '?',
+          ),
         ),
-        title: Text(widget.person.displayName.isEmpty ? widget.person.email : widget.person.displayName),
-        subtitle: Text(wage == null || wage <= 0 ? '${widget.person.email} · No daily wage set' : '${widget.person.email} · ${currencyFormat.format(wage)}/day'),
+        title: Text(
+          widget.person.displayName.isEmpty
+              ? widget.person.email
+              : widget.person.displayName,
+        ),
+        subtitle: Text(
+          wage == null || wage <= 0
+              ? '${widget.person.email} · No daily wage set'
+              : '${widget.person.email} · ${currencyFormat.format(wage)}/day',
+        ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (wage != null && wage > 0)
               _loggingPay
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : IconButton(
                       tooltip: 'Log today\'s pay',
                       icon: const Icon(Icons.payments_outlined),

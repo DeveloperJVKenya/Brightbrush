@@ -17,26 +17,29 @@ enum AppRole {
   developer;
 
   static AppRole fromRoleName(String? name) {
-    return AppRole.values.firstWhere((r) => r.name == name, orElse: () => AppRole.user);
+    return AppRole.values.firstWhere(
+      (r) => r.name == name,
+      orElse: () => AppRole.user,
+    );
   }
 
   String get label => switch (this) {
-        AppRole.user => 'User',
-        AppRole.deliveryStaff => 'Delivery Staff',
-        AppRole.systemManager => 'System Manager',
-        AppRole.admin => 'Admin / CEO',
-        AppRole.developer => 'Developer',
-      };
+    AppRole.user => 'User',
+    AppRole.deliveryStaff => 'Delivery Staff',
+    AppRole.systemManager => 'System Manager',
+    AppRole.admin => 'Admin / CEO',
+    AppRole.developer => 'Developer',
+  };
 
   /// Root path each role lands on after choosing/authenticating. Developer
   /// lands on a picker that lets them browse into any other role's shell —
   /// their Firestore permissions already allow all of them, so that's a
   /// pure navigation affordance, not a separate access grant.
   String get homePath => switch (this) {
-        AppRole.user => '/customer',
-        AppRole.deliveryStaff => '/staff',
-        AppRole.systemManager => '/manager',
-        AppRole.admin => '/admin',
-        AppRole.developer => '/developer',
-      };
+    AppRole.user => '/customer',
+    AppRole.deliveryStaff => '/staff',
+    AppRole.systemManager => '/manager',
+    AppRole.admin => '/admin',
+    AppRole.developer => '/developer',
+  };
 }

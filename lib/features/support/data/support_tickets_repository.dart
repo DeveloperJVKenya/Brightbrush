@@ -9,7 +9,8 @@ class SupportTicketsRepository {
 
   final FirebaseFirestore _db;
 
-  CollectionReference<Map<String, dynamic>> get _tickets => _db.collection('SupportTickets');
+  CollectionReference<Map<String, dynamic>> get _tickets =>
+      _db.collection('SupportTickets');
 
   /// The signed-in customer's own tickets, newest first.
   Stream<List<SupportTicket>> streamForCustomer(String customerId) {
@@ -29,16 +30,35 @@ class SupportTicketsRepository {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snap) => snap.docs.map(SupportTicket.fromFirestore).toList())
-        .transform(logStreamErrors('[support] streamAll() failed — likely signed in as a role without isAdminOrDeveloper()'));
+        .transform(
+          logStreamErrors(
+            '[support] streamAll() failed — likely signed in as a role without isAdminOrDeveloper()',
+          ),
+        );
   }
 
-  Future<void> create(SupportTicket ticket, {required String customerId, required String customerName}) async {
-    appLogger.i('[support] create() subject="${ticket.subject}" customerId=$customerId');
+  Future<void> create(
+    SupportTicket ticket, {
+    required String customerId,
+    required String customerName,
+  }) async {
+    appLogger.i(
+      '[support] create() subject="${ticket.subject}" customerId=$customerId',
+    );
     try {
-      final doc = await _tickets.add(ticket.toFirestoreCreate(customerId: customerId, customerName: customerName));
+      final doc = await _tickets.add(
+        ticket.toFirestoreCreate(
+          customerId: customerId,
+          customerName: customerName,
+        ),
+      );
       appLogger.i('[support] created ${doc.id}');
     } catch (error, stack) {
-      appLogger.e('[support] create() failed for subject="${ticket.subject}"', error: error, stackTrace: stack);
+      appLogger.e(
+        '[support] create() failed for subject="${ticket.subject}"',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }
@@ -49,7 +69,11 @@ class SupportTicketsRepository {
     try {
       await _tickets.doc(ticket.id).update(ticket.toFirestoreTriageUpdate());
     } catch (error, stack) {
-      appLogger.e('[support] triage(${ticket.id}) failed', error: error, stackTrace: stack);
+      appLogger.e(
+        '[support] triage(${ticket.id}) failed',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }

@@ -30,31 +30,70 @@ class AdminSupportInboxScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Support inbox', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+                  Text(
+                    'Support inbox',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Text(
                     'Tickets customers raise from Support, triaged by status.',
-                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 12),
-            const TabBar(tabs: [Tab(text: 'Open'), Tab(text: 'In progress'), Tab(text: 'Resolved')]),
+            const TabBar(
+              tabs: [
+                Tab(text: 'Open'),
+                Tab(text: 'In progress'),
+                Tab(text: 'Resolved'),
+              ],
+            ),
             Expanded(
               child: ticketsAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
+                loading: () => const Center(
+                  child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+                ),
                 error: (error, stack) {
-                  appLogger.e('[support] Failed to load tickets', error: error, stackTrace: stack);
+                  appLogger.e(
+                    '[support] Failed to load tickets',
+                    error: error,
+                    stackTrace: stack,
+                  );
                   return EmptyState(
-                      icon: Icons.cloud_off_rounded, title: 'Couldn\'t load tickets', message: friendlyError(error));
+                    icon: Icons.cloud_off_rounded,
+                    title: 'Couldn\'t load tickets',
+                    message: friendlyError(error),
+                    action: TextButton.icon(
+                      onPressed: () => ref.invalidate(allTicketsProvider),
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Retry'),
+                    ),
+                  );
                 },
                 data: (tickets) {
                   return TabBarView(
                     children: [
-                      _TicketList(tickets: tickets.where((t) => t.status == TicketStatus.open).toList()),
-                      _TicketList(tickets: tickets.where((t) => t.status == TicketStatus.inProgress).toList()),
-                      _TicketList(tickets: tickets.where((t) => t.status == TicketStatus.resolved).toList()),
+                      _TicketList(
+                        tickets: tickets
+                            .where((t) => t.status == TicketStatus.open)
+                            .toList(),
+                      ),
+                      _TicketList(
+                        tickets: tickets
+                            .where((t) => t.status == TicketStatus.inProgress)
+                            .toList(),
+                      ),
+                      _TicketList(
+                        tickets: tickets
+                            .where((t) => t.status == TicketStatus.resolved)
+                            .toList(),
+                      ),
                     ],
                   );
                 },
@@ -77,7 +116,11 @@ class _TicketList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (tickets.isEmpty) {
-      return const EmptyState(icon: Icons.inbox_outlined, title: 'Nothing here', message: 'No tickets in this stage.');
+      return const EmptyState(
+        icon: Icons.inbox_outlined,
+        title: 'Nothing here',
+        message: 'No tickets in this stage.',
+      );
     }
     return ListView.separated(
       padding: const EdgeInsets.all(20),
@@ -88,8 +131,13 @@ class _TicketList extends ConsumerWidget {
         return Card(
           margin: EdgeInsets.zero,
           child: ListTile(
-            title: Text(ticket.subject, style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Text('${ticket.customerName} · ${_date.format(ticket.createdAt)}'),
+            title: Text(
+              ticket.subject,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              '${ticket.customerName} · ${_date.format(ticket.createdAt)}',
+            ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => showTicketTriageSheet(context, ref, ticket),
           ),

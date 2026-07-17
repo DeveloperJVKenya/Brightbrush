@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/errors/user_facing_error.dart';
 import '../../../core/logging/app_logger.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/live_orders_map.dart';
 import '../../orders/application/orders_providers.dart';
 import '../../orders/domain/order_model.dart';
@@ -17,16 +18,32 @@ class RouteMapScreen extends ConsumerWidget {
     final ordersAsync = ref.watch(myActiveDeliveriesProvider);
 
     return ordersAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(
+        child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+      ),
       error: (error, stack) {
-        appLogger.e('[delivery] Failed to load route', error: error, stackTrace: stack);
-        return Center(child: Text('Couldn\'t load your route: ${friendlyError(error)}', textAlign: TextAlign.center));
+        appLogger.e(
+          '[delivery] Failed to load route',
+          error: error,
+          stackTrace: stack,
+        );
+        return EmptyState(
+          icon: Icons.cloud_off_rounded,
+          title: 'Couldn\'t load your route',
+          message: friendlyError(error),
+          action: TextButton.icon(
+            onPressed: () => ref.invalidate(myActiveDeliveriesProvider),
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Retry'),
+          ),
+        );
       },
       data: (orders) => LiveOrdersMap(
         orders: orders,
         emptyIcon: Icons.map_outlined,
         emptyTitle: 'No active route',
-        emptyMessage: 'Claim a delivery from My Deliveries and its stop will show up here.',
+        emptyMessage:
+            'Claim a delivery from My Deliveries and its stop will show up here.',
         onMarkerTap: _showStopSheet,
       ),
     );
@@ -47,27 +64,41 @@ class RouteMapScreen extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(order.contactName, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+                  Text(
+                    order.contactName,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Text(order.contactPhone, style: theme.textTheme.bodyMedium),
                   const SizedBox(height: 10),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.location_on_outlined, size: 18, color: theme.colorScheme.onSurfaceVariant),
+                      Icon(
+                        Icons.location_on_outlined,
+                        size: 18,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(child: Text(order.deliveryAddress)),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  Text('${order.itemCount} item(s)', style: theme.textTheme.bodySmall),
+                  Text(
+                    '${order.itemCount} item(s)',
+                    style: theme.textTheme.bodySmall,
+                  ),
                   const SizedBox(height: 20),
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
                       onPressed: () async {
                         Navigator.of(context).pop();
-                        await ref.read(ordersRepositoryProvider).markDelivered(order.id);
+                        await ref
+                            .read(ordersRepositoryProvider)
+                            .markDelivered(order.id);
                       },
                       icon: const Icon(Icons.check_circle_outline_rounded),
                       label: const Text('Mark delivered'),

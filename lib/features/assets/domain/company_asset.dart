@@ -10,7 +10,10 @@ enum AssetCategory {
   final String label;
 
   static AssetCategory fromName(String name) {
-    return AssetCategory.values.firstWhere((c) => c.name == name, orElse: () => AssetCategory.other);
+    return AssetCategory.values.firstWhere(
+      (c) => c.name == name,
+      orElse: () => AssetCategory.other,
+    );
   }
 }
 
@@ -23,7 +26,10 @@ enum AssetCondition {
   final String label;
 
   static AssetCondition fromName(String name) {
-    return AssetCondition.values.firstWhere((c) => c.name == name, orElse: () => AssetCondition.operational);
+    return AssetCondition.values.firstWhere(
+      (c) => c.name == name,
+      orElse: () => AssetCondition.operational,
+    );
   }
 }
 
@@ -52,18 +58,26 @@ class CompanyAsset {
 
   List<String> get searchFields => [name, category.label, condition.label];
 
-  factory CompanyAsset.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory CompanyAsset.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final d = doc.data() ?? {};
     return CompanyAsset(
       id: doc.id,
       name: d['name'] as String? ?? '',
       category: AssetCategory.fromName(d['category'] as String? ?? 'other'),
-      condition: AssetCondition.fromName(d['condition'] as String? ?? 'operational'),
+      condition: AssetCondition.fromName(
+        d['condition'] as String? ?? 'operational',
+      ),
       purchaseDate: (d['purchaseDate'] as Timestamp?)?.toDate(),
       notes: d['notes'] as String? ?? '',
       createdBy: d['createdBy'] as String? ?? '',
-      createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0),
-      updatedAt: (d['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0),
+      createdAt:
+          (d['createdAt'] as Timestamp?)?.toDate() ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      updatedAt:
+          (d['updatedAt'] as Timestamp?)?.toDate() ??
+          DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
 
@@ -72,7 +86,8 @@ class CompanyAsset {
       'name': name,
       'category': category.name,
       'condition': condition.name,
-      if (purchaseDate != null) 'purchaseDate': Timestamp.fromDate(purchaseDate!),
+      if (purchaseDate != null)
+        'purchaseDate': Timestamp.fromDate(purchaseDate!),
       if (notes.isNotEmpty) 'notes': notes,
       'createdBy': uid,
       'createdAt': FieldValue.serverTimestamp(),
@@ -85,7 +100,8 @@ class CompanyAsset {
       'name': name,
       'category': category.name,
       'condition': condition.name,
-      if (purchaseDate != null) 'purchaseDate': Timestamp.fromDate(purchaseDate!),
+      if (purchaseDate != null)
+        'purchaseDate': Timestamp.fromDate(purchaseDate!),
       if (notes.isNotEmpty) 'notes': notes,
       'createdBy': createdBy,
       'createdAt': Timestamp.fromDate(createdAt),

@@ -15,9 +15,12 @@ class AnnouncementBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (!ref.watch(inAppNotificationsEnabledProvider)) return const SizedBox.shrink();
+    if (!ref.watch(inAppNotificationsEnabledProvider)) {
+      return const SizedBox.shrink();
+    }
     final announcementsAsync = ref.watch(activeAnnouncementsProvider);
-    final announcements = announcementsAsync.valueOrNull ?? const <AnnouncementModel>[];
+    final announcements =
+        announcementsAsync.valueOrNull ?? const <AnnouncementModel>[];
     if (announcements.isEmpty) return const SizedBox.shrink();
 
     final textScale = MediaQuery.textScalerOf(context).scale(1.0);
@@ -27,7 +30,8 @@ class AnnouncementBanner extends ConsumerWidget {
         scrollDirection: Axis.horizontal,
         itemCount: announcements.length,
         separatorBuilder: (context, index) => const SizedBox(width: 10),
-        itemBuilder: (context, index) => _BannerCard(announcement: announcements[index]),
+        itemBuilder: (context, index) =>
+            _BannerCard(announcement: announcements[index]),
       ),
     );
   }
@@ -50,7 +54,10 @@ class _BannerCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.campaign_outlined, color: theme.colorScheme.onPrimaryContainer),
+          Icon(
+            Icons.campaign_outlined,
+            color: theme.colorScheme.onPrimaryContainer,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -61,13 +68,18 @@ class _BannerCard extends StatelessWidget {
                   announcement.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onPrimaryContainer, fontWeight: FontWeight.w700),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 Text(
                   announcement.message,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onPrimaryContainer),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onPrimaryContainer,
+                  ),
                 ),
               ],
             ),

@@ -9,7 +9,8 @@ class AssetsRepository {
 
   final FirebaseFirestore _db;
 
-  CollectionReference<Map<String, dynamic>> get _assets => _db.collection('CompanyAssets');
+  CollectionReference<Map<String, dynamic>> get _assets =>
+      _db.collection('CompanyAssets');
 
   Stream<List<CompanyAsset>> streamAll() {
     appLogger.d('[assets] streamAll()');
@@ -17,7 +18,11 @@ class AssetsRepository {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snap) => snap.docs.map(CompanyAsset.fromFirestore).toList())
-        .transform(logStreamErrors('[assets] streamAll() failed — likely signed in as a role without isAdminOrDeveloper()'));
+        .transform(
+          logStreamErrors(
+            '[assets] streamAll() failed — likely signed in as a role without isAdminOrDeveloper()',
+          ),
+        );
   }
 
   Future<String> create(CompanyAsset asset, {required String uid}) async {
@@ -27,7 +32,11 @@ class AssetsRepository {
       appLogger.i('[assets] created ${doc.id}');
       return doc.id;
     } catch (error, stack) {
-      appLogger.e('[assets] create() failed for name="${asset.name}"', error: error, stackTrace: stack);
+      appLogger.e(
+        '[assets] create() failed for name="${asset.name}"',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }
@@ -37,7 +46,11 @@ class AssetsRepository {
     try {
       await _assets.doc(asset.id).update(asset.toFirestoreUpdate());
     } catch (error, stack) {
-      appLogger.e('[assets] update(${asset.id}) failed', error: error, stackTrace: stack);
+      appLogger.e(
+        '[assets] update(${asset.id}) failed',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }
@@ -47,7 +60,11 @@ class AssetsRepository {
     try {
       await _assets.doc(id).delete();
     } catch (error, stack) {
-      appLogger.e('[assets] delete($id) failed', error: error, stackTrace: stack);
+      appLogger.e(
+        '[assets] delete($id) failed',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }

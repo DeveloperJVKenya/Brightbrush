@@ -26,7 +26,6 @@ class DeliveryOrderCard extends StatelessWidget {
   /// looking across every staff member at once) resolve and pass it in.
   final String? assignedLabel;
 
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -43,14 +42,27 @@ class DeliveryOrderCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(order.contactName, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
-                      Text(order.contactPhone, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                      Text(
+                        order.contactName,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        order.contactPhone,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                     ],
                   ),
                 ),
                 Text(
                   currencyFormat.format(order.total),
-                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: theme.colorScheme.primary),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.primary,
+                  ),
                 ),
               ],
             ),
@@ -58,9 +70,18 @@ class DeliveryOrderCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.location_on_outlined, size: 16, color: theme.colorScheme.onSurfaceVariant),
+                Icon(
+                  Icons.location_on_outlined,
+                  size: 16,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
                 const SizedBox(width: 6),
-                Expanded(child: Text(order.deliveryAddress, style: theme.textTheme.bodySmall)),
+                Expanded(
+                  child: Text(
+                    order.deliveryAddress,
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 4),
@@ -68,17 +89,26 @@ class DeliveryOrderCard extends StatelessWidget {
               '${order.itemCount} item(s) · ${order.items.map((i) => i.name).join(', ')}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
             if (assignedLabel != null) ...[
               const SizedBox(height: 6),
               Row(
                 children: [
-                  Icon(Icons.local_shipping_outlined, size: 14, color: theme.colorScheme.primary),
+                  Icon(
+                    Icons.local_shipping_outlined,
+                    size: 14,
+                    color: theme.colorScheme.primary,
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     'Assigned to $assignedLabel',
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.primary, fontWeight: FontWeight.w600),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -93,7 +123,10 @@ class DeliveryOrderCard extends StatelessWidget {
                       ? const SizedBox(
                           width: 18,
                           height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                       : Text(actionLabel!),
                 ),

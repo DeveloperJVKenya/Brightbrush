@@ -4,7 +4,9 @@ import '../../../core/firebase/firebase_providers.dart';
 import '../data/support_tickets_repository.dart';
 import '../domain/support_ticket.dart';
 
-final supportTicketsRepositoryProvider = Provider<SupportTicketsRepository>((ref) {
+final supportTicketsRepositoryProvider = Provider<SupportTicketsRepository>((
+  ref,
+) {
   return SupportTicketsRepository(ref.watch(firestoreProvider));
 });
 

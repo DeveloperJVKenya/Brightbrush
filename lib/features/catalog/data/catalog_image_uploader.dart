@@ -18,7 +18,10 @@ class CatalogImageUploader {
   }) async {
     final path = 'catalog/$itemId/${DateTime.now().millisecondsSinceEpoch}';
     final ref = _storage.ref(path);
-    final task = await ref.putData(bytes, SettableMetadata(contentType: contentType));
+    final task = await ref.putData(
+      bytes,
+      SettableMetadata(contentType: contentType),
+    );
     return task.ref.getDownloadURL();
   }
 
@@ -29,7 +32,10 @@ class CatalogImageUploader {
   }) async {
     final path = 'packages/$packageId/${DateTime.now().millisecondsSinceEpoch}';
     final ref = _storage.ref(path);
-    final task = await ref.putData(bytes, SettableMetadata(contentType: contentType));
+    final task = await ref.putData(
+      bytes,
+      SettableMetadata(contentType: contentType),
+    );
     return task.ref.getDownloadURL();
   }
 
@@ -40,7 +46,10 @@ class CatalogImageUploader {
   }) async {
     final path = 'profiles/$uid/${DateTime.now().millisecondsSinceEpoch}';
     final ref = _storage.ref(path);
-    final task = await ref.putData(bytes, SettableMetadata(contentType: contentType));
+    final task = await ref.putData(
+      bytes,
+      SettableMetadata(contentType: contentType),
+    );
     return task.ref.getDownloadURL();
   }
 
@@ -49,9 +58,13 @@ class CatalogImageUploader {
     required Uint8List bytes,
     required String contentType,
   }) async {
-    final path = 'announcements/$announcementId/${DateTime.now().millisecondsSinceEpoch}';
+    final path =
+        'announcements/$announcementId/${DateTime.now().millisecondsSinceEpoch}';
     final ref = _storage.ref(path);
-    final task = await ref.putData(bytes, SettableMetadata(contentType: contentType));
+    final task = await ref.putData(
+      bytes,
+      SettableMetadata(contentType: contentType),
+    );
     return task.ref.getDownloadURL();
   }
 }

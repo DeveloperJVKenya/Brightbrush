@@ -9,7 +9,8 @@ class InventoryRepository {
 
   final FirebaseFirestore _db;
 
-  CollectionReference<Map<String, dynamic>> get _materials => _db.collection('InventoryMaterials');
+  CollectionReference<Map<String, dynamic>> get _materials =>
+      _db.collection('InventoryMaterials');
 
   Stream<List<InventoryMaterial>> streamAll() {
     appLogger.d('[inventory] streamAll()');
@@ -17,17 +18,28 @@ class InventoryRepository {
         .orderBy('name')
         .snapshots()
         .map((snap) => snap.docs.map(InventoryMaterial.fromFirestore).toList())
-        .transform(logStreamErrors('[inventory] streamAll() failed — likely signed in as a role without isManagerOrAdmin()'));
+        .transform(
+          logStreamErrors(
+            '[inventory] streamAll() failed — likely signed in as a role without isManagerOrAdmin()',
+          ),
+        );
   }
 
-  Future<String> create(InventoryMaterial material, {required String uid}) async {
+  Future<String> create(
+    InventoryMaterial material, {
+    required String uid,
+  }) async {
     appLogger.i('[inventory] create() name="${material.name}" createdBy=$uid');
     try {
       final doc = await _materials.add(material.toFirestoreCreate(uid: uid));
       appLogger.i('[inventory] created ${doc.id}');
       return doc.id;
     } catch (error, stack) {
-      appLogger.e('[inventory] create() failed for name="${material.name}"', error: error, stackTrace: stack);
+      appLogger.e(
+        '[inventory] create() failed for name="${material.name}"',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }
@@ -37,7 +49,11 @@ class InventoryRepository {
     try {
       await _materials.doc(material.id).update(material.toFirestoreUpdate());
     } catch (error, stack) {
-      appLogger.e('[inventory] update(${material.id}) failed', error: error, stackTrace: stack);
+      appLogger.e(
+        '[inventory] update(${material.id}) failed',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }
@@ -47,7 +63,11 @@ class InventoryRepository {
     try {
       await _materials.doc(id).delete();
     } catch (error, stack) {
-      appLogger.e('[inventory] delete($id) failed', error: error, stackTrace: stack);
+      appLogger.e(
+        '[inventory] delete($id) failed',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }

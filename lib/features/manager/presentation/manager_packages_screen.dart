@@ -13,7 +13,6 @@ import 'widgets/package_form_sheet.dart';
 class ManagerPackagesScreen extends ConsumerWidget {
   const ManagerPackagesScreen({super.key});
 
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
@@ -31,34 +30,58 @@ class ManagerPackagesScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Packages', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+              Text(
+                'Packages',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               const SizedBox(height: 4),
               Text(
                 'Seasonal & campaign bundles, including drafts not yet visible to customers.',
-                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 16),
               Expanded(
                 child: packagesAsync.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+                  ),
                   error: (error, stack) {
-                    appLogger.e('[packages] Failed to load packages', error: error, stackTrace: stack);
+                    appLogger.e(
+                      '[packages] Failed to load packages',
+                      error: error,
+                      stackTrace: stack,
+                    );
                     return EmptyState(
-                        icon: Icons.cloud_off_rounded, title: 'Couldn\'t load packages', message: friendlyError(error));
+                      icon: Icons.cloud_off_rounded,
+                      title: 'Couldn\'t load packages',
+                      message: friendlyError(error),
+                      action: TextButton.icon(
+                        onPressed: () => ref.invalidate(allPackagesProvider),
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('Retry'),
+                      ),
+                    );
                   },
                   data: (packages) {
                     if (packages.isEmpty) {
                       return const EmptyState(
                         icon: Icons.card_giftcard_outlined,
                         title: 'No packages yet',
-                        message: 'Tap "Add package" to create your first seasonal bundle.',
+                        message:
+                            'Tap "Add package" to create your first seasonal bundle.',
                       );
                     }
                     return ListView.separated(
                       padding: const EdgeInsets.only(bottom: 88),
                       itemCount: packages.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) => _PackageRow(package: packages[index]),
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 10),
+                      itemBuilder: (context, index) =>
+                          _PackageRow(package: packages[index]),
                     );
                   },
                 ),
@@ -88,7 +111,9 @@ class _PackageRowState extends ConsumerState<_PackageRow> {
   Future<void> _setActive(bool value) async {
     setState(() => _busy = true);
     try {
-      await ref.read(packagesRepositoryProvider).update(
+      await ref
+          .read(packagesRepositoryProvider)
+          .update(
             PackageModel(
               id: package.id,
               name: package.name,
@@ -106,10 +131,17 @@ class _PackageRowState extends ConsumerState<_PackageRow> {
             ),
           );
     } catch (error, stack) {
-      appLogger.e('[packages] Failed to toggle active for package ${package.id}', error: error, stackTrace: stack);
+      appLogger.e(
+        '[packages] Failed to toggle active for package ${package.id}',
+        error: error,
+        stackTrace: stack,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t update: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('Couldn\'t update: ${friendlyError(error)}'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -130,7 +162,9 @@ class _PackageRowState extends ConsumerState<_PackageRow> {
               width: 56,
               height: 56,
               child: CatalogImage(
-                imageUrls: package.imageUrl == null ? const [] : [package.imageUrl!],
+                imageUrls: package.imageUrl == null
+                    ? const []
+                    : [package.imageUrl!],
                 placeholderIcon: Icons.card_giftcard_rounded,
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -140,10 +174,17 @@ class _PackageRowState extends ConsumerState<_PackageRow> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(package.name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                  Text(
+                    package.name,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   Text(
                     '${package.season} · ${currencyFormat.format(package.price)}',
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -151,13 +192,14 @@ class _PackageRowState extends ConsumerState<_PackageRow> {
             if (_busy)
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12),
-                child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
               )
             else
-              Switch(
-                value: package.isActive,
-                onChanged: _setActive,
-              ),
+              Switch(value: package.isActive, onChanged: _setActive),
             IconButton(
               tooltip: 'Delete',
               icon: const Icon(Icons.delete_outline_rounded),
@@ -166,10 +208,18 @@ class _PackageRowState extends ConsumerState<_PackageRow> {
                   context: context,
                   builder: (context) => AlertDialog(
                     title: const Text('Delete package?'),
-                    content: Text('"${package.name}" will be removed permanently.'),
+                    content: Text(
+                      '"${package.name}" will be removed permanently.',
+                    ),
                     actions: [
-                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                      FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancel'),
+                      ),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Delete'),
+                      ),
                     ],
                   ),
                 );

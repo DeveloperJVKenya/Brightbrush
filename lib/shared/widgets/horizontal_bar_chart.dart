@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 
 class BarDatum {
-  const BarDatum({required this.label, required this.value, required this.valueLabel});
+  const BarDatum({
+    required this.label,
+    required this.value,
+    required this.valueLabel,
+  });
 
   final String label;
   final num value;
@@ -31,15 +35,27 @@ class HorizontalBarChart extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(datum.label, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+                      child: Text(
+                        datum.label,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
-                    Text(datum.valueLabel, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                    Text(
+                      datum.valueLabel,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 6),
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    final fraction = maxValue <= 0 ? 0.0 : (datum.value / maxValue).clamp(0.02, 1.0);
+                    final fraction = maxValue <= 0
+                        ? 0.0
+                        : (datum.value / maxValue).clamp(0.02, 1.0);
                     return Stack(
                       children: [
                         Container(

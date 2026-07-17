@@ -11,7 +11,11 @@ import '../domain/catalog_category.dart';
 /// hallucinate a category that doesn't exist) plus a handful of keywords
 /// fed straight into the existing substring search.
 class AiCatalogSuggestion {
-  const AiCatalogSuggestion({required this.category, required this.keywords, required this.rationale});
+  const AiCatalogSuggestion({
+    required this.category,
+    required this.keywords,
+    required this.rationale,
+  });
 
   final CatalogCategory? category;
   final List<String> keywords;
@@ -30,15 +34,22 @@ class AiCatalogSearchService {
         responseSchema: Schema.object(
           properties: {
             'category': Schema.enumString(
-              enumValues: [for (final c in CatalogCategory.values) c.name, 'none'],
-              description: 'Best-matching branding category, or "none" if nothing fits clearly.',
+              enumValues: [
+                for (final c in CatalogCategory.values) c.name,
+                'none',
+              ],
+              description:
+                  'Best-matching branding category, or "none" if nothing fits clearly.',
             ),
             'keywords': Schema.array(
               items: Schema.string(),
-              description: 'Up to 5 short search keywords pulled from the request (materials, colors, occasions).',
+              description:
+                  'Up to 5 short search keywords pulled from the request (materials, colors, occasions).',
               maxItems: 5,
             ),
-            'rationale': Schema.string(description: 'One short sentence explaining the suggestion.'),
+            'rationale': Schema.string(
+              description: 'One short sentence explaining the suggestion.',
+            ),
           },
           optionalProperties: const ['category', 'keywords'],
         ),
@@ -56,7 +67,11 @@ class AiCatalogSearchService {
     final response = await model.generateContent([Content.text(prompt)]);
     final text = response.text;
     if (text == null || text.isEmpty) {
-      return const AiCatalogSuggestion(category: null, keywords: [], rationale: 'No suggestion available.');
+      return const AiCatalogSuggestion(
+        category: null,
+        keywords: [],
+        rationale: 'No suggestion available.',
+      );
     }
 
     // responseSchema guarantees valid JSON shape, but decode defensively —
@@ -64,15 +79,28 @@ class AiCatalogSearchService {
     try {
       final decoded = jsonDecode(text) as Map<String, dynamic>;
       final categoryName = decoded['category'] as String?;
-      final category =
-          (categoryName == null || categoryName == 'none') ? null : CatalogCategory.fromName(categoryName);
-      final keywords = (decoded['keywords'] as List?)?.map((e) => e.toString()).toList() ?? const [];
+      final category = (categoryName == null || categoryName == 'none')
+          ? null
+          : CatalogCategory.fromName(categoryName);
+      final keywords =
+          (decoded['keywords'] as List?)?.map((e) => e.toString()).toList() ??
+          const [];
       final rationale = decoded['rationale'] as String? ?? '';
-      return AiCatalogSuggestion(category: category, keywords: keywords, rationale: rationale);
+      return AiCatalogSuggestion(
+        category: category,
+        keywords: keywords,
+        rationale: rationale,
+      );
     } catch (_) {
-      return const AiCatalogSuggestion(category: null, keywords: [], rationale: 'Couldn\'t parse a suggestion.');
+      return const AiCatalogSuggestion(
+        category: null,
+        keywords: [],
+        rationale: 'Couldn\'t parse a suggestion.',
+      );
     }
   }
 }
 
-final aiCatalogSearchServiceProvider = Provider<AiCatalogSearchService>((ref) => AiCatalogSearchService());
+final aiCatalogSearchServiceProvider = Provider<AiCatalogSearchService>(
+  (ref) => AiCatalogSearchService(),
+);

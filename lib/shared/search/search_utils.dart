@@ -17,7 +17,11 @@ bool matchesAnyField(Iterable<String> fields, String query) {
 
 /// Filters [items] to those where [fieldsOf] returns at least one field
 /// containing [query] as a substring.
-List<T> filterBySearch<T>(List<T> items, String query, Iterable<String> Function(T item) fieldsOf) {
+List<T> filterBySearch<T>(
+  List<T> items,
+  String query,
+  Iterable<String> Function(T item) fieldsOf,
+) {
   if (query.trim().isEmpty) return items;
   return items.where((item) => matchesAnyField(fieldsOf(item), query)).toList();
 }

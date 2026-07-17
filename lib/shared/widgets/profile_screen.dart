@@ -46,7 +46,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _pickPhoto(String uid) async {
-    final file = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85);
+    final file = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
     if (file == null) return;
     final bytes = await file.readAsBytes();
     setState(() {
@@ -54,18 +57,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       _uploadingPhoto = true;
     });
     try {
-      final url = await ref.read(catalogImageUploaderProvider).uploadProfilePhoto(
+      final url = await ref
+          .read(catalogImageUploaderProvider)
+          .uploadProfilePhoto(
             uid: uid,
             bytes: bytes,
             contentType: 'image/jpeg',
           );
-      await ref.read(userProfileRepositoryProvider).updateSelfProfile(uid: uid, photoUrl: url);
+      await ref
+          .read(userProfileRepositoryProvider)
+          .updateSelfProfile(uid: uid, photoUrl: url);
       appLogger.i('[profile] Photo updated for uid=$uid');
     } catch (error, stack) {
-      appLogger.e('[profile] Photo upload failed for uid=$uid', error: error, stackTrace: stack);
+      appLogger.e(
+        '[profile] Photo upload failed for uid=$uid',
+        error: error,
+        stackTrace: stack,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t upload photo: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('Couldn\'t upload photo: ${friendlyError(error)}'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -77,26 +91,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
     try {
-      await ref.read(userProfileRepositoryProvider).updateDisplayName(
+      await ref
+          .read(userProfileRepositoryProvider)
+          .updateDisplayName(
             uid: uid,
             displayName: _nameController.text.trim(),
           );
-      await ref.read(userProfileRepositoryProvider).updateSelfProfile(
+      await ref
+          .read(userProfileRepositoryProvider)
+          .updateSelfProfile(
             uid: uid,
             phone: _phoneController.text.trim(),
-            vehiclePlate: role == AppRole.deliveryStaff ? _vehicleController.text.trim() : null,
+            vehiclePlate: role == AppRole.deliveryStaff
+                ? _vehicleController.text.trim()
+                : null,
             availability: role == AppRole.deliveryStaff ? _available : null,
           );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile updated'), behavior: SnackBarBehavior.floating),
+          const SnackBar(
+            content: Text('Profile updated'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } catch (error, stack) {
       appLogger.e('[profile] Save failed', error: error, stackTrace: stack);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t save: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('Couldn\'t save: ${friendlyError(error)}'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -105,7 +131,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _changePassword() async {
-    await showDialog<void>(context: context, builder: (context) => const _ChangePasswordDialog());
+    await showDialog<void>(
+      context: context,
+      builder: (context) => const _ChangePasswordDialog(),
+    );
   }
 
   Future<void> _signOut() async {
@@ -121,11 +150,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     return SafeArea(
       child: profileAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(
+          child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+        ),
         error: (error, stack) {
-          appLogger.e('[profile] Failed to load profile', error: error, stackTrace: stack);
+          appLogger.e(
+            '[profile] Failed to load profile',
+            error: error,
+            stackTrace: stack,
+          );
           return EmptyState(
-              icon: Icons.cloud_off_rounded, title: 'Couldn\'t load your profile', message: friendlyError(error));
+            icon: Icons.cloud_off_rounded,
+            title: 'Couldn\'t load your profile',
+            message: friendlyError(error),
+            action: TextButton.icon(
+              onPressed: () => ref.invalidate(myProfileProvider),
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Retry'),
+            ),
+          );
         },
         data: (profile) {
           if (profile == null) {
@@ -152,11 +195,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Profile', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+                  Text(
+                    'Profile',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Text(
                     'Your account details.',
-                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: 24),
                   Container(
@@ -164,7 +214,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surfaceContainerLow,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: theme.colorScheme.outlineVariant),
+                      border: Border.all(
+                        color: theme.colorScheme.outlineVariant,
+                      ),
                     ),
                     child: Form(
                       key: _formKey,
@@ -174,26 +226,45 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           Row(
                             children: [
                               GestureDetector(
-                                onTap: _uploadingPhoto ? null : () => _pickPhoto(profile.uid),
+                                onTap: _uploadingPhoto
+                                    ? null
+                                    : () => _pickPhoto(profile.uid),
                                 child: Stack(
                                   children: [
                                     CircleAvatar(
                                       radius: 28,
-                                      backgroundColor: theme.colorScheme.primaryContainer,
+                                      backgroundColor:
+                                          theme.colorScheme.primaryContainer,
                                       backgroundImage: _pickedPhotoBytes != null
                                           ? MemoryImage(_pickedPhotoBytes!)
-                                          : (profile.photoUrl != null ? NetworkImage(profile.photoUrl!) : null),
-                                      child: (_pickedPhotoBytes == null && profile.photoUrl == null)
+                                          : (profile.photoUrl != null
+                                                ? NetworkImage(
+                                                    profile.photoUrl!,
+                                                  )
+                                                : null),
+                                      child:
+                                          (_pickedPhotoBytes == null &&
+                                              profile.photoUrl == null)
                                           ? Text(
-                                              profile.displayName.isNotEmpty ? profile.displayName[0].toUpperCase() : '?',
-                                              style: theme.textTheme.titleLarge?.copyWith(
-                                                  color: theme.colorScheme.onPrimaryContainer, fontWeight: FontWeight.w700),
+                                              profile.displayName.isNotEmpty
+                                                  ? profile.displayName[0]
+                                                        .toUpperCase()
+                                                  : '?',
+                                              style: theme.textTheme.titleLarge
+                                                  ?.copyWith(
+                                                    color: theme
+                                                        .colorScheme
+                                                        .onPrimaryContainer,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
                                             )
                                           : null,
                                     ),
                                     if (_uploadingPhoto)
                                       const Positioned.fill(
-                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
                                       )
                                     else
                                       Positioned(
@@ -204,9 +275,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                           decoration: BoxDecoration(
                                             color: theme.colorScheme.primary,
                                             shape: BoxShape.circle,
-                                            border: Border.all(color: theme.colorScheme.surfaceContainerLow, width: 2),
+                                            border: Border.all(
+                                              color: theme
+                                                  .colorScheme
+                                                  .surfaceContainerLow,
+                                              width: 2,
+                                            ),
                                           ),
-                                          child: Icon(Icons.camera_alt_rounded, size: 12, color: theme.colorScheme.onPrimary),
+                                          child: Icon(
+                                            Icons.camera_alt_rounded,
+                                            size: 12,
+                                            color: theme.colorScheme.onPrimary,
+                                          ),
                                         ),
                                       ),
                                   ],
@@ -217,18 +297,31 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(profile.email, style: theme.textTheme.bodyMedium),
+                                    Text(
+                                      profile.email,
+                                      style: theme.textTheme.bodyMedium,
+                                    ),
                                     const SizedBox(height: 4),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 3,
+                                      ),
                                       decoration: BoxDecoration(
-                                        color: theme.colorScheme.secondaryContainer,
+                                        color: theme
+                                            .colorScheme
+                                            .secondaryContainer,
                                         borderRadius: BorderRadius.circular(20),
                                       ),
                                       child: Text(
                                         roleLabel,
                                         style: theme.textTheme.labelSmall
-                                            ?.copyWith(color: theme.colorScheme.onSecondaryContainer, fontWeight: FontWeight.w600),
+                                            ?.copyWith(
+                                              color: theme
+                                                  .colorScheme
+                                                  .onSecondaryContainer,
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                       ),
                                     ),
                                   ],
@@ -239,20 +332,28 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           const SizedBox(height: 20),
                           TextFormField(
                             controller: _nameController,
-                            decoration: const InputDecoration(labelText: 'Display name'),
-                            validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                            decoration: const InputDecoration(
+                              labelText: 'Display name',
+                            ),
+                            validator: (v) => (v == null || v.trim().isEmpty)
+                                ? 'Required'
+                                : null,
                           ),
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _phoneController,
-                            decoration: const InputDecoration(labelText: 'Phone (optional)'),
+                            decoration: const InputDecoration(
+                              labelText: 'Phone (optional)',
+                            ),
                             keyboardType: TextInputType.phone,
                           ),
                           if (role == AppRole.deliveryStaff) ...[
                             const SizedBox(height: 12),
                             TextFormField(
                               controller: _vehicleController,
-                              decoration: const InputDecoration(labelText: 'Vehicle plate (optional)'),
+                              decoration: const InputDecoration(
+                                labelText: 'Vehicle plate (optional)',
+                              ),
                             ),
                             const SizedBox(height: 4),
                             SwitchListTile(
@@ -262,15 +363,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               onChanged: (v) => setState(() => _available = v),
                             ),
                           ],
-                          if (profile.dailyWage != null && profile.dailyWage! > 0) ...[
+                          if (profile.dailyWage != null &&
+                              profile.dailyWage! > 0) ...[
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                Icon(Icons.payments_outlined, size: 16, color: theme.colorScheme.onSurfaceVariant),
+                                Icon(
+                                  Icons.payments_outlined,
+                                  size: 16,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
                                 const SizedBox(width: 8),
                                 Text(
                                   'Daily wage: ${currencyFormat.format(profile.dailyWage)}/day (set by Admin)',
-                                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
                                 ),
                               ],
                             ),
@@ -278,16 +386,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           const SizedBox(height: 8),
                           Text(
                             'Member since ${DateFormat('MMM d, y').format(profile.createdAt)}',
-                            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                           const SizedBox(height: 20),
                           SizedBox(
                             width: double.infinity,
                             child: FilledButton(
-                              onPressed: _saving ? null : () => _save(profile.uid, role),
+                              onPressed: _saving
+                                  ? null
+                                  : () => _save(profile.uid, role),
                               child: _saving
                                   ? const SizedBox(
-                                      width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
                                   : const Text('Save changes'),
                             ),
                           ),
@@ -296,7 +413,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Text('Security', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                  Text(
+                    'Security',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const SizedBox(height: 10),
                   Card(
                     margin: EdgeInsets.zero,
@@ -330,7 +452,8 @@ class _ChangePasswordDialog extends ConsumerStatefulWidget {
   const _ChangePasswordDialog();
 
   @override
-  ConsumerState<_ChangePasswordDialog> createState() => _ChangePasswordDialogState();
+  ConsumerState<_ChangePasswordDialog> createState() =>
+      _ChangePasswordDialogState();
 }
 
 class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
@@ -356,21 +479,35 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
     try {
       final user = ref.read(firebaseAuthProvider).currentUser;
       if (user == null || user.email == null) throw StateError('Not signed in');
-      final credential = EmailAuthProvider.credential(email: user.email!, password: _currentController.text);
+      final credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: _currentController.text,
+      );
       await user.reauthenticateWithCredential(credential);
       await user.updatePassword(_newController.text);
       appLogger.i('[auth] Password changed for uid=${user.uid}');
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Password changed'), behavior: SnackBarBehavior.floating),
+          const SnackBar(
+            content: Text('Password changed'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } on FirebaseAuthException catch (error, stack) {
-      appLogger.e('[auth] Password change failed', error: error, stackTrace: stack);
+      appLogger.e(
+        '[auth] Password change failed',
+        error: error,
+        stackTrace: stack,
+      );
       setState(() => _error = error.message ?? 'Couldn\'t change password');
     } catch (error, stack) {
-      appLogger.e('[auth] Password change failed', error: error, stackTrace: stack);
+      appLogger.e(
+        '[auth] Password change failed',
+        error: error,
+        stackTrace: stack,
+      );
       setState(() => _error = friendlyError(error));
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -397,21 +534,35 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
               controller: _newController,
               obscureText: true,
               decoration: const InputDecoration(labelText: 'New password'),
-              validator: (v) => (v == null || v.length < 6) ? 'At least 6 characters' : null,
+              validator: (v) =>
+                  (v == null || v.length < 6) ? 'At least 6 characters' : null,
             ),
             if (_error != null) ...[
               const SizedBox(height: 8),
-              Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12)),
+              Text(
+                _error!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 12,
+                ),
+              ),
             ],
           ],
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
         FilledButton(
           onPressed: _saving ? null : _submit,
           child: _saving
-              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : const Text('Save'),
         ),
       ],

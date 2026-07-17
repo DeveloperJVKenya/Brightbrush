@@ -11,7 +11,12 @@ import '../../orders/application/orders_providers.dart';
 enum _FeedKind { orderUpdate, announcement }
 
 class _FeedItem {
-  const _FeedItem({required this.kind, required this.title, required this.message, required this.timestamp});
+  const _FeedItem({
+    required this.kind,
+    required this.title,
+    required this.message,
+    required this.timestamp,
+  });
 
   final _FeedKind kind;
   final String title;
@@ -34,20 +39,43 @@ class CustomerNotificationsScreen extends ConsumerWidget {
     final announcementsAsync = ref.watch(activeAnnouncementsProvider);
 
     if (ordersAsync.isLoading || announcementsAsync.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+      );
     }
     if (ordersAsync.hasError) {
-      appLogger.e('[notifications] Failed to load orders', error: ordersAsync.error, stackTrace: ordersAsync.stackTrace);
+      appLogger.e(
+        '[notifications] Failed to load orders',
+        error: ordersAsync.error,
+        stackTrace: ordersAsync.stackTrace,
+      );
       return EmptyState(
-          icon: Icons.cloud_off_rounded, title: 'Couldn\'t load notifications', message: friendlyError(ordersAsync.error!));
+        icon: Icons.cloud_off_rounded,
+        title: 'Couldn\'t load notifications',
+        message: friendlyError(ordersAsync.error!),
+        action: TextButton.icon(
+          onPressed: () => ref.invalidate(myOrdersProvider),
+          icon: const Icon(Icons.refresh_rounded),
+          label: const Text('Retry'),
+        ),
+      );
     }
     if (announcementsAsync.hasError) {
-      appLogger.e('[notifications] Failed to load announcements',
-          error: announcementsAsync.error, stackTrace: announcementsAsync.stackTrace);
+      appLogger.e(
+        '[notifications] Failed to load announcements',
+        error: announcementsAsync.error,
+        stackTrace: announcementsAsync.stackTrace,
+      );
       return EmptyState(
-          icon: Icons.cloud_off_rounded,
-          title: 'Couldn\'t load notifications',
-          message: friendlyError(announcementsAsync.error!));
+        icon: Icons.cloud_off_rounded,
+        title: 'Couldn\'t load notifications',
+        message: friendlyError(announcementsAsync.error!),
+        action: TextButton.icon(
+          onPressed: () => ref.invalidate(activeAnnouncementsProvider),
+          icon: const Icon(Icons.refresh_rounded),
+          label: const Text('Retry'),
+        ),
+      );
     }
 
     final orders = ordersAsync.requireValue;
@@ -62,14 +90,20 @@ class CustomerNotificationsScreen extends ConsumerWidget {
           timestamp: order.updatedAt,
         ),
       for (final a in announcements)
-        _FeedItem(kind: _FeedKind.announcement, title: a.title, message: a.message, timestamp: a.createdAt),
+        _FeedItem(
+          kind: _FeedKind.announcement,
+          title: a.title,
+          message: a.message,
+          timestamp: a.createdAt,
+        ),
     ]..sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
     if (items.isEmpty) {
       return const EmptyState(
         icon: Icons.notifications_outlined,
         title: 'Nothing yet',
-        message: 'Order status changes, delivery updates and seasonal offers will show up here.',
+        message:
+            'Order status changes, delivery updates and seasonal offers will show up here.',
       );
     }
 
@@ -84,14 +118,21 @@ class CustomerNotificationsScreen extends ConsumerWidget {
             margin: EdgeInsets.zero,
             child: ListTile(
               leading: Icon(
-                item.kind == _FeedKind.orderUpdate ? Icons.receipt_long_outlined : Icons.campaign_outlined,
+                item.kind == _FeedKind.orderUpdate
+                    ? Icons.receipt_long_outlined
+                    : Icons.campaign_outlined,
                 color: theme.colorScheme.primary,
               ),
-              title: Text(item.title, style: const TextStyle(fontWeight: FontWeight.w600)),
+              title: Text(
+                item.title,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
               subtitle: Text(item.message),
               trailing: Text(
                 DateFormat('MMM d').format(item.timestamp),
-                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
           );

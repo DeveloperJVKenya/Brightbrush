@@ -8,7 +8,11 @@ import '../../../../core/logging/app_logger.dart';
 import '../../application/guide_providers.dart';
 import '../../domain/guide_article.dart';
 
-Future<void> showGuideArticleFormSheet(BuildContext context, WidgetRef ref, {GuideArticle? existing}) {
+Future<void> showGuideArticleFormSheet(
+  BuildContext context,
+  WidgetRef ref, {
+  GuideArticle? existing,
+}) {
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -24,15 +28,25 @@ class _GuideArticleFormSheet extends ConsumerStatefulWidget {
   final GuideArticle? existing;
 
   @override
-  ConsumerState<_GuideArticleFormSheet> createState() => _GuideArticleFormSheetState();
+  ConsumerState<_GuideArticleFormSheet> createState() =>
+      _GuideArticleFormSheetState();
 }
 
-class _GuideArticleFormSheetState extends ConsumerState<_GuideArticleFormSheet> {
+class _GuideArticleFormSheetState
+    extends ConsumerState<_GuideArticleFormSheet> {
   final _formKey = GlobalKey<FormState>();
-  late final _question = TextEditingController(text: widget.existing?.question ?? '');
-  late final _answer = TextEditingController(text: widget.existing?.answer ?? '');
-  late final _section = TextEditingController(text: widget.existing?.section ?? '');
-  late final _keywords = TextEditingController(text: widget.existing?.keywords.join(', ') ?? '');
+  late final _question = TextEditingController(
+    text: widget.existing?.question ?? '',
+  );
+  late final _answer = TextEditingController(
+    text: widget.existing?.answer ?? '',
+  );
+  late final _section = TextEditingController(
+    text: widget.existing?.section ?? '',
+  );
+  late final _keywords = TextEditingController(
+    text: widget.existing?.keywords.join(', ') ?? '',
+  );
   final Set<AppRole> _roles = {};
 
   bool _saving = false;
@@ -40,7 +54,9 @@ class _GuideArticleFormSheetState extends ConsumerState<_GuideArticleFormSheet> 
   @override
   void initState() {
     super.initState();
-    _roles.addAll((widget.existing?.roles ?? const <String>[]).map(AppRole.fromRoleName));
+    _roles.addAll(
+      (widget.existing?.roles ?? const <String>[]).map(AppRole.fromRoleName),
+    );
   }
 
   @override
@@ -56,7 +72,10 @@ class _GuideArticleFormSheetState extends ConsumerState<_GuideArticleFormSheet> 
     if (!_formKey.currentState!.validate()) return;
     if (_roles.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pick at least one role'), behavior: SnackBarBehavior.floating),
+        const SnackBar(
+          content: Text('Pick at least one role'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       return;
     }
@@ -64,7 +83,12 @@ class _GuideArticleFormSheetState extends ConsumerState<_GuideArticleFormSheet> 
 
     final repo = ref.read(guideArticlesRepositoryProvider);
     final uid = ref.read(currentUidProvider);
-    final keywords = _keywords.text.split(',').map((k) => k.trim()).where((k) => k.isNotEmpty).take(15).toList();
+    final keywords = _keywords.text
+        .split(',')
+        .map((k) => k.trim())
+        .where((k) => k.isNotEmpty)
+        .take(15)
+        .toList();
 
     try {
       final article = GuideArticle(
@@ -87,12 +111,30 @@ class _GuideArticleFormSheetState extends ConsumerState<_GuideArticleFormSheet> 
         appLogger.i('[guide] Updated article ${article.id}');
       }
 
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        final messenger = ScaffoldMessenger.of(context);
+        Navigator.of(context).pop();
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.existing == null ? 'Article added' : 'Article updated',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } catch (error, stack) {
-      appLogger.e('[guide] Failed to save article', error: error, stackTrace: stack);
+      appLogger.e(
+        '[guide] Failed to save article',
+        error: error,
+        stackTrace: stack,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t save: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('Couldn\'t save: ${friendlyError(error)}'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -104,7 +146,12 @@ class _GuideArticleFormSheetState extends ConsumerState<_GuideArticleFormSheet> 
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: EdgeInsets.only(left: 20, right: 20, top: 4, bottom: MediaQuery.viewInsetsOf(context).bottom + 24),
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 4,
+        bottom: MediaQuery.viewInsetsOf(context).bottom + 24,
+      ),
       child: SingleChildScrollView(
         child: Form(
           key: _formKey,
@@ -112,21 +159,29 @@ class _GuideArticleFormSheetState extends ConsumerState<_GuideArticleFormSheet> 
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.existing == null ? 'New guide article' : 'Edit guide article',
-                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                widget.existing == null
+                    ? 'New guide article'
+                    : 'Edit guide article',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _question,
                 decoration: const InputDecoration(labelText: 'Question'),
-                validator: (v) => (v == null || v.trim().length < 2) ? 'Enter a question' : null,
+                validator: (v) => (v == null || v.trim().length < 2)
+                    ? 'Enter a question'
+                    : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _answer,
                 decoration: const InputDecoration(labelText: 'Answer'),
                 maxLines: 5,
-                validator: (v) => (v == null || v.trim().length < 2) ? 'Enter an answer' : null,
+                validator: (v) => (v == null || v.trim().length < 2)
+                    ? 'Enter an answer'
+                    : null,
               ),
               const SizedBox(height: 12),
               Text('Applies to', style: theme.textTheme.labelLarge),
@@ -134,7 +189,12 @@ class _GuideArticleFormSheetState extends ConsumerState<_GuideArticleFormSheet> 
               Wrap(
                 spacing: 8,
                 children: [
-                  for (final role in [AppRole.user, AppRole.deliveryStaff, AppRole.systemManager, AppRole.admin])
+                  for (final role in [
+                    AppRole.user,
+                    AppRole.deliveryStaff,
+                    AppRole.systemManager,
+                    AppRole.admin,
+                  ])
                     FilterChip(
                       label: Text(role.label),
                       selected: _roles.contains(role),
@@ -151,12 +211,18 @@ class _GuideArticleFormSheetState extends ConsumerState<_GuideArticleFormSheet> 
               const SizedBox(height: 12),
               TextFormField(
                 controller: _section,
-                decoration: const InputDecoration(labelText: 'Related section path (optional, e.g. /manager/staff)'),
+                decoration: const InputDecoration(
+                  labelText:
+                      'Related section path (optional, e.g. /manager/staff)',
+                ),
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _keywords,
-                decoration: const InputDecoration(labelText: 'Extra search keywords (comma separated, optional)'),
+                decoration: const InputDecoration(
+                  labelText:
+                      'Extra search keywords (comma separated, optional)',
+                ),
               ),
               const SizedBox(height: 12),
               SizedBox(
@@ -164,8 +230,19 @@ class _GuideArticleFormSheetState extends ConsumerState<_GuideArticleFormSheet> 
                 child: FilledButton(
                   onPressed: _saving ? null : _save,
                   child: _saving
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : Text(widget.existing == null ? 'Add article' : 'Save changes'),
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          widget.existing == null
+                              ? 'Add article'
+                              : 'Save changes',
+                        ),
                 ),
               ),
             ],

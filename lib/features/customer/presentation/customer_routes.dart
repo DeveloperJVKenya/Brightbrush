@@ -9,10 +9,12 @@ import 'order_detail_screen.dart';
 final List<RouteBase> customerExtraRoutes = [
   GoRoute(
     path: '/customer/catalog/:id',
-    builder: (context, state) => CatalogItemDetailScreen(itemId: state.pathParameters['id']!),
+    builder: (context, state) =>
+        CatalogItemDetailScreen(itemId: state.pathParameters['id']!),
   ),
   GoRoute(
     path: '/customer/orders/:id',
-    builder: (context, state) => OrderDetailScreen(orderId: state.pathParameters['id']!),
+    builder: (context, state) =>
+        OrderDetailScreen(orderId: state.pathParameters['id']!),
   ),
 ];

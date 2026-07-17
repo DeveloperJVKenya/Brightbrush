@@ -10,7 +10,8 @@ class UserProfileRepository {
 
   final FirebaseFirestore _db;
 
-  DocumentReference<Map<String, dynamic>> _doc(String uid) => _db.collection('Users').doc(uid);
+  DocumentReference<Map<String, dynamic>> _doc(String uid) =>
+      _db.collection('Users').doc(uid);
 
   Stream<UserProfile?> streamProfile(String uid) {
     appLogger.d('[users] streamProfile(uid=$uid)');
@@ -33,7 +34,11 @@ class UserProfileRepository {
         .orderBy('displayName')
         .snapshots()
         .map((snap) => snap.docs.map(UserProfile.fromFirestore).toList())
-        .transform(logStreamErrors('[users] streamByRole(${role.name}) failed — caller likely lacks isManagerOrAdmin()'));
+        .transform(
+          logStreamErrors(
+            '[users] streamByRole(${role.name}) failed — caller likely lacks isManagerOrAdmin()',
+          ),
+        );
   }
 
   /// Every account, every role — the Role Management directory. Restricted
@@ -47,7 +52,11 @@ class UserProfileRepository {
         .orderBy('displayName')
         .snapshots()
         .map((snap) => snap.docs.map(UserProfile.fromFirestore).toList())
-        .transform(logStreamErrors('[users] streamAllProfiles() failed — caller likely lacks isAdminOrDeveloper()'));
+        .transform(
+          logStreamErrors(
+            '[users] streamAllProfiles() failed — caller likely lacks isAdminOrDeveloper()',
+          ),
+        );
   }
 
   Future<UserProfile?> fetchProfile(String uid) async {
@@ -59,7 +68,11 @@ class UserProfileRepository {
   /// profile somehow already exists (e.g. a retried request). Every
   /// self-registered account always starts as [AppRole.user] — every other
   /// role is assigned afterward via [updateRole].
-  Future<void> ensureUserProfile({required String uid, required String email, required String displayName}) async {
+  Future<void> ensureUserProfile({
+    required String uid,
+    required String email,
+    required String displayName,
+  }) async {
     appLogger.i('[users] ensureUserProfile(uid=$uid, email=$email)');
     try {
       final existing = await _doc(uid).get();
@@ -67,10 +80,16 @@ class UserProfileRepository {
         appLogger.i('[users] profile already exists for uid=$uid — no-op');
         return;
       }
-      await _doc(uid).set(UserProfile.newUserProfile(email: email, displayName: displayName));
+      await _doc(
+        uid,
+      ).set(UserProfile.newUserProfile(email: email, displayName: displayName));
       appLogger.i('[users] created user profile for uid=$uid');
     } catch (error, stack) {
-      appLogger.e('[users] ensureUserProfile(uid=$uid) failed', error: error, stackTrace: stack);
+      appLogger.e(
+        '[users] ensureUserProfile(uid=$uid) failed',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }
@@ -78,8 +97,13 @@ class UserProfileRepository {
   /// Self-service: the owner updating their own display name from the
   /// Profile screen. firestore.rules' owner-update path allows this while
   /// keeping role/email/createdAt immutable.
-  Future<void> updateDisplayName({required String uid, required String displayName}) async {
-    appLogger.i('[users] updateDisplayName(uid=$uid, displayName=$displayName)');
+  Future<void> updateDisplayName({
+    required String uid,
+    required String displayName,
+  }) async {
+    appLogger.i(
+      '[users] updateDisplayName(uid=$uid, displayName=$displayName)',
+    );
     try {
       await _doc(uid).update({
         'displayName': displayName,
@@ -87,7 +111,11 @@ class UserProfileRepository {
       });
       appLogger.i('[users] displayName updated uid=$uid');
     } catch (error, stack) {
-      appLogger.e('[users] updateDisplayName(uid=$uid) failed', error: error, stackTrace: stack);
+      appLogger.e(
+        '[users] updateDisplayName(uid=$uid) failed',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }
@@ -113,7 +141,11 @@ class UserProfileRepository {
       });
       appLogger.i('[users] self profile updated uid=$uid');
     } catch (error, stack) {
-      appLogger.e('[users] updateSelfProfile(uid=$uid) failed', error: error, stackTrace: stack);
+      appLogger.e(
+        '[users] updateSelfProfile(uid=$uid) failed',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }
@@ -121,7 +153,10 @@ class UserProfileRepository {
   /// Admin/CEO/Developer only — sets a manual-worker's daily pay rate.
   /// firestore.rules blocks this on the owner's own update path entirely,
   /// so a staff member can never set their own wage.
-  Future<void> updateDailyWage({required String uid, required num dailyWage}) async {
+  Future<void> updateDailyWage({
+    required String uid,
+    required num dailyWage,
+  }) async {
     appLogger.i('[users] updateDailyWage(uid=$uid, dailyWage=$dailyWage)');
     try {
       await _doc(uid).update({
@@ -130,7 +165,11 @@ class UserProfileRepository {
       });
       appLogger.i('[users] dailyWage updated uid=$uid');
     } catch (error, stack) {
-      appLogger.e('[users] updateDailyWage(uid=$uid) failed', error: error, stackTrace: stack);
+      appLogger.e(
+        '[users] updateDailyWage(uid=$uid) failed',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }
@@ -138,16 +177,25 @@ class UserProfileRepository {
   /// Role Management: Admin/CEO or Developer assigning a role to some other
   /// account. firestore.rules blocks this for `uid == request.auth.uid` —
   /// you can't change your own role through this path, only someone else's.
-  Future<void> updateRole({required String uid, required AppRole role, required String changedByUid}) async {
-    appLogger.i('[users] updateRole(uid=$uid -> ${role.name}, changedBy=$changedByUid)');
+  Future<void> updateRole({
+    required String uid,
+    required AppRole role,
+    required String changedByUid,
+  }) async {
+    appLogger.i(
+      '[users] updateRole(uid=$uid -> ${role.name}, changedBy=$changedByUid)',
+    );
     try {
-      await _doc(uid).update({
-        'role': role.name,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      await _doc(
+        uid,
+      ).update({'role': role.name, 'updatedAt': FieldValue.serverTimestamp()});
       appLogger.i('[users] role updated uid=$uid -> ${role.name}');
     } catch (error, stack) {
-      appLogger.e('[users] updateRole(uid=$uid) failed', error: error, stackTrace: stack);
+      appLogger.e(
+        '[users] updateRole(uid=$uid) failed',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }

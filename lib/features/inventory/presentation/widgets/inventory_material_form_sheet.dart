@@ -7,7 +7,11 @@ import '../../../../core/logging/app_logger.dart';
 import '../../application/inventory_providers.dart';
 import '../../domain/inventory_material.dart';
 
-Future<void> showInventoryMaterialFormSheet(BuildContext context, WidgetRef ref, {InventoryMaterial? existing}) {
+Future<void> showInventoryMaterialFormSheet(
+  BuildContext context,
+  WidgetRef ref, {
+  InventoryMaterial? existing,
+}) {
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -23,18 +27,32 @@ class _InventoryMaterialFormSheet extends ConsumerStatefulWidget {
   final InventoryMaterial? existing;
 
   @override
-  ConsumerState<_InventoryMaterialFormSheet> createState() => _InventoryMaterialFormSheetState();
+  ConsumerState<_InventoryMaterialFormSheet> createState() =>
+      _InventoryMaterialFormSheetState();
 }
 
-class _InventoryMaterialFormSheetState extends ConsumerState<_InventoryMaterialFormSheet> {
+class _InventoryMaterialFormSheetState
+    extends ConsumerState<_InventoryMaterialFormSheet> {
   final _formKey = GlobalKey<FormState>();
   late final _name = TextEditingController(text: widget.existing?.name ?? '');
-  late final _category = TextEditingController(text: widget.existing?.category ?? '');
-  late final _unit = TextEditingController(text: widget.existing?.unit ?? 'pcs');
-  late final _quantity = TextEditingController(text: widget.existing?.quantityOnHand.toString() ?? '0');
-  late final _reorderPoint = TextEditingController(text: widget.existing?.reorderPoint.toString() ?? '0');
-  late final _supplierName = TextEditingController(text: widget.existing?.supplierName ?? '');
-  late final _supplierContact = TextEditingController(text: widget.existing?.supplierContact ?? '');
+  late final _category = TextEditingController(
+    text: widget.existing?.category ?? '',
+  );
+  late final _unit = TextEditingController(
+    text: widget.existing?.unit ?? 'pcs',
+  );
+  late final _quantity = TextEditingController(
+    text: widget.existing?.quantityOnHand.toString() ?? '0',
+  );
+  late final _reorderPoint = TextEditingController(
+    text: widget.existing?.reorderPoint.toString() ?? '0',
+  );
+  late final _supplierName = TextEditingController(
+    text: widget.existing?.supplierName ?? '',
+  );
+  late final _supplierContact = TextEditingController(
+    text: widget.existing?.supplierContact ?? '',
+  );
   late final _notes = TextEditingController(text: widget.existing?.notes ?? '');
 
   bool _saving = false;
@@ -59,7 +77,9 @@ class _InventoryMaterialFormSheetState extends ConsumerState<_InventoryMaterialF
     final repo = ref.read(inventoryRepositoryProvider);
     final uid = ref.read(currentUidProvider);
     if (uid == null) {
-      appLogger.w('[inventory] Save attempted with no signed-in uid — this will fail Firestore rules (createdBy required)');
+      appLogger.w(
+        '[inventory] Save attempted with no signed-in uid — this will fail Firestore rules (createdBy required)',
+      );
     }
 
     try {
@@ -86,12 +106,30 @@ class _InventoryMaterialFormSheetState extends ConsumerState<_InventoryMaterialF
         appLogger.i('[inventory] Updated material ${material.id}');
       }
 
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        final messenger = ScaffoldMessenger.of(context);
+        Navigator.of(context).pop();
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.existing == null ? 'Material added' : 'Material updated',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } catch (error, stack) {
-      appLogger.e('[inventory] Failed to save material', error: error, stackTrace: stack);
+      appLogger.e(
+        '[inventory] Failed to save material',
+        error: error,
+        stackTrace: stack,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t save: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('Couldn\'t save: ${friendlyError(error)}'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -103,7 +141,12 @@ class _InventoryMaterialFormSheetState extends ConsumerState<_InventoryMaterialF
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: EdgeInsets.only(left: 20, right: 20, top: 4, bottom: MediaQuery.viewInsetsOf(context).bottom + 24),
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 4,
+        bottom: MediaQuery.viewInsetsOf(context).bottom + 24,
+      ),
       child: SingleChildScrollView(
         child: Form(
           key: _formKey,
@@ -112,20 +155,28 @@ class _InventoryMaterialFormSheetState extends ConsumerState<_InventoryMaterialF
             children: [
               Text(
                 widget.existing == null ? 'Add material' : 'Edit material',
-                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _name,
                 autofocus: true,
                 decoration: const InputDecoration(labelText: 'Name'),
-                validator: (v) => (v == null || v.trim().length < 2) ? 'Enter a name (2+ chars)' : null,
+                validator: (v) => (v == null || v.trim().length < 2)
+                    ? 'Enter a name (2+ chars)'
+                    : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _category,
-                decoration: const InputDecoration(labelText: 'Category (e.g. paint, blanks, thread)'),
-                validator: (v) => (v == null || v.trim().length < 2) ? 'Enter a category' : null,
+                decoration: const InputDecoration(
+                  labelText: 'Category (e.g. paint, blanks, thread)',
+                ),
+                validator: (v) => (v == null || v.trim().length < 2)
+                    ? 'Enter a category'
+                    : null,
               ),
               const SizedBox(height: 12),
               Row(
@@ -134,14 +185,17 @@ class _InventoryMaterialFormSheetState extends ConsumerState<_InventoryMaterialF
                     child: TextFormField(
                       controller: _unit,
                       decoration: const InputDecoration(labelText: 'Unit'),
-                      validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? 'Required' : null,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextFormField(
                       controller: _quantity,
-                      decoration: const InputDecoration(labelText: 'Qty on hand'),
+                      decoration: const InputDecoration(
+                        labelText: 'Qty on hand',
+                      ),
                       keyboardType: TextInputType.number,
                       validator: (v) {
                         final n = int.tryParse(v ?? '');
@@ -155,7 +209,9 @@ class _InventoryMaterialFormSheetState extends ConsumerState<_InventoryMaterialF
                   Expanded(
                     child: TextFormField(
                       controller: _reorderPoint,
-                      decoration: const InputDecoration(labelText: 'Reorder at'),
+                      decoration: const InputDecoration(
+                        labelText: 'Reorder at',
+                      ),
                       keyboardType: TextInputType.number,
                       validator: (v) {
                         final n = int.tryParse(v ?? '');
@@ -170,17 +226,23 @@ class _InventoryMaterialFormSheetState extends ConsumerState<_InventoryMaterialF
               const SizedBox(height: 12),
               TextFormField(
                 controller: _supplierName,
-                decoration: const InputDecoration(labelText: 'Supplier (optional)'),
+                decoration: const InputDecoration(
+                  labelText: 'Supplier (optional)',
+                ),
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _supplierContact,
-                decoration: const InputDecoration(labelText: 'Supplier contact (optional)'),
+                decoration: const InputDecoration(
+                  labelText: 'Supplier contact (optional)',
+                ),
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _notes,
-                decoration: const InputDecoration(labelText: 'Notes (optional)'),
+                decoration: const InputDecoration(
+                  labelText: 'Notes (optional)',
+                ),
                 maxLines: 2,
               ),
               const SizedBox(height: 12),
@@ -189,8 +251,19 @@ class _InventoryMaterialFormSheetState extends ConsumerState<_InventoryMaterialF
                 child: FilledButton(
                   onPressed: _saving ? null : _save,
                   child: _saving
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : Text(widget.existing == null ? 'Add material' : 'Save changes'),
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          widget.existing == null
+                              ? 'Add material'
+                              : 'Save changes',
+                        ),
                 ),
               ),
             ],

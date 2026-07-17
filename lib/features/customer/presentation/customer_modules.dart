@@ -77,7 +77,8 @@ final List<ModuleSpec> customerModules = [
     label: 'Support',
     icon: Icons.support_agent_outlined,
     selectedIcon: Icons.support_agent,
-    description: 'Chat with BrightBrush about an order, a design, or a complaint.',
+    description:
+        'Chat with BrightBrush about an order, a design, or a complaint.',
     screenBuilder: (context, state) => const CustomerSupportScreen(),
   ),
   ModuleSpec(

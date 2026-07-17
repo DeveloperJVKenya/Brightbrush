@@ -30,39 +30,64 @@ class AdminAssetsScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Company assets', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+              Text(
+                'Company assets',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               const SizedBox(height: 4),
               Text(
                 'In-house machines and equipment used across the branding process.',
-                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 16),
               LiveSearchField(
                 hintText: 'Search by name, category, or condition',
-                onChanged: (v) => ref.read(assetsSearchQueryProvider.notifier).state = v,
+                onChanged: (v) =>
+                    ref.read(assetsSearchQueryProvider.notifier).state = v,
               ),
               const SizedBox(height: 16),
               Expanded(
                 child: filtered.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+                  ),
                   error: (error, stack) {
-                    appLogger.e('[assets] Failed to load assets', error: error, stackTrace: stack);
+                    appLogger.e(
+                      '[assets] Failed to load assets',
+                      error: error,
+                      stackTrace: stack,
+                    );
                     return EmptyState(
-                        icon: Icons.cloud_off_rounded, title: 'Couldn\'t load assets', message: friendlyError(error));
+                      icon: Icons.cloud_off_rounded,
+                      title: 'Couldn\'t load assets',
+                      message: friendlyError(error),
+                      action: TextButton.icon(
+                        onPressed: () => ref.invalidate(allAssetsProvider),
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('Retry'),
+                      ),
+                    );
                   },
                   data: (assets) {
                     if (assets.isEmpty) {
                       return const EmptyState(
                         icon: Icons.precision_manufacturing_outlined,
                         title: 'No assets recorded yet',
-                        message: 'Add machines, equipment and vehicles to track their condition.',
+                        message:
+                            'Add machines, equipment and vehicles to track their condition.',
                       );
                     }
                     return ListView.separated(
                       padding: const EdgeInsets.only(bottom: 100),
                       itemCount: assets.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) => _AssetRow(asset: assets[index]),
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 10),
+                      itemBuilder: (context, index) =>
+                          _AssetRow(asset: assets[index]),
                     );
                   },
                 ),
@@ -93,23 +118,40 @@ class _AssetRow extends ConsumerWidget {
     return Card(
       margin: EdgeInsets.zero,
       child: ListTile(
-        title: Text(asset.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text([
-          asset.category.label,
-          if (asset.purchaseDate != null) 'Purchased ${_date.format(asset.purchaseDate!)}',
-        ].join(' · ')),
+        title: Text(
+          asset.name,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          [
+            asset.category.label,
+            if (asset.purchaseDate != null)
+              'Purchased ${_date.format(asset.purchaseDate!)}',
+          ].join(' · '),
+        ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(color: conditionColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(20)),
-              child: Text(asset.condition.label, style: TextStyle(color: conditionColor, fontWeight: FontWeight.w600, fontSize: 12)),
+              decoration: BoxDecoration(
+                color: conditionColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                asset.condition.label,
+                style: TextStyle(
+                  color: conditionColor,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
             ),
             IconButton(
               tooltip: 'Edit',
               icon: const Icon(Icons.edit_outlined),
-              onPressed: () => showAssetFormSheet(context, ref, existing: asset),
+              onPressed: () =>
+                  showAssetFormSheet(context, ref, existing: asset),
             ),
             IconButton(
               tooltip: 'Delete',
@@ -129,8 +171,14 @@ class _AssetRow extends ConsumerWidget {
         title: const Text('Delete asset?'),
         content: Text('This removes "${asset.name}" from the asset list.'),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Delete')),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
         ],
       ),
     );

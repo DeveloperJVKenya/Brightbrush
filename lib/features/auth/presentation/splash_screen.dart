@@ -18,13 +18,18 @@ class SplashScreen extends StatelessWidget {
             const SizedBox(height: 20),
             Text(
               'BrightBrush Creations',
-              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: 24),
             SizedBox(
               width: 26,
               height: 26,
-              child: CircularProgressIndicator(color: theme.colorScheme.primary, strokeWidth: 3),
+              child: CircularProgressIndicator(
+                color: theme.colorScheme.primary,
+                strokeWidth: 3,
+              ),
             ),
           ],
         ),

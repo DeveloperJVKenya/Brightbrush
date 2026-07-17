@@ -9,7 +9,8 @@ class ExpensesRepository {
 
   final FirebaseFirestore _db;
 
-  CollectionReference<Map<String, dynamic>> get _expenses => _db.collection('Expenses');
+  CollectionReference<Map<String, dynamic>> get _expenses =>
+      _db.collection('Expenses');
 
   Stream<List<ExpenseModel>> streamAll() {
     appLogger.d('[expenses] streamAll()');
@@ -17,17 +18,27 @@ class ExpensesRepository {
         .orderBy('date', descending: true)
         .snapshots()
         .map((snap) => snap.docs.map(ExpenseModel.fromFirestore).toList())
-        .transform(logStreamErrors('[expenses] streamAll() failed — likely signed in as a role without isAdminOrDeveloper()'));
+        .transform(
+          logStreamErrors(
+            '[expenses] streamAll() failed — likely signed in as a role without isAdminOrDeveloper()',
+          ),
+        );
   }
 
   Future<String> create(ExpenseModel expense, {required String uid}) async {
-    appLogger.i('[expenses] create() category=${expense.category.name} amount=${expense.amount} createdBy=$uid');
+    appLogger.i(
+      '[expenses] create() category=${expense.category.name} amount=${expense.amount} createdBy=$uid',
+    );
     try {
       final doc = await _expenses.add(expense.toFirestoreCreate(uid: uid));
       appLogger.i('[expenses] created ${doc.id}');
       return doc.id;
     } catch (error, stack) {
-      appLogger.e('[expenses] create() failed', error: error, stackTrace: stack);
+      appLogger.e(
+        '[expenses] create() failed',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }
@@ -37,7 +48,11 @@ class ExpensesRepository {
     try {
       await _expenses.doc(expense.id).update(expense.toFirestoreUpdate());
     } catch (error, stack) {
-      appLogger.e('[expenses] update(${expense.id}) failed', error: error, stackTrace: stack);
+      appLogger.e(
+        '[expenses] update(${expense.id}) failed',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }
@@ -47,7 +62,11 @@ class ExpensesRepository {
     try {
       await _expenses.doc(id).delete();
     } catch (error, stack) {
-      appLogger.e('[expenses] delete($id) failed', error: error, stackTrace: stack);
+      appLogger.e(
+        '[expenses] delete($id) failed',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }

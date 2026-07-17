@@ -24,28 +24,57 @@ class AdminDeliveriesScreen extends ConsumerWidget {
     final staffAsync = ref.watch(deliveryStaffDirectoryProvider);
 
     return ordersAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(
+        child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+      ),
       error: (error, stack) {
-        appLogger.e('[delivery] Failed to load deliveries', error: error, stackTrace: stack);
+        appLogger.e(
+          '[delivery] Failed to load deliveries',
+          error: error,
+          stackTrace: stack,
+        );
         return EmptyState(
-            icon: Icons.cloud_off_rounded, title: 'Couldn\'t load deliveries', message: friendlyError(error));
+          icon: Icons.cloud_off_rounded,
+          title: 'Couldn\'t load deliveries',
+          message: friendlyError(error),
+          action: TextButton.icon(
+            onPressed: () => ref.invalidate(allOrdersProvider),
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Retry'),
+          ),
+        );
       },
       data: (orders) {
-        final staffByUid = {for (final s in staffAsync.valueOrNull ?? const <UserProfile>[]) s.uid: s};
+        final staffByUid = {
+          for (final s in staffAsync.valueOrNull ?? const <UserProfile>[])
+            s.uid: s,
+        };
 
-        final unassigned = orders.where((o) => o.status == OrderStatus.readyForDelivery && o.assignedStaffId == null).length;
-        final active = orders.where((o) => o.status == OrderStatus.outForDelivery).toList();
+        final unassigned = orders
+            .where(
+              (o) =>
+                  o.status == OrderStatus.readyForDelivery &&
+                  o.assignedStaffId == null,
+            )
+            .length;
+        final active = orders
+            .where((o) => o.status == OrderStatus.outForDelivery)
+            .toList();
         final now = DateTime.now();
         final deliveredToday = orders
-            .where((o) =>
-                o.status == OrderStatus.completed &&
-                o.updatedAt.year == now.year &&
-                o.updatedAt.month == now.month &&
-                o.updatedAt.day == now.day)
+            .where(
+              (o) =>
+                  o.status == OrderStatus.completed &&
+                  o.updatedAt.year == now.year &&
+                  o.updatedAt.month == now.month &&
+                  o.updatedAt.day == now.day,
+            )
             .length;
 
         String? labelFor(OrderModel order) {
-          final staff = order.assignedStaffId == null ? null : staffByUid[order.assignedStaffId];
+          final staff = order.assignedStaffId == null
+              ? null
+              : staffByUid[order.assignedStaffId];
           if (staff == null) return null;
           return staff.displayName.isEmpty ? staff.email : staff.displayName;
         }
@@ -60,20 +89,39 @@ class AdminDeliveriesScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Deliveries', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+                      Text(
+                        'Deliveries',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                       const SizedBox(height: 4),
                       Text(
                         'Live fleet position and delivery plans across every staff member.',
-                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       Wrap(
                         spacing: 12,
                         runSpacing: 12,
                         children: [
-                          _StatChip(label: 'Awaiting assignment', value: '$unassigned', icon: Icons.assignment_late_outlined),
-                          _StatChip(label: 'Active deliveries', value: '${active.length}', icon: Icons.local_shipping_outlined),
-                          _StatChip(label: 'Delivered today', value: '$deliveredToday', icon: Icons.check_circle_outline_rounded),
+                          _StatChip(
+                            label: 'Awaiting assignment',
+                            value: '$unassigned',
+                            icon: Icons.assignment_late_outlined,
+                          ),
+                          _StatChip(
+                            label: 'Active deliveries',
+                            value: '${active.length}',
+                            icon: Icons.local_shipping_outlined,
+                          ),
+                          _StatChip(
+                            label: 'Delivered today',
+                            value: '$deliveredToday',
+                            icon: Icons.check_circle_outline_rounded,
+                          ),
                         ],
                       ),
                     ],
@@ -97,12 +145,20 @@ class AdminDeliveriesScreen extends ConsumerWidget {
                             orders: active,
                             emptyIcon: Icons.map_outlined,
                             emptyTitle: 'No active deliveries',
-                            emptyMessage: 'Once staff start a delivery, it\'ll show up here on the map.',
+                            emptyMessage:
+                                'Once staff start a delivery, it\'ll show up here on the map.',
                             markerLabel: (order) {
                               final staffLabel = labelFor(order);
-                              return staffLabel == null ? order.deliveryAddress : 'Assigned to $staffLabel';
+                              return staffLabel == null
+                                  ? order.deliveryAddress
+                                  : 'Assigned to $staffLabel';
                             },
-                            onMarkerTap: (context, order) => _showDeliverySheet(context, ref, order, labelFor(order)),
+                            onMarkerTap: (context, order) => _showDeliverySheet(
+                              context,
+                              ref,
+                              order,
+                              labelFor(order),
+                            ),
                           ),
                         ),
                       ),
@@ -110,14 +166,19 @@ class AdminDeliveriesScreen extends ConsumerWidget {
                           ? const EmptyState(
                               icon: Icons.local_shipping_outlined,
                               title: 'No active deliveries',
-                              message: 'Once staff start a delivery, it\'ll show up here.',
+                              message:
+                                  'Once staff start a delivery, it\'ll show up here.',
                             )
                           : ListView.separated(
                               padding: const EdgeInsets.all(20),
                               itemCount: active.length,
-                              separatorBuilder: (context, index) => const SizedBox(height: 10),
+                              separatorBuilder: (context, index) =>
+                                  const SizedBox(height: 10),
                               itemBuilder: (context, index) =>
-                                  DeliveryOrderCard(order: active[index], assignedLabel: labelFor(active[index])),
+                                  DeliveryOrderCard(
+                                    order: active[index],
+                                    assignedLabel: labelFor(active[index]),
+                                  ),
                             ),
                     ],
                   ),
@@ -130,7 +191,12 @@ class AdminDeliveriesScreen extends ConsumerWidget {
     );
   }
 
-  void _showDeliverySheet(BuildContext context, WidgetRef ref, OrderModel order, String? staffLabel) {
+  void _showDeliverySheet(
+    BuildContext context,
+    WidgetRef ref,
+    OrderModel order,
+    String? staffLabel,
+  ) {
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
@@ -143,16 +209,30 @@ class AdminDeliveriesScreen extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(order.contactName, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+              Text(
+                order.contactName,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               const SizedBox(height: 4),
               Text(order.contactPhone, style: theme.textTheme.bodyMedium),
               if (staffLabel != null) ...[
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.local_shipping_outlined, size: 16, color: theme.colorScheme.primary),
+                    Icon(
+                      Icons.local_shipping_outlined,
+                      size: 16,
+                      color: theme.colorScheme.primary,
+                    ),
                     const SizedBox(width: 6),
-                    Text('Assigned to $staffLabel', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.primary)),
+                    Text(
+                      'Assigned to $staffLabel',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -160,20 +240,29 @@ class AdminDeliveriesScreen extends ConsumerWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.location_on_outlined, size: 18, color: theme.colorScheme.onSurfaceVariant),
+                  Icon(
+                    Icons.location_on_outlined,
+                    size: 18,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(child: Text(order.deliveryAddress)),
                 ],
               ),
               const SizedBox(height: 16),
-              Text('${order.itemCount} item(s)', style: theme.textTheme.bodySmall),
+              Text(
+                '${order.itemCount} item(s)',
+                style: theme.textTheme.bodySmall,
+              ),
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
                   onPressed: () async {
                     Navigator.of(context).pop();
-                    await ref.read(ordersRepositoryProvider).markDelivered(order.id);
+                    await ref
+                        .read(ordersRepositoryProvider)
+                        .markDelivered(order.id);
                   },
                   icon: const Icon(Icons.check_circle_outline_rounded),
                   label: const Text('Mark delivered'),
@@ -188,7 +277,11 @@ class AdminDeliveriesScreen extends ConsumerWidget {
 }
 
 class _StatChip extends StatelessWidget {
-  const _StatChip({required this.label, required this.value, required this.icon});
+  const _StatChip({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
 
   final String label;
   final String value;
@@ -209,9 +302,19 @@ class _StatChip extends StatelessWidget {
         children: [
           Icon(icon, size: 18, color: theme.colorScheme.primary),
           const SizedBox(width: 8),
-          Text(value, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+          Text(
+            value,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
           const SizedBox(width: 6),
-          Text(label, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
         ],
       ),
     );

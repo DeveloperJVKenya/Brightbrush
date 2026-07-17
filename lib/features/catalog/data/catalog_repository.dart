@@ -9,7 +9,8 @@ class CatalogRepository {
 
   final FirebaseFirestore _db;
 
-  CollectionReference<Map<String, dynamic>> get _items => _db.collection('CatalogItems');
+  CollectionReference<Map<String, dynamic>> get _items =>
+      _db.collection('CatalogItems');
 
   /// All items, newest first — used by Manager/Admin authoring views, which
   /// need to see inactive/draft items too.
@@ -19,7 +20,11 @@ class CatalogRepository {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snap) => snap.docs.map(CatalogItem.fromFirestore).toList())
-        .transform(logStreamErrors('[catalog] streamAll() failed — likely signed in as a role without isCatalogManager()'));
+        .transform(
+          logStreamErrors(
+            '[catalog] streamAll() failed — likely signed in as a role without isCatalogManager()',
+          ),
+        );
   }
 
   /// Active-only items, newest first — the customer-facing catalog.
@@ -46,7 +51,11 @@ class CatalogRepository {
       appLogger.i('[catalog] created ${doc.id}');
       return doc.id;
     } catch (error, stack) {
-      appLogger.e('[catalog] create() failed for name="${item.name}"', error: error, stackTrace: stack);
+      appLogger.e(
+        '[catalog] create() failed for name="${item.name}"',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }
@@ -56,7 +65,11 @@ class CatalogRepository {
     try {
       await _items.doc(item.id).update(item.toFirestoreUpdate());
     } catch (error, stack) {
-      appLogger.e('[catalog] update(${item.id}) failed', error: error, stackTrace: stack);
+      appLogger.e(
+        '[catalog] update(${item.id}) failed',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }
@@ -66,7 +79,11 @@ class CatalogRepository {
     try {
       await _items.doc(id).delete();
     } catch (error, stack) {
-      appLogger.e('[catalog] delete($id) failed', error: error, stackTrace: stack);
+      appLogger.e(
+        '[catalog] delete($id) failed',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }

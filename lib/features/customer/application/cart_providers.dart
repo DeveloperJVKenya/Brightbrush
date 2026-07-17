@@ -1,29 +1,64 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Minimal cart: item id -> quantity. Full checkout/payment lives in the
-/// Cart & Checkout module (still a placeholder); this exists so "Add to
-/// cart" on a catalog item is a real, working action today rather than a
-/// dead button, and the shell can show a live item count badge.
-class CartController extends Notifier<Map<String, int>> {
-  @override
-  Map<String, int> build() => const {};
+import '../../../core/firebase/firebase_providers.dart';
+import '../data/cart_repository.dart';
 
-  void add(String itemId, {int quantity = 1}) {
-    state = {...state, itemId: (state[itemId] ?? 0) + quantity};
-  }
+final cartRepositoryProvider = Provider<CartRepository>((ref) {
+  return CartRepository(ref.watch(firestoreProvider));
+});
 
-  void remove(String itemId) {
-    final next = {...state};
-    next.remove(itemId);
-    state = next;
-  }
-
-  void clear() => state = const {};
-}
-
-final cartProvider = NotifierProvider<CartController, Map<String, int>>(CartController.new);
+/// Live cart contents (item id -> quantity), persisted per customer in
+/// Firestore — survives app restarts and follows the account across
+/// devices, unlike the old session-only in-memory cart.
+final cartProvider = StreamProvider<Map<String, int>>((ref) {
+  final uid = ref.watch(currentUidProvider);
+  if (uid == null) return Stream.value(const {});
+  return ref.watch(cartRepositoryProvider).streamCart(uid);
+});
 
 final cartItemCountProvider = Provider<int>((ref) {
-  final cart = ref.watch(cartProvider);
+  final cart = ref.watch(cartProvider).valueOrNull ?? const {};
   return cart.values.fold(0, (sum, qty) => sum + qty);
 });
+
+/// Cart mutations, split out from [cartProvider] since that's a plain
+/// [StreamProvider] (the write path always goes straight to Firestore —
+/// the stream above is the only source of truth for what's displayed).
+class CartActions {
+  CartActions(this._ref);
+
+  final Ref _ref;
+
+  Future<void> add(String itemId, {int quantity = 1}) async {
+    final uid = _ref.read(currentUidProvider);
+    if (uid == null) return;
+    final current =
+        _ref.read(cartProvider).valueOrNull ?? const <String, int>{};
+    final next = {...current, itemId: (current[itemId] ?? 0) + quantity};
+    await _ref.read(cartRepositoryProvider).setItems(uid, next);
+  }
+
+  Future<void> setQuantity(String itemId, int quantity) async {
+    final uid = _ref.read(currentUidProvider);
+    if (uid == null) return;
+    final current =
+        _ref.read(cartProvider).valueOrNull ?? const <String, int>{};
+    final next = {...current};
+    if (quantity <= 0) {
+      next.remove(itemId);
+    } else {
+      next[itemId] = quantity;
+    }
+    await _ref.read(cartRepositoryProvider).setItems(uid, next);
+  }
+
+  Future<void> remove(String itemId) => setQuantity(itemId, 0);
+
+  Future<void> clear() async {
+    final uid = _ref.read(currentUidProvider);
+    if (uid == null) return;
+    await _ref.read(cartRepositoryProvider).clear(uid);
+  }
+}
+
+final cartActionsProvider = Provider<CartActions>((ref) => CartActions(ref));

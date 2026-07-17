@@ -20,32 +20,70 @@ class CartCheckoutScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cart = ref.watch(cartProvider);
+    final cartAsync = ref.watch(cartProvider);
     final catalogAsync = ref.watch(activeCatalogItemsProvider);
 
-    if (cart.isEmpty) {
-      return const EmptyState(
-        icon: Icons.shopping_cart_outlined,
-        title: 'Your cart is empty',
-        message: 'Add items from the catalog to start building an order.',
-      );
-    }
-
-    return catalogAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+    return cartAsync.when(
+      loading: () => const Center(
+        child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+      ),
       error: (error, stack) {
-        appLogger.e('[checkout] Failed to load cart', error: error, stackTrace: stack);
+        appLogger.e(
+          '[checkout] Failed to load cart',
+          error: error,
+          stackTrace: stack,
+        );
         return EmptyState(
-            icon: Icons.cloud_off_rounded, title: 'Couldn\'t load your cart', message: friendlyError(error));
+          icon: Icons.cloud_off_rounded,
+          title: 'Couldn\'t load your cart',
+          message: friendlyError(error),
+          action: TextButton.icon(
+            onPressed: () => ref.invalidate(cartProvider),
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Retry'),
+          ),
+        );
       },
-      data: (catalogItems) {
-        final byId = {for (final item in catalogItems) item.id: item};
-        final lines = <MapEntry<CatalogItem, int>>[];
-        for (final entry in cart.entries) {
-          final item = byId[entry.key];
-          if (item != null) lines.add(MapEntry(item, entry.value));
+      data: (cart) {
+        if (cart.isEmpty) {
+          return const EmptyState(
+            icon: Icons.shopping_cart_outlined,
+            title: 'Your cart is empty',
+            message: 'Add items from the catalog to start building an order.',
+          );
         }
-        return _CheckoutBody(lines: lines);
+
+        return catalogAsync.when(
+          loading: () => const Center(
+            child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+          ),
+          error: (error, stack) {
+            appLogger.e(
+              '[checkout] Failed to load catalog for cart',
+              error: error,
+              stackTrace: stack,
+            );
+            return EmptyState(
+              icon: Icons.cloud_off_rounded,
+              title: 'Couldn\'t load your cart',
+              message: friendlyError(error),
+              action: TextButton.icon(
+                onPressed: () => ref.invalidate(activeCatalogItemsProvider),
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Retry'),
+              ),
+            );
+          },
+          data: (catalogItems) {
+            final byId = {for (final item in catalogItems) item.id: item};
+            final lines = <MapEntry<CatalogItem, int>>[];
+            for (final entry in cart.entries) {
+              final item = byId[entry.key];
+              if (item != null) lines.add(MapEntry(item, entry.value));
+            }
+            return _CheckoutBody(lines: lines);
+          },
+        );
       },
     );
   }
@@ -68,7 +106,6 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
   final _notes = TextEditingController();
   bool _placing = false;
 
-
   @override
   void dispose() {
     _contactName.dispose();
@@ -78,7 +115,8 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
     super.dispose();
   }
 
-  num get _total => widget.lines.fold(0, (sum, e) => sum + e.key.basePrice * e.value);
+  num get _total =>
+      widget.lines.fold(0, (sum, e) => sum + e.key.basePrice * e.value);
 
   Future<void> _placeOrder() async {
     if (!_formKey.currentState!.validate()) return;
@@ -86,10 +124,14 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
     try {
       final uid = ref.read(currentUidProvider);
       if (uid == null) {
-        appLogger.w('[checkout] _placeOrder called with no signed-in uid — aborting before a doomed Firestore write');
+        appLogger.w(
+          '[checkout] _placeOrder called with no signed-in uid — aborting before a doomed Firestore write',
+        );
         throw StateError('You need to be signed in to place an order.');
       }
-      appLogger.i('[checkout] Placing order for uid=$uid, ${widget.lines.length} line item group(s), total=$_total');
+      appLogger.i(
+        '[checkout] Placing order for uid=$uid, ${widget.lines.length} line item group(s), total=$_total',
+      );
       final items = [
         for (final entry in widget.lines)
           OrderLineItem(
@@ -120,7 +162,7 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
       );
       final orderId = await ref.read(ordersRepositoryProvider).create(order);
       appLogger.i('[checkout] Order $orderId created for uid=$uid');
-      ref.read(cartProvider.notifier).clear();
+      await ref.read(cartActionsProvider).clear();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -131,10 +173,17 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
         context.go('/customer/orders');
       }
     } catch (error, stack) {
-      appLogger.e('[checkout] Failed to place order', error: error, stackTrace: stack);
+      appLogger.e(
+        '[checkout] Failed to place order',
+        error: error,
+        stackTrace: stack,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t place order: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('Couldn\'t place order: ${friendlyError(error)}'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -174,23 +223,25 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(item.name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                      Text(
+                        item.name,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                       Text(
                         currencyFormat.format(item.basePrice),
-                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),
                 ),
                 _QuantityStepper(
                   quantity: qty,
-                  onChanged: (next) {
-                    if (next <= 0) {
-                      ref.read(cartProvider.notifier).remove(item.id);
-                    } else {
-                      ref.read(cartProvider.notifier).add(item.id, quantity: next - qty);
-                    }
-                  },
+                  onChanged: (next) =>
+                      ref.read(cartActionsProvider).setQuantity(item.id, next),
                 ),
               ],
             ),
@@ -206,30 +257,42 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Delivery details', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+            Text(
+              'Delivery details',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _contactName,
               decoration: const InputDecoration(labelText: 'Contact name'),
-              validator: (v) => (v == null || v.trim().length < 2) ? 'Enter your name' : null,
+              validator: (v) =>
+                  (v == null || v.trim().length < 2) ? 'Enter your name' : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _contactPhone,
               decoration: const InputDecoration(labelText: 'Contact phone'),
-              validator: (v) => (v == null || v.trim().length < 3) ? 'Enter a phone number' : null,
+              validator: (v) => (v == null || v.trim().length < 3)
+                  ? 'Enter a phone number'
+                  : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _deliveryAddress,
               decoration: const InputDecoration(labelText: 'Delivery address'),
               maxLines: 2,
-              validator: (v) => (v == null || v.trim().length < 5) ? 'Enter a delivery address' : null,
+              validator: (v) => (v == null || v.trim().length < 5)
+                  ? 'Enter a delivery address'
+                  : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _notes,
-              decoration: const InputDecoration(labelText: 'Notes (artwork details, special requests...)'),
+              decoration: const InputDecoration(
+                labelText: 'Notes (artwork details, special requests...)',
+              ),
               maxLines: 3,
             ),
             const SizedBox(height: 20),
@@ -250,7 +313,9 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
             Text(
               'No payment gateway yet — this places the order as unpaid, and BrightBrush will invoice you '
               'directly to confirm payment.',
-              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -261,7 +326,10 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : const Icon(Icons.send_rounded),
                 label: const Text('Place order'),

@@ -24,7 +24,6 @@ class _CatalogItemCardState extends State<CatalogItemCard> {
   bool _hovering = false;
   bool _justAdded = false;
 
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -57,7 +56,11 @@ class _CatalogItemCardState extends State<CatalogItemCard> {
                           borderRadius: BorderRadius.zero,
                         ),
                         if (item.isFeatured)
-                          const Positioned(top: 10, left: 10, child: BrandBadge(label: 'Featured')),
+                          const Positioned(
+                            top: 10,
+                            left: 10,
+                            child: BrandBadge(label: 'Featured'),
+                          ),
                       ],
                     ),
                   ),
@@ -67,16 +70,27 @@ class _CatalogItemCardState extends State<CatalogItemCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        item.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        item.category.label,
-                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      MergeSemantics(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              item.category.label,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Row(
@@ -92,20 +106,30 @@ class _CatalogItemCardState extends State<CatalogItemCard> {
                           ),
                           AnimatedSwitcher(
                             duration: const Duration(milliseconds: 200),
-                            transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+                            transitionBuilder: (child, anim) =>
+                                ScaleTransition(scale: anim, child: child),
                             child: IconButton(
                               key: ValueKey(_justAdded),
                               tooltip: 'Add to cart',
                               onPressed: () {
                                 widget.onAddToCart();
                                 setState(() => _justAdded = true);
-                                Future.delayed(const Duration(milliseconds: 900), () {
-                                  if (mounted) setState(() => _justAdded = false);
-                                });
+                                Future.delayed(
+                                  const Duration(milliseconds: 900),
+                                  () {
+                                    if (mounted) {
+                                      setState(() => _justAdded = false);
+                                    }
+                                  },
+                                );
                               },
                               icon: Icon(
-                                _justAdded ? Icons.check_circle_rounded : Icons.add_shopping_cart_rounded,
-                                color: _justAdded ? Colors.green : theme.colorScheme.primary,
+                                _justAdded
+                                    ? Icons.check_circle_rounded
+                                    : Icons.add_shopping_cart_rounded,
+                                color: _justAdded
+                                    ? Colors.green
+                                    : theme.colorScheme.primary,
                               ),
                             ),
                           ),

@@ -33,34 +33,59 @@ class GuideEditorScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Guide editor', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+              Text(
+                'Guide editor',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               const SizedBox(height: 4),
               Text(
                 'Predefined questions and answers shown in every role\'s Guide — edits here go live immediately, no app update needed.',
-                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 16),
               Expanded(
                 child: articlesAsync.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+                  ),
                   error: (error, stack) {
-                    appLogger.e('[guide] Failed to load articles', error: error, stackTrace: stack);
+                    appLogger.e(
+                      '[guide] Failed to load articles',
+                      error: error,
+                      stackTrace: stack,
+                    );
                     return EmptyState(
-                        icon: Icons.cloud_off_rounded, title: 'Couldn\'t load articles', message: friendlyError(error));
+                      icon: Icons.cloud_off_rounded,
+                      title: 'Couldn\'t load articles',
+                      message: friendlyError(error),
+                      action: TextButton.icon(
+                        onPressed: () =>
+                            ref.invalidate(allGuideArticlesProvider),
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('Retry'),
+                      ),
+                    );
                   },
                   data: (articles) {
                     if (articles.isEmpty) {
                       return const EmptyState(
                         icon: Icons.menu_book_outlined,
                         title: 'No articles yet',
-                        message: 'Add the first question and answer for a role\'s Guide.',
+                        message:
+                            'Add the first question and answer for a role\'s Guide.',
                       );
                     }
                     return ListView.separated(
                       padding: const EdgeInsets.only(bottom: 100),
                       itemCount: articles.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) => _ArticleRow(article: articles[index]),
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 10),
+                      itemBuilder: (context, index) =>
+                          _ArticleRow(article: articles[index]),
                     );
                   },
                 ),
@@ -80,19 +105,27 @@ class _ArticleRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final roleLabels = article.roles.map((name) => AppRole.fromRoleName(name).label).join(', ');
+    final roleLabels = article.roles
+        .map((name) => AppRole.fromRoleName(name).label)
+        .join(', ');
     return Card(
       margin: EdgeInsets.zero,
       child: ListTile(
-        title: Text(article.question, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text('$roleLabels${article.section != null ? ' · ${article.section}' : ''}'),
+        title: Text(
+          article.question,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          '$roleLabels${article.section != null ? ' · ${article.section}' : ''}',
+        ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
               tooltip: 'Edit',
               icon: const Icon(Icons.edit_outlined),
-              onPressed: () => showGuideArticleFormSheet(context, ref, existing: article),
+              onPressed: () =>
+                  showGuideArticleFormSheet(context, ref, existing: article),
             ),
             IconButton(
               tooltip: 'Delete',
@@ -102,15 +135,25 @@ class _ArticleRow extends ConsumerWidget {
                   context: context,
                   builder: (context) => AlertDialog(
                     title: const Text('Delete article?'),
-                    content: Text('"${article.question}" will be removed permanently.'),
+                    content: Text(
+                      '"${article.question}" will be removed permanently.',
+                    ),
                     actions: [
-                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                      FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancel'),
+                      ),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Delete'),
+                      ),
                     ],
                   ),
                 );
                 if (confirmed == true) {
-                  await ref.read(guideArticlesRepositoryProvider).delete(article.id);
+                  await ref
+                      .read(guideArticlesRepositoryProvider)
+                      .delete(article.id);
                 }
               },
             ),

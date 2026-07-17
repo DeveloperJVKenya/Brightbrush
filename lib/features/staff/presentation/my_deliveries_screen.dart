@@ -26,15 +26,16 @@ class MyDeliveriesScreen extends StatelessWidget {
                 children: [
                   Text(
                     'My deliveries',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Claim ready orders and run your active drops.',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -47,12 +48,7 @@ class MyDeliveriesScreen extends StatelessWidget {
               ],
             ),
             const Expanded(
-              child: TabBarView(
-                children: [
-                  _AvailableTab(),
-                  _ActiveTab(),
-                ],
-              ),
+              child: TabBarView(children: [_AvailableTab(), _ActiveTab()]),
             ),
           ],
         ),
@@ -68,17 +64,33 @@ class _AvailableTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ordersAsync = ref.watch(availableForDeliveryProvider);
     return ordersAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(
+        child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+      ),
       error: (error, stack) {
-        appLogger.e('[delivery] Failed to load available orders', error: error, stackTrace: stack);
-        return EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load orders', message: friendlyError(error));
+        appLogger.e(
+          '[delivery] Failed to load available orders',
+          error: error,
+          stackTrace: stack,
+        );
+        return EmptyState(
+          icon: Icons.cloud_off_rounded,
+          title: 'Couldn\'t load orders',
+          message: friendlyError(error),
+          action: TextButton.icon(
+            onPressed: () => ref.invalidate(availableForDeliveryProvider),
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Retry'),
+          ),
+        );
       },
       data: (orders) {
         if (orders.isEmpty) {
           return const EmptyState(
             icon: Icons.inventory_2_outlined,
             title: 'Nothing ready yet',
-            message: 'Orders the System Manager marks "Ready for Delivery" will show up here to claim.',
+            message:
+                'Orders the System Manager marks "Ready for Delivery" will show up here to claim.',
           );
         }
         return ListView.separated(
@@ -110,15 +122,26 @@ class _ClaimableCardState extends ConsumerState<_ClaimableCard> {
       final uid = ref.read(currentUidProvider);
       if (uid != null) {
         appLogger.i('[delivery] uid=$uid claiming order ${widget.order.id}');
-        await ref.read(ordersRepositoryProvider).claimForDelivery(widget.order.id, staffUid: uid);
+        await ref
+            .read(ordersRepositoryProvider)
+            .claimForDelivery(widget.order.id, staffUid: uid);
       } else {
-        appLogger.w('[delivery] Claim attempted with no signed-in uid — ignoring');
+        appLogger.w(
+          '[delivery] Claim attempted with no signed-in uid — ignoring',
+        );
       }
     } catch (error, stack) {
-      appLogger.e('[delivery] Failed to claim order ${widget.order.id}', error: error, stackTrace: stack);
+      appLogger.e(
+        '[delivery] Failed to claim order ${widget.order.id}',
+        error: error,
+        stackTrace: stack,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t claim: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('Couldn\'t claim: ${friendlyError(error)}'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -144,17 +167,33 @@ class _ActiveTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ordersAsync = ref.watch(myActiveDeliveriesProvider);
     return ordersAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(
+        child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+      ),
       error: (error, stack) {
-        appLogger.e('[delivery] Failed to load active deliveries', error: error, stackTrace: stack);
-        return EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load orders', message: friendlyError(error));
+        appLogger.e(
+          '[delivery] Failed to load active deliveries',
+          error: error,
+          stackTrace: stack,
+        );
+        return EmptyState(
+          icon: Icons.cloud_off_rounded,
+          title: 'Couldn\'t load orders',
+          message: friendlyError(error),
+          action: TextButton.icon(
+            onPressed: () => ref.invalidate(myActiveDeliveriesProvider),
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Retry'),
+          ),
+        );
       },
       data: (orders) {
         if (orders.isEmpty) {
           return const EmptyState(
             icon: Icons.local_shipping_outlined,
             title: 'No active deliveries',
-            message: 'Claim an order from the Available tab to start a delivery.',
+            message:
+                'Claim an order from the Available tab to start a delivery.',
           );
         }
         return ListView.separated(
@@ -186,10 +225,17 @@ class _ActiveCardState extends ConsumerState<_ActiveCard> {
       appLogger.i('[delivery] Marking order ${widget.order.id} delivered');
       await ref.read(ordersRepositoryProvider).markDelivered(widget.order.id);
     } catch (error, stack) {
-      appLogger.e('[delivery] Failed to mark order ${widget.order.id} delivered', error: error, stackTrace: stack);
+      appLogger.e(
+        '[delivery] Failed to mark order ${widget.order.id} delivered',
+        error: error,
+        stackTrace: stack,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t update: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('Couldn\'t update: ${friendlyError(error)}'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {

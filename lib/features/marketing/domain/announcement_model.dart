@@ -27,7 +27,9 @@ class AnnouncementModel {
 
   List<String> get searchFields => [title, message];
 
-  factory AnnouncementModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory AnnouncementModel.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final d = doc.data() ?? {};
     return AnnouncementModel(
       id: doc.id,
@@ -38,8 +40,12 @@ class AnnouncementModel {
       validFrom: (d['validFrom'] as Timestamp?)?.toDate(),
       validTo: (d['validTo'] as Timestamp?)?.toDate(),
       createdBy: d['createdBy'] as String? ?? '',
-      createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0),
-      updatedAt: (d['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0),
+      createdAt:
+          (d['createdAt'] as Timestamp?)?.toDate() ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      updatedAt:
+          (d['updatedAt'] as Timestamp?)?.toDate() ??
+          DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
 

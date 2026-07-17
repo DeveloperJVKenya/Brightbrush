@@ -34,7 +34,8 @@ class GeocodingService {
     final results = body['results'] as List?;
     if (results == null || results.isEmpty) return null;
 
-    final location = results.first['geometry']['location'] as Map<String, dynamic>;
+    final location =
+        results.first['geometry']['location'] as Map<String, dynamic>;
     final lat = (location['lat'] as num).toDouble();
     final lng = (location['lng'] as num).toDouble();
     return GeocodeResult(lat: lat, lng: lng);

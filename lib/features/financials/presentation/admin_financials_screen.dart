@@ -27,24 +27,54 @@ class AdminFinancialsScreen extends ConsumerWidget {
     final expensesAsync = ref.watch(allExpensesProvider);
 
     if (ordersAsync.isLoading || expensesAsync.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+      );
     }
     if (ordersAsync.hasError) {
-      appLogger.e('[financials] Failed to load orders', error: ordersAsync.error, stackTrace: ordersAsync.stackTrace);
+      appLogger.e(
+        '[financials] Failed to load orders',
+        error: ordersAsync.error,
+        stackTrace: ordersAsync.stackTrace,
+      );
       return EmptyState(
-          icon: Icons.cloud_off_rounded, title: 'Couldn\'t load orders', message: friendlyError(ordersAsync.error!));
+        icon: Icons.cloud_off_rounded,
+        title: 'Couldn\'t load orders',
+        message: friendlyError(ordersAsync.error!),
+        action: TextButton.icon(
+          onPressed: () => ref.invalidate(allOrdersProvider),
+          icon: const Icon(Icons.refresh_rounded),
+          label: const Text('Retry'),
+        ),
+      );
     }
     if (expensesAsync.hasError) {
-      appLogger.e('[financials] Failed to load expenses', error: expensesAsync.error, stackTrace: expensesAsync.stackTrace);
+      appLogger.e(
+        '[financials] Failed to load expenses',
+        error: expensesAsync.error,
+        stackTrace: expensesAsync.stackTrace,
+      );
       return EmptyState(
-          icon: Icons.cloud_off_rounded, title: 'Couldn\'t load expenses', message: friendlyError(expensesAsync.error!));
+        icon: Icons.cloud_off_rounded,
+        title: 'Couldn\'t load expenses',
+        message: friendlyError(expensesAsync.error!),
+        action: TextButton.icon(
+          onPressed: () => ref.invalidate(allExpensesProvider),
+          icon: const Icon(Icons.refresh_rounded),
+          label: const Text('Retry'),
+        ),
+      );
     }
 
     final orders = ordersAsync.requireValue;
     final expenses = expensesAsync.requireValue;
 
-    final live = orders.where((o) => o.status != OrderStatus.cancelled).toList();
-    final collected = live.where((o) => o.paymentStatus.name == 'paid').fold<num>(0, (s, o) => s + o.total);
+    final live = orders
+        .where((o) => o.status != OrderStatus.cancelled)
+        .toList();
+    final collected = live
+        .where((o) => o.paymentStatus.name == 'paid')
+        .fold<num>(0, (s, o) => s + o.total);
     final totalExpenses = expenses.fold<num>(0, (s, e) => s + e.amount);
     final net = collected - totalExpenses;
 
@@ -52,9 +82,11 @@ class AdminFinancialsScreen extends ConsumerWidget {
     for (final e in expenses) {
       byCategory[e.category] = (byCategory[e.category] ?? 0) + e.amount;
     }
-    final sortedCategories = byCategory.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+    final sortedCategories = byCategory.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
 
-    final sortedExpenses = [...expenses]..sort((a, b) => b.date.compareTo(a.date));
+    final sortedExpenses = [...expenses]
+      ..sort((a, b) => b.date.compareTo(a.date));
 
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
@@ -68,11 +100,18 @@ class AdminFinancialsScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Financials', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+              Text(
+                'Financials',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               const SizedBox(height: 4),
               Text(
                 'Revenue collected against logged expenses.',
-                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 20),
               Wrap(
@@ -84,7 +123,8 @@ class AdminFinancialsScreen extends ConsumerWidget {
                     value: currencyFormat.format(collected),
                     icon: Icons.account_balance_wallet_outlined,
                     accent: true,
-                    hint: 'Revenue actually marked paid, across all non-cancelled orders.',
+                    hint:
+                        'Revenue actually marked paid, across all non-cancelled orders.',
                   ),
                   StatCard(
                     label: 'Total expenses',
@@ -102,26 +142,42 @@ class AdminFinancialsScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 28),
               if (sortedCategories.isNotEmpty) ...[
-                Text('Expenses by category', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                Text(
+                  'Expenses by category',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 const SizedBox(height: 12),
                 HorizontalBarChart(
                   data: [
                     for (final entry in sortedCategories)
-                      BarDatum(label: entry.key.label, value: entry.value, valueLabel: currencyFormat.format(entry.value)),
+                      BarDatum(
+                        label: entry.key.label,
+                        value: entry.value,
+                        valueLabel: currencyFormat.format(entry.value),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 28),
               ],
-              Text('Expense log', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+              Text(
+                'Expense log',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               const SizedBox(height: 12),
               if (sortedExpenses.isEmpty)
                 const EmptyState(
                   icon: Icons.receipt_long_outlined,
                   title: 'No expenses logged yet',
-                  message: 'Add materials, utilities, wages and other costs to track the P&L.',
+                  message:
+                      'Add materials, utilities, wages and other costs to track the P&L.',
                 )
               else
-                for (final expense in sortedExpenses) _ExpenseRow(expense: expense),
+                for (final expense in sortedExpenses)
+                  _ExpenseRow(expense: expense),
             ],
           ),
         ),
@@ -143,16 +199,31 @@ class _ExpenseRow extends ConsumerWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
-        title: Text(expense.category.label, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text([_date.format(expense.date), if (expense.note.isNotEmpty) expense.note].join(' · ')),
+        title: Text(
+          expense.category.label,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          [
+            _date.format(expense.date),
+            if (expense.note.isNotEmpty) expense.note,
+          ].join(' · '),
+        ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(currencyFormat.format(expense.amount), style: TextStyle(fontWeight: FontWeight.w700, color: theme.colorScheme.primary)),
+            Text(
+              currencyFormat.format(expense.amount),
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.primary,
+              ),
+            ),
             IconButton(
               tooltip: 'Edit',
               icon: const Icon(Icons.edit_outlined),
-              onPressed: () => showExpenseFormSheet(context, ref, existing: expense),
+              onPressed: () =>
+                  showExpenseFormSheet(context, ref, existing: expense),
             ),
             IconButton(
               tooltip: 'Delete',
@@ -162,10 +233,18 @@ class _ExpenseRow extends ConsumerWidget {
                   context: context,
                   builder: (context) => AlertDialog(
                     title: const Text('Delete expense?'),
-                    content: Text('This ${expense.category.label} expense will be removed permanently.'),
+                    content: Text(
+                      'This ${expense.category.label} expense will be removed permanently.',
+                    ),
                     actions: [
-                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                      FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancel'),
+                      ),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Delete'),
+                      ),
                     ],
                   ),
                 );

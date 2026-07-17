@@ -26,7 +26,9 @@ final myProfileProvider = StreamProvider<UserProfile?>((ref) {
 /// and Admin's Deliveries screen to show names alongside orders, which only
 /// ever store a staff *uid* (`assignedStaffId`), never a denormalized name.
 final deliveryStaffDirectoryProvider = StreamProvider<List<UserProfile>>((ref) {
-  return ref.watch(userProfileRepositoryProvider).streamByRole(AppRole.deliveryStaff);
+  return ref
+      .watch(userProfileRepositoryProvider)
+      .streamByRole(AppRole.deliveryStaff);
 });
 
 /// Every account, every role — the Role Management directory. Firestore
@@ -72,21 +74,35 @@ final resolvedRoleProvider = StreamProvider<AppRole?>((ref) {
         return Stream.value(null);
       }
       final repo = ref.watch(userProfileRepositoryProvider);
-      return repo.streamProfile(user.uid).map((profile) {
-        final role = profile?.role ?? AppRole.user;
-        appLogger.i('[role] users/${user.uid} -> role=$role (profile ${profile == null ? "missing, defaulted" : "found"})');
-        return role;
-      }).transform(StreamTransformer<AppRole, AppRole?>.fromHandlers(
-        handleError: (error, stack, sink) {
-          appLogger.e('[role] streamProfile(${user.uid}) failed — treating as signed-out so the router falls back to /login',
-              error: error, stackTrace: stack);
-          sink.add(null);
-        },
-      ));
+      return repo
+          .streamProfile(user.uid)
+          .map((profile) {
+            final role = profile?.role ?? AppRole.user;
+            appLogger.i(
+              '[role] users/${user.uid} -> role=$role (profile ${profile == null ? "missing, defaulted" : "found"})',
+            );
+            return role;
+          })
+          .transform(
+            StreamTransformer<AppRole, AppRole?>.fromHandlers(
+              handleError: (error, stack, sink) {
+                appLogger.e(
+                  '[role] streamProfile(${user.uid}) failed — treating as signed-out so the router falls back to /login',
+                  error: error,
+                  stackTrace: stack,
+                );
+                sink.add(null);
+              },
+            ),
+          );
     },
     loading: () => const Stream<AppRole?>.empty(),
     error: (error, stack) {
-      appLogger.e('[role] authStateProvider errored', error: error, stackTrace: stack);
+      appLogger.e(
+        '[role] authStateProvider errored',
+        error: error,
+        stackTrace: stack,
+      );
       return Stream.value(null);
     },
   );

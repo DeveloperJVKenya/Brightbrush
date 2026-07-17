@@ -27,27 +27,48 @@ class AdminReportsScreen extends ConsumerWidget {
     final staffAsync = ref.watch(deliveryStaffDirectoryProvider);
 
     return ordersAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(
+        child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+      ),
       error: (error, stack) {
-        appLogger.e('[reports] Failed to load reports', error: error, stackTrace: stack);
+        appLogger.e(
+          '[reports] Failed to load reports',
+          error: error,
+          stackTrace: stack,
+        );
         return EmptyState(
-            icon: Icons.cloud_off_rounded, title: 'Couldn\'t load reports', message: friendlyError(error));
+          icon: Icons.cloud_off_rounded,
+          title: 'Couldn\'t load reports',
+          message: friendlyError(error),
+          action: TextButton.icon(
+            onPressed: () => ref.invalidate(allOrdersProvider),
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Retry'),
+          ),
+        );
       },
       data: (orders) {
         if (orders.isEmpty) {
           return const EmptyState(
             icon: Icons.bar_chart_outlined,
             title: 'Nothing to report yet',
-            message: 'Once orders start coming in, sales, production and delivery analytics show up here.',
+            message:
+                'Once orders start coming in, sales, production and delivery analytics show up here.',
           );
         }
 
-        final live = orders.where((o) => o.status != OrderStatus.cancelled).toList();
+        final live = orders
+            .where((o) => o.status != OrderStatus.cancelled)
+            .toList();
         final totalValue = live.fold<num>(0, (s, o) => s + o.total);
-        final collected = live.where((o) => o.paymentStatus.name == 'paid').fold<num>(0, (s, o) => s + o.total);
+        final collected = live
+            .where((o) => o.paymentStatus.name == 'paid')
+            .fold<num>(0, (s, o) => s + o.total);
         final outstanding = totalValue - collected;
 
-        final statusCounts = <OrderStatus, int>{for (final s in OrderStatus.values) s: 0};
+        final statusCounts = <OrderStatus, int>{
+          for (final s in OrderStatus.values) s: 0,
+        };
         for (final o in orders) {
           statusCounts[o.status] = statusCounts[o.status]! + 1;
         }
@@ -56,22 +77,38 @@ class AdminReportsScreen extends ConsumerWidget {
         for (final o in live) {
           for (final item in o.items) {
             final category = CatalogCategory.fromName(item.category);
-            categoryRevenue[category] = (categoryRevenue[category] ?? 0) + item.lineTotal;
+            categoryRevenue[category] =
+                (categoryRevenue[category] ?? 0) + item.lineTotal;
           }
         }
-        final topCategories = categoryRevenue.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-
-        final staff = staffAsync.valueOrNull ?? const <UserProfile>[];
-        final deliveryPerformance = staff
-            .map((member) {
-              final completed = orders.where((o) => o.assignedStaffId == member.uid && o.status == OrderStatus.completed).length;
-              return MapEntry(member.displayName.isEmpty ? member.email : member.displayName, completed);
-            })
-            .where((e) => e.value > 0)
-            .toList()
+        final topCategories = categoryRevenue.entries.toList()
           ..sort((a, b) => b.value.compareTo(a.value));
 
-        final production = statusCounts[OrderStatus.confirmed]! + statusCounts[OrderStatus.inProduction]!;
+        final staff = staffAsync.valueOrNull ?? const <UserProfile>[];
+        final deliveryPerformance =
+            staff
+                .map((member) {
+                  final completed = orders
+                      .where(
+                        (o) =>
+                            o.assignedStaffId == member.uid &&
+                            o.status == OrderStatus.completed,
+                      )
+                      .length;
+                  return MapEntry(
+                    member.displayName.isEmpty
+                        ? member.email
+                        : member.displayName,
+                    completed,
+                  );
+                })
+                .where((e) => e.value > 0)
+                .toList()
+              ..sort((a, b) => b.value.compareTo(a.value));
+
+        final production =
+            statusCounts[OrderStatus.confirmed]! +
+            statusCounts[OrderStatus.inProduction]!;
         final backlog = statusCounts[OrderStatus.readyForDelivery]!;
 
         return SafeArea(
@@ -87,11 +124,18 @@ class AdminReportsScreen extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Reports', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+                          Text(
+                            'Reports',
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                           const SizedBox(height: 4),
                           Text(
                             'Sales, production and delivery analytics across the whole company.',
-                            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ],
                       ),
@@ -116,16 +160,32 @@ class AdminReportsScreen extends ConsumerWidget {
                   spacing: 12,
                   runSpacing: 12,
                   children: [
-                    StatCard(label: 'Total order value', value: currencyFormat.format(totalValue), icon: Icons.receipt_long_outlined),
+                    StatCard(
+                      label: 'Total order value',
+                      value: currencyFormat.format(totalValue),
+                      icon: Icons.receipt_long_outlined,
+                    ),
                     StatCard(
                       label: 'Collected',
                       value: currencyFormat.format(collected),
                       icon: Icons.account_balance_wallet_outlined,
                       accent: true,
                     ),
-                    StatCard(label: 'Outstanding', value: currencyFormat.format(outstanding), icon: Icons.pending_actions_outlined),
-                    StatCard(label: 'In production', value: '$production', icon: Icons.precision_manufacturing_outlined),
-                    StatCard(label: 'Ready-for-delivery backlog', value: '$backlog', icon: Icons.inventory_2_outlined),
+                    StatCard(
+                      label: 'Outstanding',
+                      value: currencyFormat.format(outstanding),
+                      icon: Icons.pending_actions_outlined,
+                    ),
+                    StatCard(
+                      label: 'In production',
+                      value: '$production',
+                      icon: Icons.precision_manufacturing_outlined,
+                    ),
+                    StatCard(
+                      label: 'Ready-for-delivery backlog',
+                      value: '$backlog',
+                      icon: Icons.inventory_2_outlined,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 28),
@@ -136,29 +196,49 @@ class AdminReportsScreen extends ConsumerWidget {
                       child: HorizontalBarChart(
                         data: [
                           for (final status in OrderStatus.values)
-                            BarDatum(label: status.label, value: statusCounts[status]!, valueLabel: '${statusCounts[status]}'),
+                            BarDatum(
+                              label: status.label,
+                              value: statusCounts[status]!,
+                              valueLabel: '${statusCounts[status]}',
+                            ),
                         ],
                       ),
                     ),
                     _ReportSection(
                       title: 'Top categories by revenue',
                       child: topCategories.isEmpty
-                          ? Text('No sales yet.', style: theme.textTheme.bodyMedium)
+                          ? Text(
+                              'No sales yet.',
+                              style: theme.textTheme.bodyMedium,
+                            )
                           : HorizontalBarChart(
                               data: [
                                 for (final entry in topCategories.take(6))
-                                  BarDatum(label: entry.key.label, value: entry.value, valueLabel: currencyFormat.format(entry.value)),
+                                  BarDatum(
+                                    label: entry.key.label,
+                                    value: entry.value,
+                                    valueLabel: currencyFormat.format(
+                                      entry.value,
+                                    ),
+                                  ),
                               ],
                             ),
                     ),
                     _ReportSection(
                       title: 'Delivery performance',
                       child: deliveryPerformance.isEmpty
-                          ? Text('No completed deliveries yet.', style: theme.textTheme.bodyMedium)
+                          ? Text(
+                              'No completed deliveries yet.',
+                              style: theme.textTheme.bodyMedium,
+                            )
                           : HorizontalBarChart(
                               data: [
                                 for (final entry in deliveryPerformance)
-                                  BarDatum(label: entry.key, value: entry.value, valueLabel: '${entry.value} delivered'),
+                                  BarDatum(
+                                    label: entry.key,
+                                    value: entry.value,
+                                    valueLabel: '${entry.value} delivered',
+                                  ),
                               ],
                             ),
                     ),
@@ -182,7 +262,9 @@ class AdminReportsScreen extends ConsumerWidget {
     required List<MapEntry<String, int>> deliveryPerformance,
   }) {
     final buffer = StringBuffer()
-      ..writeln('BrightBrush Creations — Report summary (${DateTime.now().toLocal()})')
+      ..writeln(
+        'BrightBrush Creations — Report summary (${DateTime.now().toLocal()})',
+      )
       ..writeln()
       ..writeln('Total order value: ${currencyFormat.format(totalValue)}')
       ..writeln('Collected: ${currencyFormat.format(collected)}')
@@ -195,7 +277,9 @@ class AdminReportsScreen extends ConsumerWidget {
     buffer.writeln();
     buffer.writeln('Top categories by revenue:');
     for (final entry in topCategories.take(6)) {
-      buffer.writeln('  ${entry.key.label}: ${currencyFormat.format(entry.value)}');
+      buffer.writeln(
+        '  ${entry.key.label}: ${currencyFormat.format(entry.value)}',
+      );
     }
     buffer.writeln();
     buffer.writeln('Delivery performance:');
@@ -205,7 +289,10 @@ class AdminReportsScreen extends ConsumerWidget {
 
     Clipboard.setData(ClipboardData(text: buffer.toString()));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Report summary copied to clipboard'), behavior: SnackBarBehavior.floating),
+      const SnackBar(
+        content: Text('Report summary copied to clipboard'),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 }
@@ -241,7 +328,8 @@ class _ReportsGrid extends StatelessWidget {
           spacing: _spacing,
           runSpacing: 24,
           children: [
-            for (final section in sections) SizedBox(width: columnWidth, child: section),
+            for (final section in sections)
+              SizedBox(width: columnWidth, child: section),
           ],
         );
       },
@@ -269,7 +357,12 @@ class _ReportSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+          Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
           const SizedBox(height: 16),
           child,
         ],
@@ -277,4 +370,3 @@ class _ReportSection extends StatelessWidget {
     );
   }
 }
-

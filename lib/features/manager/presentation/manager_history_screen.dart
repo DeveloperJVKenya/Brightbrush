@@ -32,36 +32,69 @@ class ManagerHistoryScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Service history', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+            Text(
+              'Service history',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const SizedBox(height: 4),
             Text(
               'Completed and cancelled jobs, for reference and reprints.',
-              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 16),
             LiveSearchField(
               hintText: 'Search by customer, phone, order id, or item',
-              onChanged: (v) => ref.read(_historySearchProvider.notifier).state = v,
+              onChanged: (v) =>
+                  ref.read(_historySearchProvider.notifier).state = v,
             ),
             const SizedBox(height: 12),
             Expanded(
               child: ordersAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
+                loading: () => const Center(
+                  child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+                ),
                 error: (error, stack) {
-                  appLogger.e('[history] Failed to load service history', error: error, stackTrace: stack);
+                  appLogger.e(
+                    '[history] Failed to load service history',
+                    error: error,
+                    stackTrace: stack,
+                  );
                   return EmptyState(
-                      icon: Icons.cloud_off_rounded, title: 'Couldn\'t load history', message: friendlyError(error));
+                    icon: Icons.cloud_off_rounded,
+                    title: 'Couldn\'t load history',
+                    message: friendlyError(error),
+                    action: TextButton.icon(
+                      onPressed: () => ref.invalidate(allOrdersProvider),
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Retry'),
+                    ),
+                  );
                 },
                 data: (orders) {
-                  final done = orders
-                      .where((o) => o.status == OrderStatus.completed || o.status == OrderStatus.cancelled)
-                      .toList()
-                    ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-                  final filtered = filterBySearch(done, query, (o) => o.searchFields);
+                  final done =
+                      orders
+                          .where(
+                            (o) =>
+                                o.status == OrderStatus.completed ||
+                                o.status == OrderStatus.cancelled,
+                          )
+                          .toList()
+                        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+                  final filtered = filterBySearch(
+                    done,
+                    query,
+                    (o) => o.searchFields,
+                  );
                   if (filtered.isEmpty) {
                     return EmptyState(
                       icon: Icons.fact_check_outlined,
-                      title: done.isEmpty ? 'Nothing archived yet' : 'No matches',
+                      title: done.isEmpty
+                          ? 'Nothing archived yet'
+                          : 'No matches',
                       message: done.isEmpty
                           ? 'Completed and cancelled orders will show up here.'
                           : 'Try a different search term.',
@@ -70,8 +103,10 @@ class ManagerHistoryScreen extends ConsumerWidget {
                   return ListView.separated(
                     padding: const EdgeInsets.only(bottom: 24),
                     itemCount: filtered.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 10),
-                    itemBuilder: (context, index) => _HistoryRow(order: filtered[index]),
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 10),
+                    itemBuilder: (context, index) =>
+                        _HistoryRow(order: filtered[index]),
                   );
                 },
               ),
@@ -98,10 +133,17 @@ class _HistoryRow extends StatelessWidget {
       margin: EdgeInsets.zero,
       child: ListTile(
         leading: Icon(
-          completed ? Icons.check_circle_outline_rounded : Icons.cancel_outlined,
-          color: completed ? theme.colorScheme.primary : theme.colorScheme.error,
+          completed
+              ? Icons.check_circle_outline_rounded
+              : Icons.cancel_outlined,
+          color: completed
+              ? theme.colorScheme.primary
+              : theme.colorScheme.error,
         ),
-        title: Text(order.contactName, style: const TextStyle(fontWeight: FontWeight.w600)),
+        title: Text(
+          order.contactName,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
         subtitle: Text(
           '${order.items.map((i) => '${i.quantity}× ${i.name}').join(', ')}\n${_date.format(order.updatedAt)}',
         ),
@@ -112,7 +154,10 @@ class _HistoryRow extends StatelessWidget {
           children: [
             Text(
               currencyFormat.format(order.total),
-              style: TextStyle(fontWeight: FontWeight.w700, color: theme.colorScheme.primary),
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.primary,
+              ),
             ),
             Text(order.status.label, style: theme.textTheme.bodySmall),
           ],

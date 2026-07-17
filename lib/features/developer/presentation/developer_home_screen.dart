@@ -55,11 +55,18 @@ class DeveloperHomeScreen extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('View as', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+                  Text(
+                    'View as',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Text(
                     'Your account has full access across every role. Pick a dashboard to browse into it.',
-                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: 24),
                   for (final role in _viewableRoles) ...[
@@ -79,10 +86,18 @@ class DeveloperHomeScreen extends ConsumerWidget {
                         padding: const EdgeInsets.all(16),
                         child: Row(
                           children: [
-                            Icon(Icons.admin_panel_settings_outlined, color: theme.colorScheme.primary),
+                            Icon(
+                              Icons.admin_panel_settings_outlined,
+                              color: theme.colorScheme.primary,
+                            ),
                             const SizedBox(width: 16),
                             Expanded(
-                              child: Text('Role Management', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                              child: Text(
+                                'Role Management',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
                             const Icon(Icons.chevron_right_rounded),
                           ],
@@ -106,12 +121,12 @@ class _ViewAsCard extends StatelessWidget {
   final AppRole role;
 
   IconData get _icon => switch (role) {
-        AppRole.user => Icons.storefront_outlined,
-        AppRole.deliveryStaff => Icons.local_shipping_outlined,
-        AppRole.systemManager => Icons.dashboard_outlined,
-        AppRole.admin => Icons.insights_outlined,
-        AppRole.developer => Icons.code_rounded,
-      };
+    AppRole.user => Icons.storefront_outlined,
+    AppRole.deliveryStaff => Icons.local_shipping_outlined,
+    AppRole.systemManager => Icons.dashboard_outlined,
+    AppRole.admin => Icons.insights_outlined,
+    AppRole.developer => Icons.code_rounded,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -121,7 +136,9 @@ class _ViewAsCard extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () {
-          appLogger.i('[developer] Switching view -> ${role.name} (${role.homePath})');
+          appLogger.i(
+            '[developer] Switching view -> ${role.name} (${role.homePath})',
+          );
           context.go(role.homePath);
         },
         child: Padding(
@@ -131,7 +148,12 @@ class _ViewAsCard extends StatelessWidget {
               Icon(_icon, color: theme.colorScheme.primary),
               const SizedBox(width: 16),
               Expanded(
-                child: Text(role.label, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                child: Text(
+                  role.label,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
               const Icon(Icons.chevron_right_rounded),
             ],

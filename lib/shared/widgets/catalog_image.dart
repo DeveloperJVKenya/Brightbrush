@@ -12,11 +12,17 @@ class CatalogImage extends StatelessWidget {
     required this.imageUrls,
     required this.placeholderIcon,
     this.borderRadius = const BorderRadius.all(Radius.circular(16)),
+    this.semanticLabel,
   });
 
   final List<String> imageUrls;
   final IconData placeholderIcon;
   final BorderRadius borderRadius;
+
+  /// Screen-reader description of what's pictured — typically the item's
+  /// name. Left null on small thumbnails where an adjacent name label
+  /// already covers it (avoids double-announcing the same text).
+  final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -27,11 +33,13 @@ class CatalogImage extends StatelessWidget {
           : Image.network(
               imageUrls.first,
               fit: BoxFit.cover,
+              semanticLabel: semanticLabel,
               loadingBuilder: (context, child, progress) {
                 if (progress == null) return child;
                 return _placeholder(context, loading: true);
               },
-              errorBuilder: (context, error, stackTrace) => _placeholder(context),
+              errorBuilder: (context, error, stackTrace) =>
+                  _placeholder(context),
             ),
     );
   }
@@ -51,9 +59,16 @@ class CatalogImage extends StatelessWidget {
           ? SizedBox(
               width: 22,
               height: 22,
-              child: CircularProgressIndicator(strokeWidth: 2, color: scheme.primary),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: scheme.primary,
+              ),
             )
-          : Icon(placeholderIcon, size: 36, color: scheme.onSurfaceVariant.withValues(alpha: 0.6)),
+          : Icon(
+              placeholderIcon,
+              size: 36,
+              color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
+            ),
     );
   }
 }
@@ -75,7 +90,11 @@ class BrandBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

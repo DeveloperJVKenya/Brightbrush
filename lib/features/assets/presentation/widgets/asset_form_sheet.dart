@@ -7,7 +7,11 @@ import '../../../../core/logging/app_logger.dart';
 import '../../application/assets_providers.dart';
 import '../../domain/company_asset.dart';
 
-Future<void> showAssetFormSheet(BuildContext context, WidgetRef ref, {CompanyAsset? existing}) {
+Future<void> showAssetFormSheet(
+  BuildContext context,
+  WidgetRef ref, {
+  CompanyAsset? existing,
+}) {
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -30,8 +34,10 @@ class _AssetFormSheetState extends ConsumerState<_AssetFormSheet> {
   final _formKey = GlobalKey<FormState>();
   late final _name = TextEditingController(text: widget.existing?.name ?? '');
   late final _notes = TextEditingController(text: widget.existing?.notes ?? '');
-  late AssetCategory _category = widget.existing?.category ?? AssetCategory.equipment;
-  late AssetCondition _condition = widget.existing?.condition ?? AssetCondition.operational;
+  late AssetCategory _category =
+      widget.existing?.category ?? AssetCategory.equipment;
+  late AssetCondition _condition =
+      widget.existing?.condition ?? AssetCondition.operational;
   late DateTime? _purchaseDate = widget.existing?.purchaseDate;
 
   bool _saving = false;
@@ -60,7 +66,9 @@ class _AssetFormSheetState extends ConsumerState<_AssetFormSheet> {
     final repo = ref.read(assetsRepositoryProvider);
     final uid = ref.read(currentUidProvider);
     if (uid == null) {
-      appLogger.w('[assets] Save attempted with no signed-in uid — this will fail Firestore rules (createdBy required)');
+      appLogger.w(
+        '[assets] Save attempted with no signed-in uid — this will fail Firestore rules (createdBy required)',
+      );
     }
 
     try {
@@ -84,12 +92,30 @@ class _AssetFormSheetState extends ConsumerState<_AssetFormSheet> {
         appLogger.i('[assets] Updated asset ${asset.id}');
       }
 
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        final messenger = ScaffoldMessenger.of(context);
+        Navigator.of(context).pop();
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.existing == null ? 'Asset added' : 'Asset updated',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } catch (error, stack) {
-      appLogger.e('[assets] Failed to save asset', error: error, stackTrace: stack);
+      appLogger.e(
+        '[assets] Failed to save asset',
+        error: error,
+        stackTrace: stack,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t save: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('Couldn\'t save: ${friendlyError(error)}'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -101,7 +127,12 @@ class _AssetFormSheetState extends ConsumerState<_AssetFormSheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: EdgeInsets.only(left: 20, right: 20, top: 4, bottom: MediaQuery.viewInsetsOf(context).bottom + 24),
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 4,
+        bottom: MediaQuery.viewInsetsOf(context).bottom + 24,
+      ),
       child: SingleChildScrollView(
         child: Form(
           key: _formKey,
@@ -110,39 +141,59 @@ class _AssetFormSheetState extends ConsumerState<_AssetFormSheet> {
             children: [
               Text(
                 widget.existing == null ? 'Add asset' : 'Edit asset',
-                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _name,
                 autofocus: true,
                 decoration: const InputDecoration(labelText: 'Name'),
-                validator: (v) => (v == null || v.trim().length < 2) ? 'Enter a name (2+ chars)' : null,
+                validator: (v) => (v == null || v.trim().length < 2)
+                    ? 'Enter a name (2+ chars)'
+                    : null,
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<AssetCategory>(
                 initialValue: _category,
                 decoration: const InputDecoration(labelText: 'Category'),
-                items: [for (final c in AssetCategory.values) DropdownMenuItem(value: c, child: Text(c.label))],
-                onChanged: (value) => setState(() => _category = value ?? _category),
+                items: [
+                  for (final c in AssetCategory.values)
+                    DropdownMenuItem(value: c, child: Text(c.label)),
+                ],
+                onChanged: (value) =>
+                    setState(() => _category = value ?? _category),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<AssetCondition>(
                 initialValue: _condition,
                 decoration: const InputDecoration(labelText: 'Condition'),
-                items: [for (final c in AssetCondition.values) DropdownMenuItem(value: c, child: Text(c.label))],
-                onChanged: (value) => setState(() => _condition = value ?? _condition),
+                items: [
+                  for (final c in AssetCondition.values)
+                    DropdownMenuItem(value: c, child: Text(c.label)),
+                ],
+                onChanged: (value) =>
+                    setState(() => _condition = value ?? _condition),
               ),
               const SizedBox(height: 12),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(_purchaseDate == null ? 'Purchase date (optional)' : 'Purchased ${_purchaseDate!.toLocal()}'.split(' ').first),
+                title: Text(
+                  _purchaseDate == null
+                      ? 'Purchase date (optional)'
+                      : 'Purchased ${_purchaseDate!.toLocal()}'
+                            .split(' ')
+                            .first,
+                ),
                 trailing: const Icon(Icons.calendar_today_outlined),
                 onTap: _pickDate,
               ),
               TextFormField(
                 controller: _notes,
-                decoration: const InputDecoration(labelText: 'Notes (optional)'),
+                decoration: const InputDecoration(
+                  labelText: 'Notes (optional)',
+                ),
                 maxLines: 3,
               ),
               const SizedBox(height: 12),
@@ -151,8 +202,19 @@ class _AssetFormSheetState extends ConsumerState<_AssetFormSheet> {
                 child: FilledButton(
                   onPressed: _saving ? null : _save,
                   child: _saving
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : Text(widget.existing == null ? 'Add asset' : 'Save changes'),
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          widget.existing == null
+                              ? 'Add asset'
+                              : 'Save changes',
+                        ),
                 ),
               ),
             ],

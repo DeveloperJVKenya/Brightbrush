@@ -27,7 +27,9 @@ class ThemeModeController extends Notifier<ThemeMode> {
   }
 }
 
-final themeModeProvider = NotifierProvider<ThemeModeController, ThemeMode>(ThemeModeController.new);
+final themeModeProvider = NotifierProvider<ThemeModeController, ThemeMode>(
+  ThemeModeController.new,
+);
 
 class AppFontController extends Notifier<AppFont> {
   @override
@@ -42,7 +44,9 @@ class AppFontController extends Notifier<AppFont> {
   }
 }
 
-final appFontProvider = NotifierProvider<AppFontController, AppFont>(AppFontController.new);
+final appFontProvider = NotifierProvider<AppFontController, AppFont>(
+  AppFontController.new,
+);
 
 /// Accessibility text scale — a plain multiplier applied via
 /// `MediaQuery.withClampedTextScaling` at the app root (see `lib/app.dart`),
@@ -63,7 +67,9 @@ class TextScaleController extends Notifier<double> {
   }
 }
 
-final textScaleProvider = NotifierProvider<TextScaleController, double>(TextScaleController.new);
+final textScaleProvider = NotifierProvider<TextScaleController, double>(
+  TextScaleController.new,
+);
 
 /// Skips the small entrance/stagger animations (e.g. `StaggeredEntrance`)
 /// for anyone who finds them distracting — independent of the OS-level
@@ -71,7 +77,8 @@ final textScaleProvider = NotifierProvider<TextScaleController, double>(TextScal
 /// read.
 class ReduceMotionController extends Notifier<bool> {
   @override
-  bool build() => ref.read(sharedPreferencesProvider).getBool(_reduceMotionKey) ?? false;
+  bool build() =>
+      ref.read(sharedPreferencesProvider).getBool(_reduceMotionKey) ?? false;
 
   void set(bool value) {
     state = value;
@@ -79,7 +86,9 @@ class ReduceMotionController extends Notifier<bool> {
   }
 }
 
-final reduceMotionProvider = NotifierProvider<ReduceMotionController, bool>(ReduceMotionController.new);
+final reduceMotionProvider = NotifierProvider<ReduceMotionController, bool>(
+  ReduceMotionController.new,
+);
 
 /// Whether the Announcement banner / Notifications feed show up at all.
 /// Explicitly "in-app" — there's no push notification infrastructure (FCM)
@@ -87,7 +96,9 @@ final reduceMotionProvider = NotifierProvider<ReduceMotionController, bool>(Redu
 /// open, never a promise of a push alert.
 class InAppNotificationsController extends Notifier<bool> {
   @override
-  bool build() => ref.read(sharedPreferencesProvider).getBool(_inAppNotificationsKey) ?? true;
+  bool build() =>
+      ref.read(sharedPreferencesProvider).getBool(_inAppNotificationsKey) ??
+      true;
 
   void set(bool value) {
     state = value;
@@ -96,4 +107,6 @@ class InAppNotificationsController extends Notifier<bool> {
 }
 
 final inAppNotificationsEnabledProvider =
-    NotifierProvider<InAppNotificationsController, bool>(InAppNotificationsController.new);
+    NotifierProvider<InAppNotificationsController, bool>(
+      InAppNotificationsController.new,
+    );

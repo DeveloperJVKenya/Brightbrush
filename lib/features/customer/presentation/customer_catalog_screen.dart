@@ -45,18 +45,25 @@ class CustomerCatalogScreen extends ConsumerWidget {
                 builder: (context, value, child) {
                   return Opacity(
                     opacity: value,
-                    child: Transform.translate(offset: Offset(0, (1 - value) * 8), child: child),
+                    child: Transform.translate(
+                      offset: Offset(0, (1 - value) * 8),
+                      child: child,
+                    ),
                   );
                 },
                 child: Text(
                   'Browse the catalog',
-                  style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 'Caps, tees, hoodies, embroidery and every other branding form we offer.',
-                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 16),
               const AnnouncementBanner(),
@@ -66,14 +73,19 @@ class CustomerCatalogScreen extends ConsumerWidget {
                   Expanded(
                     child: LiveSearchField(
                       hintText: 'Search items, e.g. "hoodie" or "cotton"',
-                      onChanged: (value) => ref.read(catalogSearchQueryProvider.notifier).state = value,
+                      onChanged: (value) =>
+                          ref.read(catalogSearchQueryProvider.notifier).state =
+                              value,
                     ),
                   ),
                   const SizedBox(width: 10),
                   Tooltip(
                     message: 'Ask AI what you need',
                     child: FilledButton.tonalIcon(
-                      onPressed: () => showDialog(context: context, builder: (_) => const AiSearchDialog()),
+                      onPressed: () => showDialog(
+                        context: context,
+                        builder: (_) => const AiSearchDialog(),
+                      ),
                       icon: const Icon(Icons.auto_awesome_rounded, size: 18),
                       label: const Text('Ask AI'),
                     ),
@@ -83,28 +95,44 @@ class CustomerCatalogScreen extends ConsumerWidget {
               const SizedBox(height: 12),
               CategoryFilterBar(
                 selected: category,
-                onSelected: (value) => ref.read(catalogCategoryFilterProvider.notifier).state = value,
+                onSelected: (value) =>
+                    ref.read(catalogCategoryFilterProvider.notifier).state =
+                        value,
               ),
               const SizedBox(height: 12),
               Expanded(
                 child: filtered.when(
                   loading: () => const _CatalogGridSkeleton(),
                   error: (error, stack) {
-                    appLogger.e('[catalog] Failed to load catalog', error: error, stackTrace: stack);
+                    appLogger.e(
+                      '[catalog] Failed to load catalog',
+                      error: error,
+                      stackTrace: stack,
+                    );
                     return EmptyState(
                       icon: Icons.cloud_off_rounded,
                       title: 'Couldn\'t load the catalog',
                       message: friendlyError(error),
+                      action: TextButton.icon(
+                        onPressed: () =>
+                            ref.invalidate(activeCatalogItemsProvider),
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('Retry'),
+                      ),
                     );
                   },
                   data: (items) {
                     if (items.isEmpty) {
                       return EmptyState(
                         icon: Icons.inventory_2_outlined,
-                        title: ref.read(catalogSearchQueryProvider).isEmpty && category == null
+                        title:
+                            ref.read(catalogSearchQueryProvider).isEmpty &&
+                                category == null
                             ? 'No items in the catalog yet'
                             : 'No matches',
-                        message: ref.read(catalogSearchQueryProvider).isEmpty && category == null
+                        message:
+                            ref.read(catalogSearchQueryProvider).isEmpty &&
+                                category == null
                             ? 'Once the System Manager adds branding items, they\'ll show up here live.'
                             : 'Try a different search term or clear the category filter.',
                       );
@@ -113,12 +141,13 @@ class CustomerCatalogScreen extends ConsumerWidget {
                       builder: (context, constraints) {
                         return GridView.builder(
                           padding: const EdgeInsets.only(bottom: 24),
-                          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                            maxCrossAxisExtent: 260,
-                            mainAxisSpacing: 16,
-                            crossAxisSpacing: 16,
-                            childAspectRatio: 0.66,
-                          ),
+                          gridDelegate:
+                              const SliverGridDelegateWithMaxCrossAxisExtent(
+                                maxCrossAxisExtent: 260,
+                                mainAxisSpacing: 16,
+                                crossAxisSpacing: 16,
+                                childAspectRatio: 0.66,
+                              ),
                           itemCount: items.length,
                           itemBuilder: (context, index) {
                             final item = items[index];
@@ -126,16 +155,46 @@ class CustomerCatalogScreen extends ConsumerWidget {
                               index: index,
                               child: CatalogItemCard(
                                 item: item,
-                                onTap: () => context.push('/customer/catalog/${item.id}'),
-                                onAddToCart: () {
-                                  ref.read(cartProvider.notifier).add(item.id);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('${item.name} added to cart'),
-                                      duration: const Duration(seconds: 2),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
+                                onTap: () => context.push(
+                                  '/customer/catalog/${item.id}',
+                                ),
+                                onAddToCart: () async {
+                                  try {
+                                    await ref
+                                        .read(cartActionsProvider)
+                                        .add(item.id);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            '${item.name} added to cart',
+                                          ),
+                                          duration: const Duration(seconds: 2),
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                    }
+                                  } catch (error, stack) {
+                                    appLogger.e(
+                                      '[catalog] Failed to add ${item.id} to cart',
+                                      error: error,
+                                      stackTrace: stack,
+                                    );
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Couldn\'t add to cart: ${friendlyError(error)}',
+                                          ),
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                    }
+                                  }
                                 },
                               ),
                             );
@@ -187,9 +246,12 @@ class _Shimmer extends StatefulWidget {
   State<_Shimmer> createState() => _ShimmerState();
 }
 
-class _ShimmerState extends State<_Shimmer> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 900))..repeat(reverse: true);
+class _ShimmerState extends State<_Shimmer>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..repeat(reverse: true);
 
   @override
   void dispose() {
@@ -202,13 +264,13 @@ class _ShimmerState extends State<_Shimmer> with SingleTickerProviderStateMixin 
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        return Opacity(
-          opacity: 0.4 + _controller.value * 0.3,
-          child: child,
-        );
+        return Opacity(opacity: 0.4 + _controller.value * 0.3, child: child);
       },
       child: Container(
-        decoration: BoxDecoration(color: widget.color, borderRadius: BorderRadius.circular(16)),
+        decoration: BoxDecoration(
+          color: widget.color,
+          borderRadius: BorderRadius.circular(16),
+        ),
       ),
     );
   }

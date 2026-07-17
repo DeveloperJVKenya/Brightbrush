@@ -23,7 +23,12 @@ class LoginScreen extends StatelessWidget {
             return SafeArea(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
-                child: Center(child: ConstrainedBox(constraints: BoxConstraints(maxWidth: 440), child: form)),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: 440),
+                    child: form,
+                  ),
+                ),
               ),
             );
           }
@@ -35,7 +40,10 @@ class LoginScreen extends StatelessWidget {
                 child: Center(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(48),
-                    child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 420), child: form),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 420),
+                      child: form,
+                    ),
                   ),
                 ),
               ),
@@ -66,18 +74,18 @@ class _BrandPanel extends StatelessWidget {
           Text(
             'BrightBrush\nCreations',
             style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  height: 1.15,
-                ),
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              height: 1.15,
+            ),
           ),
           const SizedBox(height: 16),
           Text(
             'One system for orders, production, delivery and the numbers behind '
             'every cap, hoodie and campaign package.',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.85),
-                ),
+              color: Colors.white.withValues(alpha: 0.85),
+            ),
           ),
         ],
       ),
@@ -120,10 +128,18 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
       // (which watches Firebase auth state) and redirects itself the
       // moment a role resolves.
     } on FirebaseAuthException catch (e, stack) {
-      appLogger.e('[auth] Sign-in/sign-up failed (${e.code})', error: e, stackTrace: stack);
+      appLogger.e(
+        '[auth] Sign-in/sign-up failed (${e.code})',
+        error: e,
+        stackTrace: stack,
+      );
       setState(() => _error = e.message ?? 'Something went wrong (${e.code}).');
     } catch (error, stack) {
-      appLogger.e('[auth] Sign-in/sign-up failed with an unexpected error', error: error, stackTrace: stack);
+      appLogger.e(
+        '[auth] Sign-in/sign-up failed with an unexpected error',
+        error: error,
+        stackTrace: stack,
+      );
       setState(() => _error = friendlyError(error));
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -138,12 +154,21 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
     await _run(() async {
       if (_isSignUp) {
         appLogger.i('[auth] Creating account for $email');
-        final credential = await auth.createUserWithEmailAndPassword(email: email, password: password);
-        appLogger.i('[auth] Account created uid=${credential.user!.uid}; writing user profile');
-        await ref.read(userProfileRepositoryProvider).ensureUserProfile(
+        final credential = await auth.createUserWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+        appLogger.i(
+          '[auth] Account created uid=${credential.user!.uid}; writing user profile',
+        );
+        await ref
+            .read(userProfileRepositoryProvider)
+            .ensureUserProfile(
               uid: credential.user!.uid,
               email: email,
-              displayName: _displayName.text.trim().isEmpty ? email : _displayName.text.trim(),
+              displayName: _displayName.text.trim().isEmpty
+                  ? email
+                  : _displayName.text.trim(),
             );
       } else {
         appLogger.i('[auth] Signing in $email');
@@ -162,33 +187,48 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
         children: [
           Text(
             _isSignUp ? 'Create your account' : 'Sign in',
-            style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
             'Access your BrightBrush Creations workspace.',
-            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 24),
           if (_isSignUp) ...[
             TextFormField(
               controller: _displayName,
-              decoration: const InputDecoration(labelText: 'Full name', prefixIcon: Icon(Icons.person_outline)),
+              decoration: const InputDecoration(
+                labelText: 'Full name',
+                prefixIcon: Icon(Icons.person_outline),
+              ),
             ),
             const SizedBox(height: 12),
           ],
           TextFormField(
             controller: _email,
             keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.mail_outline)),
-            validator: (v) => (v == null || !v.contains('@')) ? 'Enter a valid email' : null,
+            decoration: const InputDecoration(
+              labelText: 'Email',
+              prefixIcon: Icon(Icons.mail_outline),
+            ),
+            validator: (v) =>
+                (v == null || !v.contains('@')) ? 'Enter a valid email' : null,
           ),
           const SizedBox(height: 12),
           TextFormField(
             controller: _password,
             obscureText: true,
-            decoration: const InputDecoration(labelText: 'Password', prefixIcon: Icon(Icons.lock_outline)),
-            validator: (v) => (v == null || v.length < 6) ? 'At least 6 characters' : null,
+            decoration: const InputDecoration(
+              labelText: 'Password',
+              prefixIcon: Icon(Icons.lock_outline),
+            ),
+            validator: (v) =>
+                (v == null || v.length < 6) ? 'At least 6 characters' : null,
           ),
           const SizedBox(height: 16),
           FilledButton(
@@ -197,25 +237,40 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
                 ? const SizedBox(
                     width: 18,
                     height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   )
                 : Text(_isSignUp ? 'Create account' : 'Sign in'),
           ),
           const SizedBox(height: 8),
           TextButton(
-            onPressed: _loading ? null : () => setState(() => _isSignUp = !_isSignUp),
-            child: Text(_isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"),
+            onPressed: _loading
+                ? null
+                : () => setState(() => _isSignUp = !_isSignUp),
+            child: Text(
+              _isSignUp
+                  ? 'Already have an account? Sign in'
+                  : "Don't have an account? Sign up",
+            ),
           ),
           if (_error != null) ...[
             const SizedBox(height: 4),
-            Text(_error!, style: TextStyle(color: theme.colorScheme.error, fontSize: 12), textAlign: TextAlign.center),
+            Text(
+              _error!,
+              style: TextStyle(color: theme.colorScheme.error, fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
           ],
           if (!_isSignUp) ...[
             const SizedBox(height: 8),
             Text(
               'Signing up here always creates a plain User account. Every other '
               'role is assigned afterward by an Admin/CEO or Developer.',
-              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
           ],

@@ -20,5 +20,6 @@ class ModuleSpec {
   final IconData icon;
   final IconData selectedIcon;
   final String description;
-  final Widget Function(BuildContext context, GoRouterState state)? screenBuilder;
+  final Widget Function(BuildContext context, GoRouterState state)?
+  screenBuilder;
 }

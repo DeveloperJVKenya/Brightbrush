@@ -16,7 +16,6 @@ class CatalogItemDetailScreen extends ConsumerWidget {
 
   final String itemId;
 
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final itemsAsync = ref.watch(activeCatalogItemsProvider);
@@ -31,10 +30,25 @@ class CatalogItemDetailScreen extends ConsumerWidget {
         title: const Text('Item details'),
       ),
       body: itemsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(
+          child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+        ),
         error: (error, stack) {
-          appLogger.e('[catalog] Failed to load catalog item detail', error: error, stackTrace: stack);
-          return EmptyState(icon: Icons.cloud_off_rounded, title: 'Failed to load', message: friendlyError(error));
+          appLogger.e(
+            '[catalog] Failed to load catalog item detail',
+            error: error,
+            stackTrace: stack,
+          );
+          return EmptyState(
+            icon: Icons.cloud_off_rounded,
+            title: 'Failed to load',
+            message: friendlyError(error),
+            action: TextButton.icon(
+              onPressed: () => ref.invalidate(activeCatalogItemsProvider),
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Retry'),
+            ),
+          );
         },
         data: (items) {
           final matches = items.where((i) => i.id == itemId);
@@ -67,7 +81,11 @@ class _DetailBody extends ConsumerWidget {
       tag: 'catalog-item-${item.id}',
       child: AspectRatio(
         aspectRatio: 1,
-        child: CatalogImage(imageUrls: item.imageUrls, placeholderIcon: item.category.icon),
+        child: CatalogImage(
+          imageUrls: item.imageUrls,
+          placeholderIcon: item.category.icon,
+          semanticLabel: item.name,
+        ),
       ),
     );
 
@@ -79,11 +97,19 @@ class _DetailBody extends ConsumerWidget {
           Row(
             children: [
               Chip(label: Text(item.category.label)),
-              if (item.isFeatured) ...[const SizedBox(width: 8), const BrandBadge(label: 'Featured')],
+              if (item.isFeatured) ...[
+                const SizedBox(width: 8),
+                const BrandBadge(label: 'Featured'),
+              ],
             ],
           ),
           const SizedBox(height: 12),
-          Text(item.name, style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+          Text(
+            item.name,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
           const SizedBox(height: 8),
           Text(
             currencyFormat.format(item.basePrice),
@@ -98,12 +124,17 @@ class _DetailBody extends ConsumerWidget {
             runSpacing: 8,
             children: [
               _MetaChip(icon: Icons.numbers_rounded, label: 'MOQ ${item.moq}'),
-              _MetaChip(icon: Icons.schedule_rounded, label: '${item.leadTimeDays} day lead time'),
+              _MetaChip(
+                icon: Icons.schedule_rounded,
+                label: '${item.leadTimeDays} day lead time',
+              ),
             ],
           ),
           const SizedBox(height: 20),
           Text(
-            item.description.isEmpty ? 'No description provided yet.' : item.description,
+            item.description.isEmpty
+                ? 'No description provided yet.'
+                : item.description,
             style: theme.textTheme.bodyMedium,
           ),
           if (item.tags.isNotEmpty) ...[
@@ -111,18 +142,44 @@ class _DetailBody extends ConsumerWidget {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: [for (final tag in item.tags) Chip(label: Text(tag), visualDensity: VisualDensity.compact)],
+              children: [
+                for (final tag in item.tags)
+                  Chip(label: Text(tag), visualDensity: VisualDensity.compact),
+              ],
             ),
           ],
           const SizedBox(height: 28),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () {
-                ref.read(cartProvider.notifier).add(item.id);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('${item.name} added to cart'), behavior: SnackBarBehavior.floating),
-                );
+              onPressed: () async {
+                try {
+                  await ref.read(cartActionsProvider).add(item.id);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('${item.name} added to cart'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                } catch (error, stack) {
+                  appLogger.e(
+                    '[catalog] Failed to add ${item.id} to cart',
+                    error: error,
+                    stackTrace: stack,
+                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Couldn\'t add to cart: ${friendlyError(error)}',
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                }
               },
               icon: const Icon(Icons.add_shopping_cart_rounded),
               label: const Text('Add to cart'),
@@ -140,9 +197,7 @@ class _DetailBody extends ConsumerWidget {
         ],
       );
     }
-    return SingleChildScrollView(
-      child: Column(children: [image, info]),
-    );
+    return SingleChildScrollView(child: Column(children: [image, info]));
   }
 }
 
@@ -160,7 +215,10 @@ class _MetaChip extends StatelessWidget {
       children: [
         Icon(icon, size: 16, color: scheme.onSurfaceVariant),
         const SizedBox(width: 6),
-        Text(label, style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13)),
+        Text(
+          label,
+          style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
+        ),
       ],
     );
   }

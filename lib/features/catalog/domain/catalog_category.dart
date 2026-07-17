@@ -19,6 +19,9 @@ enum CatalogCategory {
   final IconData icon;
 
   static CatalogCategory fromName(String name) {
-    return CatalogCategory.values.firstWhere((c) => c.name == name, orElse: () => CatalogCategory.other);
+    return CatalogCategory.values.firstWhere(
+      (c) => c.name == name,
+      orElse: () => CatalogCategory.other,
+    );
   }
 }

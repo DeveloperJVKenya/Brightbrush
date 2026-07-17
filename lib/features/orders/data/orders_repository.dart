@@ -10,7 +10,8 @@ class OrdersRepository {
 
   final FirebaseFirestore _db;
 
-  CollectionReference<Map<String, dynamic>> get _orders => _db.collection('Orders');
+  CollectionReference<Map<String, dynamic>> get _orders =>
+      _db.collection('Orders');
 
   /// A customer's own orders, newest first.
   Stream<List<OrderModel>> streamForCustomer(String uid) {
@@ -20,7 +21,11 @@ class OrdersRepository {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snap) => snap.docs.map(OrderModel.fromFirestore).toList())
-        .transform(logStreamErrors('[orders] streamForCustomer(uid=$uid) failed — check firestore.rules customerId ownership match'));
+        .transform(
+          logStreamErrors(
+            '[orders] streamForCustomer(uid=$uid) failed — check firestore.rules customerId ownership match',
+          ),
+        );
   }
 
   /// Every order — the Manager/Admin/Developer view. Grouping by
@@ -32,52 +37,83 @@ class OrdersRepository {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snap) => snap.docs.map(OrderModel.fromFirestore).toList())
-        .transform(logStreamErrors('[orders] streamAll() failed — likely signed in as a role without isOrderStaff()'));
+        .transform(
+          logStreamErrors(
+            '[orders] streamAll() failed — likely signed in as a role without isOrderStaff()',
+          ),
+        );
   }
 
   Future<String> create(OrderModel order) async {
-    appLogger.i('[orders] create() customerId=${order.customerId} total=${order.total}');
+    appLogger.i(
+      '[orders] create() customerId=${order.customerId} total=${order.total}',
+    );
     try {
       final doc = await _orders.add(order.toFirestoreCreate());
       appLogger.i('[orders] created ${doc.id}');
       return doc.id;
     } catch (error, stack) {
-      appLogger.e('[orders] create() failed for customerId=${order.customerId}', error: error, stackTrace: stack);
+      appLogger.e(
+        '[orders] create() failed for customerId=${order.customerId}',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }
 
   Future<void> updateStatus(String orderId, OrderStatus status) {
     appLogger.i('[orders] updateStatus($orderId -> ${status.name})');
-    return _orders.doc(orderId).update({
-      'status': status.name,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }).catchError((error, stack) {
-      appLogger.e('[orders] updateStatus($orderId) failed', error: error, stackTrace: stack);
-      throw error;
-    });
+    return _orders
+        .doc(orderId)
+        .update({
+          'status': status.name,
+          'updatedAt': FieldValue.serverTimestamp(),
+        })
+        .catchError((error, stack) {
+          appLogger.e(
+            '[orders] updateStatus($orderId) failed',
+            error: error,
+            stackTrace: stack,
+          );
+          throw error;
+        });
   }
 
   Future<void> updatePaymentStatus(String orderId, PaymentStatus status) {
     appLogger.i('[orders] updatePaymentStatus($orderId -> ${status.name})');
-    return _orders.doc(orderId).update({
-      'paymentStatus': status.name,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }).catchError((error, stack) {
-      appLogger.e('[orders] updatePaymentStatus($orderId) failed', error: error, stackTrace: stack);
-      throw error;
-    });
+    return _orders
+        .doc(orderId)
+        .update({
+          'paymentStatus': status.name,
+          'updatedAt': FieldValue.serverTimestamp(),
+        })
+        .catchError((error, stack) {
+          appLogger.e(
+            '[orders] updatePaymentStatus($orderId) failed',
+            error: error,
+            stackTrace: stack,
+          );
+          throw error;
+        });
   }
 
   Future<void> cancel(String orderId) {
     appLogger.i('[orders] cancel($orderId)');
-    return _orders.doc(orderId).update({
-      'status': OrderStatus.cancelled.name,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }).catchError((error, stack) {
-      appLogger.e('[orders] cancel($orderId) failed', error: error, stackTrace: stack);
-      throw error;
-    });
+    return _orders
+        .doc(orderId)
+        .update({
+          'status': OrderStatus.cancelled.name,
+          'updatedAt': FieldValue.serverTimestamp(),
+        })
+        .catchError((error, stack) {
+          appLogger.e(
+            '[orders] cancel($orderId) failed',
+            error: error,
+            stackTrace: stack,
+          );
+          throw error;
+        });
   }
 
   /// Delivery staff claims an unassigned, ready-for-delivery order (or a
@@ -86,36 +122,63 @@ class OrdersRepository {
   /// the single staff-transition path firestore.rules allows.
   Future<void> claimForDelivery(String orderId, {required String staffUid}) {
     appLogger.i('[orders] claimForDelivery($orderId, staffUid=$staffUid)');
-    return _orders.doc(orderId).update({
-      'status': OrderStatus.outForDelivery.name,
-      'assignedStaffId': staffUid,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }).catchError((error, stack) {
-      appLogger.e('[orders] claimForDelivery($orderId, staffUid=$staffUid) failed', error: error, stackTrace: stack);
-      throw error;
-    });
+    return _orders
+        .doc(orderId)
+        .update({
+          'status': OrderStatus.outForDelivery.name,
+          'assignedStaffId': staffUid,
+          'updatedAt': FieldValue.serverTimestamp(),
+        })
+        .catchError((error, stack) {
+          appLogger.e(
+            '[orders] claimForDelivery($orderId, staffUid=$staffUid) failed',
+            error: error,
+            stackTrace: stack,
+          );
+          throw error;
+        });
   }
 
   Future<void> markDelivered(String orderId) {
     appLogger.i('[orders] markDelivered($orderId)');
-    return _orders.doc(orderId).update({
-      'status': OrderStatus.completed.name,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }).catchError((error, stack) {
-      appLogger.e('[orders] markDelivered($orderId) failed', error: error, stackTrace: stack);
-      throw error;
-    });
+    return _orders
+        .doc(orderId)
+        .update({
+          'status': OrderStatus.completed.name,
+          'updatedAt': FieldValue.serverTimestamp(),
+        })
+        .catchError((error, stack) {
+          appLogger.e(
+            '[orders] markDelivered($orderId) failed',
+            error: error,
+            stackTrace: stack,
+          );
+          throw error;
+        });
   }
 
-  Future<void> setDeliveryCoordinates(String orderId, {required double lat, required double lng}) {
-    appLogger.d('[orders] setDeliveryCoordinates($orderId, lat=$lat, lng=$lng)');
-    return _orders.doc(orderId).update({
-      'deliveryLat': lat,
-      'deliveryLng': lng,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }).catchError((error, stack) {
-      appLogger.e('[orders] setDeliveryCoordinates($orderId) failed', error: error, stackTrace: stack);
-      throw error;
-    });
+  Future<void> setDeliveryCoordinates(
+    String orderId, {
+    required double lat,
+    required double lng,
+  }) {
+    appLogger.d(
+      '[orders] setDeliveryCoordinates($orderId, lat=$lat, lng=$lng)',
+    );
+    return _orders
+        .doc(orderId)
+        .update({
+          'deliveryLat': lat,
+          'deliveryLng': lng,
+          'updatedAt': FieldValue.serverTimestamp(),
+        })
+        .catchError((error, stack) {
+          appLogger.e(
+            '[orders] setDeliveryCoordinates($orderId) failed',
+            error: error,
+            stackTrace: stack,
+          );
+          throw error;
+        });
   }
 }

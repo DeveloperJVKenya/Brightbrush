@@ -21,34 +21,59 @@ class DeliveryHistoryScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Delivery history', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+            Text(
+              'Delivery history',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const SizedBox(height: 4),
             Text(
               'Every delivery you\'ve completed.',
-              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 16),
             Expanded(
               child: ordersAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
+                loading: () => const Center(
+                  child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+                ),
                 error: (error, stack) {
-                  appLogger.e('[delivery] Failed to load delivery history', error: error, stackTrace: stack);
+                  appLogger.e(
+                    '[delivery] Failed to load delivery history',
+                    error: error,
+                    stackTrace: stack,
+                  );
                   return EmptyState(
-                      icon: Icons.cloud_off_rounded, title: 'Couldn\'t load history', message: friendlyError(error));
+                    icon: Icons.cloud_off_rounded,
+                    title: 'Couldn\'t load history',
+                    message: friendlyError(error),
+                    action: TextButton.icon(
+                      onPressed: () =>
+                          ref.invalidate(myDeliveryHistoryProvider),
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Retry'),
+                    ),
+                  );
                 },
                 data: (orders) {
                   if (orders.isEmpty) {
                     return const EmptyState(
                       icon: Icons.history_rounded,
                       title: 'No completed deliveries yet',
-                      message: 'Deliveries you\'ve marked delivered will show up here.',
+                      message:
+                          'Deliveries you\'ve marked delivered will show up here.',
                     );
                   }
                   return ListView.separated(
                     padding: const EdgeInsets.only(bottom: 24),
                     itemCount: orders.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 10),
-                    itemBuilder: (context, index) => DeliveryOrderCard(order: orders[index]),
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 10),
+                    itemBuilder: (context, index) =>
+                        DeliveryOrderCard(order: orders[index]),
                   );
                 },
               ),

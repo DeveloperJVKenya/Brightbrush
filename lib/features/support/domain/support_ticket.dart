@@ -9,7 +9,10 @@ enum TicketStatus {
   final String label;
 
   static TicketStatus fromName(String name) {
-    return TicketStatus.values.firstWhere((s) => s.name == name, orElse: () => TicketStatus.open);
+    return TicketStatus.values.firstWhere(
+      (s) => s.name == name,
+      orElse: () => TicketStatus.open,
+    );
   }
 }
 
@@ -36,7 +39,9 @@ class SupportTicket {
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  factory SupportTicket.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory SupportTicket.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final d = doc.data() ?? {};
     return SupportTicket(
       id: doc.id,
@@ -46,12 +51,19 @@ class SupportTicket {
       customerName: d['customerName'] as String? ?? '',
       status: TicketStatus.fromName(d['status'] as String? ?? 'open'),
       response: d['response'] as String?,
-      createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0),
-      updatedAt: (d['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0),
+      createdAt:
+          (d['createdAt'] as Timestamp?)?.toDate() ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      updatedAt:
+          (d['updatedAt'] as Timestamp?)?.toDate() ??
+          DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
 
-  Map<String, dynamic> toFirestoreCreate({required String customerId, required String customerName}) {
+  Map<String, dynamic> toFirestoreCreate({
+    required String customerId,
+    required String customerName,
+  }) {
     return {
       'subject': subject,
       'message': message,

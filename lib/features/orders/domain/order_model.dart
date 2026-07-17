@@ -30,7 +30,13 @@ class OrderLineItem {
   }
 
   Map<String, dynamic> toMap() {
-    return {'itemId': itemId, 'name': name, 'category': category, 'unitPrice': unitPrice, 'quantity': quantity};
+    return {
+      'itemId': itemId,
+      'name': name,
+      'category': category,
+      'unitPrice': unitPrice,
+      'quantity': quantity,
+    };
   }
 }
 
@@ -73,9 +79,15 @@ class OrderModel {
 
   bool get hasDeliveryCoordinates => deliveryLat != null && deliveryLng != null;
 
-  int get itemCount => items.fold(0, (runningTotal, item) => runningTotal + item.quantity);
+  int get itemCount =>
+      items.fold(0, (runningTotal, item) => runningTotal + item.quantity);
 
-  List<String> get searchFields => [contactName, contactPhone, id, ...items.map((i) => i.name)];
+  List<String> get searchFields => [
+    contactName,
+    contactPhone,
+    id,
+    ...items.map((i) => i.name),
+  ];
 
   factory OrderModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data() ?? {};
@@ -87,17 +99,25 @@ class OrderModel {
       deliveryAddress: d['deliveryAddress'] as String? ?? '',
       notes: d['notes'] as String? ?? '',
       items: (d['items'] as List? ?? [])
-          .map((e) => OrderLineItem.fromMap(Map<String, dynamic>.from(e as Map)))
+          .map(
+            (e) => OrderLineItem.fromMap(Map<String, dynamic>.from(e as Map)),
+          )
           .toList(),
       subtotal: d['subtotal'] as num? ?? 0,
       total: d['total'] as num? ?? 0,
       status: OrderStatus.fromName(d['status'] as String? ?? 'pendingReview'),
-      paymentStatus: PaymentStatus.fromName(d['paymentStatus'] as String? ?? 'unpaid'),
+      paymentStatus: PaymentStatus.fromName(
+        d['paymentStatus'] as String? ?? 'unpaid',
+      ),
       assignedStaffId: d['assignedStaffId'] as String?,
       deliveryLat: (d['deliveryLat'] as num?)?.toDouble(),
       deliveryLng: (d['deliveryLng'] as num?)?.toDouble(),
-      createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0),
-      updatedAt: (d['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0),
+      createdAt:
+          (d['createdAt'] as Timestamp?)?.toDate() ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      updatedAt:
+          (d['updatedAt'] as Timestamp?)?.toDate() ??
+          DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
 

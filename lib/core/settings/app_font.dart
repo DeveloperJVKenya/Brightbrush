@@ -10,23 +10,46 @@
 /// dependency; swapping in real bundled font files later only touches this
 /// file (add the family here, add the asset + pubspec.yaml `fonts:` entry).
 enum AppFont {
-  systemDefault(label: 'System Default', description: 'Platform default', fontFamily: null),
-  serif(label: 'Serif', description: 'Georgia — editorial, classic', fontFamily: 'Georgia'),
+  systemDefault(
+    label: 'System Default',
+    description: 'Platform default',
+    fontFamily: null,
+  ),
+  serif(
+    label: 'Serif',
+    description: 'Georgia — editorial, classic',
+    fontFamily: 'Georgia',
+  ),
   roundedSans(
     label: 'Rounded Sans',
     description: 'Trebuchet MS — friendly, humanist',
     fontFamily: 'Trebuchet MS',
   ),
-  wideSans(label: 'Wide Sans', description: 'Verdana — clean, highly legible', fontFamily: 'Verdana'),
-  mono(label: 'Monospace', description: 'Courier New — technical, tabular', fontFamily: 'Courier New');
+  wideSans(
+    label: 'Wide Sans',
+    description: 'Verdana — clean, highly legible',
+    fontFamily: 'Verdana',
+  ),
+  mono(
+    label: 'Monospace',
+    description: 'Courier New — technical, tabular',
+    fontFamily: 'Courier New',
+  );
 
-  const AppFont({required this.label, required this.description, required this.fontFamily});
+  const AppFont({
+    required this.label,
+    required this.description,
+    required this.fontFamily,
+  });
 
   final String label;
   final String description;
   final String? fontFamily;
 
   static AppFont fromName(String? name) {
-    return AppFont.values.firstWhere((f) => f.name == name, orElse: () => AppFont.systemDefault);
+    return AppFont.values.firstWhere(
+      (f) => f.name == name,
+      orElse: () => AppFont.systemDefault,
+    );
   }
 }

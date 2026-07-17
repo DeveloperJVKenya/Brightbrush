@@ -28,36 +28,59 @@ class AdminMarketingScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Marketing', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+              Text(
+                'Marketing',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               const SizedBox(height: 4),
               Text(
                 'Announcements shown on every signed-in user\'s Home and Notifications feed.',
-                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 16),
               Expanded(
                 child: announcementsAsync.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+                  ),
                   error: (error, stack) {
-                    appLogger.e('[marketing] Failed to load announcements', error: error, stackTrace: stack);
+                    appLogger.e(
+                      '[marketing] Failed to load announcements',
+                      error: error,
+                      stackTrace: stack,
+                    );
                     return EmptyState(
-                        icon: Icons.cloud_off_rounded,
-                        title: 'Couldn\'t load announcements',
-                        message: friendlyError(error));
+                      icon: Icons.cloud_off_rounded,
+                      title: 'Couldn\'t load announcements',
+                      message: friendlyError(error),
+                      action: TextButton.icon(
+                        onPressed: () =>
+                            ref.invalidate(allAnnouncementsProvider),
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('Retry'),
+                      ),
+                    );
                   },
                   data: (announcements) {
                     if (announcements.isEmpty) {
                       return const EmptyState(
                         icon: Icons.campaign_outlined,
                         title: 'Nothing published yet',
-                        message: 'Announce seasonal offers or brand news — they\'ll show on every customer\'s Home.',
+                        message:
+                            'Announce seasonal offers or brand news — they\'ll show on every customer\'s Home.',
                       );
                     }
                     return ListView.separated(
                       padding: const EdgeInsets.only(bottom: 100),
                       itemCount: announcements.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) => _AnnouncementRow(announcement: announcements[index]),
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 10),
+                      itemBuilder: (context, index) =>
+                          _AnnouncementRow(announcement: announcements[index]),
                     );
                   },
                 ),
@@ -84,34 +107,59 @@ class _AnnouncementRow extends ConsumerWidget {
         leading: announcement.imageUrl != null
             ? ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.network(announcement.imageUrl!, width: 48, height: 48, fit: BoxFit.cover),
+                child: Image.network(
+                  announcement.imageUrl!,
+                  width: 48,
+                  height: 48,
+                  fit: BoxFit.cover,
+                ),
               )
-            : CircleAvatar(child: Icon(Icons.campaign_outlined, color: theme.colorScheme.primary)),
-        title: Text(announcement.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text(announcement.message, maxLines: 2, overflow: TextOverflow.ellipsis),
+            : CircleAvatar(
+                child: Icon(
+                  Icons.campaign_outlined,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+        title: Text(
+          announcement.title,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          announcement.message,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
         isThreeLine: true,
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Switch(
               value: announcement.isActive,
-              onChanged: (v) => ref.read(announcementsRepositoryProvider).update(AnnouncementModel(
-                    id: announcement.id,
-                    title: announcement.title,
-                    message: announcement.message,
-                    imageUrl: announcement.imageUrl,
-                    isActive: v,
-                    validFrom: announcement.validFrom,
-                    validTo: announcement.validTo,
-                    createdBy: announcement.createdBy,
-                    createdAt: announcement.createdAt,
-                    updatedAt: DateTime.now(),
-                  )),
+              onChanged: (v) => ref
+                  .read(announcementsRepositoryProvider)
+                  .update(
+                    AnnouncementModel(
+                      id: announcement.id,
+                      title: announcement.title,
+                      message: announcement.message,
+                      imageUrl: announcement.imageUrl,
+                      isActive: v,
+                      validFrom: announcement.validFrom,
+                      validTo: announcement.validTo,
+                      createdBy: announcement.createdBy,
+                      createdAt: announcement.createdAt,
+                      updatedAt: DateTime.now(),
+                    ),
+                  ),
             ),
             IconButton(
               tooltip: 'Edit',
               icon: const Icon(Icons.edit_outlined),
-              onPressed: () => showAnnouncementFormSheet(context, ref, existing: announcement),
+              onPressed: () => showAnnouncementFormSheet(
+                context,
+                ref,
+                existing: announcement,
+              ),
             ),
             IconButton(
               tooltip: 'Delete',
@@ -121,15 +169,25 @@ class _AnnouncementRow extends ConsumerWidget {
                   context: context,
                   builder: (context) => AlertDialog(
                     title: const Text('Delete announcement?'),
-                    content: Text('"${announcement.title}" will be removed permanently.'),
+                    content: Text(
+                      '"${announcement.title}" will be removed permanently.',
+                    ),
                     actions: [
-                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                      FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancel'),
+                      ),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Delete'),
+                      ),
                     ],
                   ),
                 );
                 if (confirmed == true) {
-                  await ref.read(announcementsRepositoryProvider).delete(announcement.id);
+                  await ref
+                      .read(announcementsRepositoryProvider)
+                      .delete(announcement.id);
                 }
               },
             ),

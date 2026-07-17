@@ -29,7 +29,9 @@ class GuideArticle {
 
   List<String> get searchFields => [question, ...keywords];
 
-  factory GuideArticle.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory GuideArticle.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final d = doc.data() ?? {};
     return GuideArticle(
       id: doc.id,
@@ -39,8 +41,12 @@ class GuideArticle {
       section: d['section'] as String?,
       keywords: (d['keywords'] as List?)?.cast<String>() ?? const [],
       createdBy: d['createdBy'] as String? ?? '',
-      createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0),
-      updatedAt: (d['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0),
+      createdAt:
+          (d['createdAt'] as Timestamp?)?.toDate() ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      updatedAt:
+          (d['updatedAt'] as Timestamp?)?.toDate() ??
+          DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
 
@@ -82,8 +88,12 @@ class GuideArticle {
       section: json['section'] as String?,
       keywords: (json['keywords'] as List?)?.cast<String>() ?? const [],
       createdBy: json['createdBy'] as String? ?? '',
-      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0),
-      updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0),
+      createdAt:
+          DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      updatedAt:
+          DateTime.tryParse(json['updatedAt'] as String? ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
 

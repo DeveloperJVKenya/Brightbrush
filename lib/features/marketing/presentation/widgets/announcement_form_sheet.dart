@@ -14,7 +14,11 @@ import '../../domain/announcement_model.dart';
 /// Create/edit form for a marketing announcement. Image upload degrades
 /// gracefully, same as the catalog item form: if it fails, the announcement
 /// still saves without a photo.
-Future<void> showAnnouncementFormSheet(BuildContext context, WidgetRef ref, {AnnouncementModel? existing}) {
+Future<void> showAnnouncementFormSheet(
+  BuildContext context,
+  WidgetRef ref, {
+  AnnouncementModel? existing,
+}) {
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -30,13 +34,17 @@ class _AnnouncementFormSheet extends ConsumerStatefulWidget {
   final AnnouncementModel? existing;
 
   @override
-  ConsumerState<_AnnouncementFormSheet> createState() => _AnnouncementFormSheetState();
+  ConsumerState<_AnnouncementFormSheet> createState() =>
+      _AnnouncementFormSheetState();
 }
 
-class _AnnouncementFormSheetState extends ConsumerState<_AnnouncementFormSheet> {
+class _AnnouncementFormSheetState
+    extends ConsumerState<_AnnouncementFormSheet> {
   final _formKey = GlobalKey<FormState>();
   late final _title = TextEditingController(text: widget.existing?.title ?? '');
-  late final _message = TextEditingController(text: widget.existing?.message ?? '');
+  late final _message = TextEditingController(
+    text: widget.existing?.message ?? '',
+  );
   late bool _isActive = widget.existing?.isActive ?? true;
 
   Uint8List? _pickedImageBytes;
@@ -50,7 +58,10 @@ class _AnnouncementFormSheetState extends ConsumerState<_AnnouncementFormSheet> 
   }
 
   Future<void> _pickImage() async {
-    final file = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85);
+    final file = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
     if (file == null) return;
     final bytes = await file.readAsBytes();
     setState(() => _pickedImageBytes = bytes);
@@ -63,7 +74,9 @@ class _AnnouncementFormSheetState extends ConsumerState<_AnnouncementFormSheet> 
     final repo = ref.read(announcementsRepositoryProvider);
     final uid = ref.read(currentUidProvider);
     if (uid == null) {
-      appLogger.w('[marketing] Save attempted with no signed-in uid — this will fail Firestore rules (createdBy required)');
+      appLogger.w(
+        '[marketing] Save attempted with no signed-in uid — this will fail Firestore rules (createdBy required)',
+      );
     }
 
     try {
@@ -83,7 +96,9 @@ class _AnnouncementFormSheetState extends ConsumerState<_AnnouncementFormSheet> 
       String announcementId;
       if (widget.existing == null) {
         announcementId = await repo.create(base, uid: uid ?? '');
-        appLogger.i('[marketing] Created announcement $announcementId (createdBy=$uid)');
+        appLogger.i(
+          '[marketing] Created announcement $announcementId (createdBy=$uid)',
+        );
       } else {
         announcementId = widget.existing!.id;
         await repo.update(base);
@@ -98,25 +113,32 @@ class _AnnouncementFormSheetState extends ConsumerState<_AnnouncementFormSheet> 
             bytes: _pickedImageBytes!,
             contentType: 'image/jpeg',
           );
-          await repo.update(AnnouncementModel(
-            id: announcementId,
-            title: base.title,
-            message: base.message,
-            imageUrl: url,
-            isActive: base.isActive,
-            validFrom: base.validFrom,
-            validTo: base.validTo,
-            createdBy: base.createdBy,
-            createdAt: base.createdAt,
-            updatedAt: DateTime.now(),
-          ));
+          await repo.update(
+            AnnouncementModel(
+              id: announcementId,
+              title: base.title,
+              message: base.message,
+              imageUrl: url,
+              isActive: base.isActive,
+              validFrom: base.validFrom,
+              validTo: base.validTo,
+              createdBy: base.createdBy,
+              createdAt: base.createdAt,
+              updatedAt: DateTime.now(),
+            ),
+          );
         } catch (error, stack) {
-          appLogger.w('[marketing] Image upload failed for announcement $announcementId — saved without a photo',
-              error: error, stackTrace: stack);
+          appLogger.w(
+            '[marketing] Image upload failed for announcement $announcementId — saved without a photo',
+            error: error,
+            stackTrace: stack,
+          );
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Saved without a photo — Storage isn\'t activated on this project yet.'),
+                content: Text(
+                  'Saved without a photo — Storage isn\'t activated on this project yet.',
+                ),
                 behavior: SnackBarBehavior.floating,
               ),
             );
@@ -124,12 +146,32 @@ class _AnnouncementFormSheetState extends ConsumerState<_AnnouncementFormSheet> 
         }
       }
 
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        final messenger = ScaffoldMessenger.of(context);
+        Navigator.of(context).pop();
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.existing == null
+                  ? 'Announcement added'
+                  : 'Announcement updated',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } catch (error, stack) {
-      appLogger.e('[marketing] Failed to save announcement', error: error, stackTrace: stack);
+      appLogger.e(
+        '[marketing] Failed to save announcement',
+        error: error,
+        stackTrace: stack,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t save: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('Couldn\'t save: ${friendlyError(error)}'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -141,7 +183,12 @@ class _AnnouncementFormSheetState extends ConsumerState<_AnnouncementFormSheet> 
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: EdgeInsets.only(left: 20, right: 20, top: 4, bottom: MediaQuery.viewInsetsOf(context).bottom + 24),
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 4,
+        bottom: MediaQuery.viewInsetsOf(context).bottom + 24,
+      ),
       child: SingleChildScrollView(
         child: Form(
           key: _formKey,
@@ -149,8 +196,12 @@ class _AnnouncementFormSheetState extends ConsumerState<_AnnouncementFormSheet> 
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.existing == null ? 'New announcement' : 'Edit announcement',
-                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                widget.existing == null
+                    ? 'New announcement'
+                    : 'Edit announcement',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const SizedBox(height: 16),
               GestureDetector(
@@ -164,13 +215,23 @@ class _AnnouncementFormSheetState extends ConsumerState<_AnnouncementFormSheet> 
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: _pickedImageBytes != null
-                      ? Image.memory(_pickedImageBytes!, fit: BoxFit.cover, width: double.infinity)
+                      ? Image.memory(
+                          _pickedImageBytes!,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                        )
                       : Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.add_photo_alternate_outlined, color: theme.colorScheme.onSurfaceVariant),
+                            Icon(
+                              Icons.add_photo_alternate_outlined,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                             const SizedBox(height: 6),
-                            Text('Add a banner photo (optional)', style: theme.textTheme.bodySmall),
+                            Text(
+                              'Add a banner photo (optional)',
+                              style: theme.textTheme.bodySmall,
+                            ),
                           ],
                         ),
                 ),
@@ -180,14 +241,18 @@ class _AnnouncementFormSheetState extends ConsumerState<_AnnouncementFormSheet> 
                 controller: _title,
                 autofocus: true,
                 decoration: const InputDecoration(labelText: 'Title'),
-                validator: (v) => (v == null || v.trim().length < 2) ? 'Enter a title (2+ chars)' : null,
+                validator: (v) => (v == null || v.trim().length < 2)
+                    ? 'Enter a title (2+ chars)'
+                    : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _message,
                 decoration: const InputDecoration(labelText: 'Message'),
                 maxLines: 3,
-                validator: (v) => (v == null || v.trim().length < 2) ? 'Enter a message' : null,
+                validator: (v) => (v == null || v.trim().length < 2)
+                    ? 'Enter a message'
+                    : null,
               ),
               const SizedBox(height: 8),
               SwitchListTile(
@@ -202,8 +267,17 @@ class _AnnouncementFormSheetState extends ConsumerState<_AnnouncementFormSheet> 
                 child: FilledButton(
                   onPressed: _saving ? null : _save,
                   child: _saving
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : Text(widget.existing == null ? 'Publish' : 'Save changes'),
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          widget.existing == null ? 'Publish' : 'Save changes',
+                        ),
                 ),
               ),
             ],

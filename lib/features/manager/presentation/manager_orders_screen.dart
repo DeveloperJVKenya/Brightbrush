@@ -15,7 +15,9 @@ import '../../orders/domain/order_status.dart';
 import 'widgets/order_status_filter_bar.dart';
 
 final _managerOrdersSearchProvider = StateProvider<String>((ref) => '');
-final _managerOrdersStatusFilterProvider = StateProvider<OrderStatus?>((ref) => null);
+final _managerOrdersStatusFilterProvider = StateProvider<OrderStatus?>(
+  (ref) => null,
+);
 
 class ManagerOrdersScreen extends ConsumerWidget {
   const ManagerOrdersScreen({super.key});
@@ -33,35 +35,64 @@ class ManagerOrdersScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Orders', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+            Text(
+              'Orders',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const SizedBox(height: 4),
             Text(
               'Every order across all customers, live as customers place and staff progress them.',
-              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 16),
             LiveSearchField(
               hintText: 'Search by customer, phone, order id, or item',
-              onChanged: (v) => ref.read(_managerOrdersSearchProvider.notifier).state = v,
+              onChanged: (v) =>
+                  ref.read(_managerOrdersSearchProvider.notifier).state = v,
             ),
             const SizedBox(height: 12),
             OrderStatusFilterBar(
               selected: statusFilter,
-              onSelected: (value) => ref.read(_managerOrdersStatusFilterProvider.notifier).state = value,
+              onSelected: (value) =>
+                  ref.read(_managerOrdersStatusFilterProvider.notifier).state =
+                      value,
             ),
             const SizedBox(height: 12),
             Expanded(
               child: ordersAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
+                loading: () => const Center(
+                  child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+                ),
                 error: (error, stack) {
-                  appLogger.e('[orders] Failed to load orders', error: error, stackTrace: stack);
+                  appLogger.e(
+                    '[orders] Failed to load orders',
+                    error: error,
+                    stackTrace: stack,
+                  );
                   return EmptyState(
-                      icon: Icons.cloud_off_rounded, title: 'Couldn\'t load orders', message: friendlyError(error));
+                    icon: Icons.cloud_off_rounded,
+                    title: 'Couldn\'t load orders',
+                    message: friendlyError(error),
+                    action: TextButton.icon(
+                      onPressed: () => ref.invalidate(allOrdersProvider),
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Retry'),
+                    ),
+                  );
                 },
                 data: (orders) {
-                  final statusFiltered =
-                      statusFilter == null ? orders : orders.where((o) => o.status == statusFilter).toList();
-                  final filtered = filterBySearch(statusFiltered, query, (o) => o.searchFields);
+                  final statusFiltered = statusFilter == null
+                      ? orders
+                      : orders.where((o) => o.status == statusFilter).toList();
+                  final filtered = filterBySearch(
+                    statusFiltered,
+                    query,
+                    (o) => o.searchFields,
+                  );
                   if (filtered.isEmpty) {
                     return EmptyState(
                       icon: Icons.receipt_long_outlined,
@@ -74,8 +105,10 @@ class ManagerOrdersScreen extends ConsumerWidget {
                   return ListView.separated(
                     padding: const EdgeInsets.only(bottom: 24),
                     itemCount: filtered.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 10),
-                    itemBuilder: (context, index) => _ManagerOrderRow(order: filtered[index]),
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 10),
+                    itemBuilder: (context, index) =>
+                        _ManagerOrderRow(order: filtered[index]),
                   );
                 },
               ),
@@ -108,10 +141,17 @@ class _ManagerOrderRowState extends ConsumerState<_ManagerOrderRow> {
     try {
       await ref.read(ordersRepositoryProvider).updateStatus(order.id, value);
     } catch (error, stack) {
-      appLogger.e('[orders] Failed to update status for order ${order.id}', error: error, stackTrace: stack);
+      appLogger.e(
+        '[orders] Failed to update status for order ${order.id}',
+        error: error,
+        stackTrace: stack,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t update status: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('Couldn\'t update status: ${friendlyError(error)}'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -127,12 +167,21 @@ class _ManagerOrderRowState extends ConsumerState<_ManagerOrderRow> {
     };
     setState(() => _busy = true);
     try {
-      await ref.read(ordersRepositoryProvider).updatePaymentStatus(order.id, next);
+      await ref
+          .read(ordersRepositoryProvider)
+          .updatePaymentStatus(order.id, next);
     } catch (error, stack) {
-      appLogger.e('[orders] Failed to update payment status for order ${order.id}', error: error, stackTrace: stack);
+      appLogger.e(
+        '[orders] Failed to update payment status for order ${order.id}',
+        error: error,
+        stackTrace: stack,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t update payment: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('Couldn\'t update payment: ${friendlyError(error)}'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -159,18 +208,25 @@ class _ManagerOrderRowState extends ConsumerState<_ManagerOrderRow> {
                     children: [
                       Text(
                         order.contactName,
-                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                       Text(
                         '${order.contactPhone} · ${_date.format(order.createdAt)}',
-                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),
                 ),
                 Text(
                   currencyFormat.format(order.total),
-                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: theme.colorScheme.primary),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.primary,
+                  ),
                 ),
               ],
             ),
@@ -194,7 +250,10 @@ class _ManagerOrderRowState extends ConsumerState<_ManagerOrderRow> {
                   underline: const SizedBox.shrink(),
                   items: [
                     for (final status in OrderStatus.values)
-                      DropdownMenuItem(value: status, child: Text(status.label)),
+                      DropdownMenuItem(
+                        value: status,
+                        child: Text(status.label),
+                      ),
                   ],
                   onChanged: _busy
                       ? null

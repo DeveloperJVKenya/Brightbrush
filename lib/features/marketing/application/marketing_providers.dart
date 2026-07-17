@@ -4,7 +4,9 @@ import '../../../core/firebase/firebase_providers.dart';
 import '../data/announcements_repository.dart';
 import '../domain/announcement_model.dart';
 
-final announcementsRepositoryProvider = Provider<AnnouncementsRepository>((ref) {
+final announcementsRepositoryProvider = Provider<AnnouncementsRepository>((
+  ref,
+) {
   return AnnouncementsRepository(ref.watch(firestoreProvider));
 });
 
@@ -15,7 +17,9 @@ final allAnnouncementsProvider = StreamProvider<List<AnnouncementModel>>((ref) {
 });
 
 /// Everyone-facing stream: active announcements only, for Home/Notifications.
-final activeAnnouncementsProvider = StreamProvider<List<AnnouncementModel>>((ref) {
+final activeAnnouncementsProvider = StreamProvider<List<AnnouncementModel>>((
+  ref,
+) {
   ref.watch(currentUidProvider);
   return ref.watch(announcementsRepositoryProvider).streamActive();
 });

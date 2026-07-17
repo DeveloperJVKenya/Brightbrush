@@ -9,7 +9,8 @@ class PackagesRepository {
 
   final FirebaseFirestore _db;
 
-  CollectionReference<Map<String, dynamic>> get _packages => _db.collection('Packages');
+  CollectionReference<Map<String, dynamic>> get _packages =>
+      _db.collection('Packages');
 
   Stream<List<PackageModel>> streamAll() {
     appLogger.d('[packages] streamAll()');
@@ -17,7 +18,11 @@ class PackagesRepository {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snap) => snap.docs.map(PackageModel.fromFirestore).toList())
-        .transform(logStreamErrors('[packages] streamAll() failed — likely signed in as a role without isCatalogManager()'));
+        .transform(
+          logStreamErrors(
+            '[packages] streamAll() failed — likely signed in as a role without isCatalogManager()',
+          ),
+        );
   }
 
   Stream<List<PackageModel>> streamActive() {
@@ -37,7 +42,11 @@ class PackagesRepository {
       appLogger.i('[packages] created ${doc.id}');
       return doc.id;
     } catch (error, stack) {
-      appLogger.e('[packages] create() failed for name="${package.name}"', error: error, stackTrace: stack);
+      appLogger.e(
+        '[packages] create() failed for name="${package.name}"',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }
@@ -47,7 +56,11 @@ class PackagesRepository {
     try {
       await _packages.doc(package.id).update(package.toFirestoreUpdate());
     } catch (error, stack) {
-      appLogger.e('[packages] update(${package.id}) failed', error: error, stackTrace: stack);
+      appLogger.e(
+        '[packages] update(${package.id}) failed',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }
@@ -57,7 +70,11 @@ class PackagesRepository {
     try {
       await _packages.doc(id).delete();
     } catch (error, stack) {
-      appLogger.e('[packages] delete($id) failed', error: error, stackTrace: stack);
+      appLogger.e(
+        '[packages] delete($id) failed',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }

@@ -8,7 +8,11 @@ import '../../core/settings/settings_providers.dart';
 /// data-driven grid an entrance instead of just popping into existence.
 /// Skipped entirely when the user has turned on "Reduce motion" in Settings.
 class StaggeredEntrance extends ConsumerStatefulWidget {
-  const StaggeredEntrance({super.key, required this.index, required this.child});
+  const StaggeredEntrance({
+    super.key,
+    required this.index,
+    required this.child,
+  });
 
   final int index;
   final Widget child;

@@ -14,7 +14,11 @@ import '../../../../core/logging/app_logger.dart';
 /// Create/edit form for a catalog item. Image upload degrades gracefully:
 /// if Storage isn't activated on the project yet, the item still saves —
 /// just without a photo — rather than blocking the whole form on it.
-Future<void> showCatalogItemFormSheet(BuildContext context, WidgetRef ref, {CatalogItem? existing}) {
+Future<void> showCatalogItemFormSheet(
+  BuildContext context,
+  WidgetRef ref, {
+  CatalogItem? existing,
+}) {
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -30,18 +34,30 @@ class _CatalogItemFormSheet extends ConsumerStatefulWidget {
   final CatalogItem? existing;
 
   @override
-  ConsumerState<_CatalogItemFormSheet> createState() => _CatalogItemFormSheetState();
+  ConsumerState<_CatalogItemFormSheet> createState() =>
+      _CatalogItemFormSheetState();
 }
 
 class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
   final _formKey = GlobalKey<FormState>();
   late final _name = TextEditingController(text: widget.existing?.name ?? '');
-  late final _description = TextEditingController(text: widget.existing?.description ?? '');
-  late final _price = TextEditingController(text: widget.existing?.basePrice.toString() ?? '');
-  late final _moq = TextEditingController(text: widget.existing?.moq.toString() ?? '1');
-  late final _leadTime = TextEditingController(text: widget.existing?.leadTimeDays.toString() ?? '3');
-  late final _tags = TextEditingController(text: widget.existing?.tags.join(', ') ?? '');
-  late CatalogCategory _category = widget.existing?.category ?? CatalogCategory.tshirts;
+  late final _description = TextEditingController(
+    text: widget.existing?.description ?? '',
+  );
+  late final _price = TextEditingController(
+    text: widget.existing?.basePrice.toString() ?? '',
+  );
+  late final _moq = TextEditingController(
+    text: widget.existing?.moq.toString() ?? '1',
+  );
+  late final _leadTime = TextEditingController(
+    text: widget.existing?.leadTimeDays.toString() ?? '3',
+  );
+  late final _tags = TextEditingController(
+    text: widget.existing?.tags.join(', ') ?? '',
+  );
+  late CatalogCategory _category =
+      widget.existing?.category ?? CatalogCategory.tshirts;
   late bool _isActive = widget.existing?.isActive ?? true;
   late bool _isFeatured = widget.existing?.isFeatured ?? false;
 
@@ -60,7 +76,10 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
   }
 
   Future<void> _pickImage() async {
-    final file = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85);
+    final file = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
     if (file == null) return;
     final bytes = await file.readAsBytes();
     setState(() => _pickedImageBytes = bytes);
@@ -81,7 +100,9 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
     final repo = ref.read(catalogRepositoryProvider);
     final uid = ref.read(currentUidProvider);
     if (uid == null) {
-      appLogger.w('[catalog] Save attempted with no signed-in uid — this will fail Firestore rules (createdBy required)');
+      appLogger.w(
+        '[catalog] Save attempted with no signed-in uid — this will fail Firestore rules (createdBy required)',
+      );
     }
 
     try {
@@ -120,28 +141,36 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
             bytes: _pickedImageBytes!,
             contentType: 'image/jpeg',
           );
-          await repo.update(CatalogItem(
-            id: itemId,
-            name: base.name,
-            category: base.category,
-            description: base.description,
-            basePrice: base.basePrice,
-            moq: base.moq,
-            leadTimeDays: base.leadTimeDays,
-            imageUrls: [...imageUrls, url],
-            tags: base.tags,
-            isActive: base.isActive,
-            isFeatured: base.isFeatured,
-            createdBy: base.createdBy,
-            createdAt: base.createdAt,
-            updatedAt: DateTime.now(),
-          ));
+          await repo.update(
+            CatalogItem(
+              id: itemId,
+              name: base.name,
+              category: base.category,
+              description: base.description,
+              basePrice: base.basePrice,
+              moq: base.moq,
+              leadTimeDays: base.leadTimeDays,
+              imageUrls: [...imageUrls, url],
+              tags: base.tags,
+              isActive: base.isActive,
+              isFeatured: base.isFeatured,
+              createdBy: base.createdBy,
+              createdAt: base.createdAt,
+              updatedAt: DateTime.now(),
+            ),
+          );
         } catch (error, stack) {
-          appLogger.w('[catalog] Image upload failed for item $itemId — saved without a photo', error: error, stackTrace: stack);
+          appLogger.w(
+            '[catalog] Image upload failed for item $itemId — saved without a photo',
+            error: error,
+            stackTrace: stack,
+          );
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Saved without a photo — Storage isn\'t activated on this project yet.'),
+                content: Text(
+                  'Saved without a photo — Storage isn\'t activated on this project yet.',
+                ),
                 behavior: SnackBarBehavior.floating,
               ),
             );
@@ -149,12 +178,30 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
         }
       }
 
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        final messenger = ScaffoldMessenger.of(context);
+        Navigator.of(context).pop();
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.existing == null ? 'Item added' : 'Item updated',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } catch (error, stack) {
-      appLogger.e('[catalog] Failed to save catalog item', error: error, stackTrace: stack);
+      appLogger.e(
+        '[catalog] Failed to save catalog item',
+        error: error,
+        stackTrace: stack,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t save: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('Couldn\'t save: ${friendlyError(error)}'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -179,8 +226,12 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.existing == null ? 'Add catalog item' : 'Edit catalog item',
-                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                widget.existing == null
+                    ? 'Add catalog item'
+                    : 'Edit catalog item',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const SizedBox(height: 16),
               GestureDetector(
@@ -194,13 +245,23 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: _pickedImageBytes != null
-                      ? Image.memory(_pickedImageBytes!, fit: BoxFit.cover, width: double.infinity)
+                      ? Image.memory(
+                          _pickedImageBytes!,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                        )
                       : Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.add_photo_alternate_outlined, color: theme.colorScheme.onSurfaceVariant),
+                            Icon(
+                              Icons.add_photo_alternate_outlined,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                             const SizedBox(height: 6),
-                            Text('Add a photo (optional)', style: theme.textTheme.bodySmall),
+                            Text(
+                              'Add a photo (optional)',
+                              style: theme.textTheme.bodySmall,
+                            ),
                           ],
                         ),
                 ),
@@ -210,7 +271,9 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
                 controller: _name,
                 autofocus: true,
                 decoration: const InputDecoration(labelText: 'Name'),
-                validator: (v) => (v == null || v.trim().length < 2) ? 'Enter a name (2+ chars)' : null,
+                validator: (v) => (v == null || v.trim().length < 2)
+                    ? 'Enter a name (2+ chars)'
+                    : null,
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<CatalogCategory>(
@@ -220,7 +283,8 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
                   for (final c in CatalogCategory.values)
                     DropdownMenuItem(value: c, child: Text(c.label)),
                 ],
-                onChanged: (value) => setState(() => _category = value ?? _category),
+                onChanged: (value) =>
+                    setState(() => _category = value ?? _category),
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -234,7 +298,9 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
                   Expanded(
                     child: TextFormField(
                       controller: _price,
-                      decoration: const InputDecoration(labelText: 'Base price (KES)'),
+                      decoration: const InputDecoration(
+                        labelText: 'Base price (KES)',
+                      ),
                       keyboardType: TextInputType.number,
                       validator: (v) {
                         final n = num.tryParse(v ?? '');
@@ -277,7 +343,9 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _tags,
-                decoration: const InputDecoration(labelText: 'Tags (comma separated)'),
+                decoration: const InputDecoration(
+                  labelText: 'Tags (comma separated)',
+                ),
               ),
               const SizedBox(height: 8),
               SwitchListTile(
@@ -301,9 +369,14 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
-                      : Text(widget.existing == null ? 'Add item' : 'Save changes'),
+                      : Text(
+                          widget.existing == null ? 'Add item' : 'Save changes',
+                        ),
                 ),
               ),
             ],

@@ -14,6 +14,8 @@ import '../../auth/domain/user_profile.dart';
 
 final _roleManagementSearchProvider = StateProvider<String>((ref) => '');
 
+const _twoColumnBreakpoint = 700.0;
+
 /// Admin/CEO- and Developer-only account directory: view every account and
 /// change anyone else's role. firestore.rules is the real gate (see
 /// `isAdminOrDeveloper()`) — this screen assumes it's only ever reached by
@@ -30,61 +32,121 @@ class RoleManagementScreen extends ConsumerWidget {
     final myUid = ref.watch(currentUidProvider);
 
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Role management', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 4),
-            Text(
-              'Every account in the system. Assign or change anyone else\'s role — you can\'t change your own here.',
-              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 16),
-            LiveSearchField(
-              hintText: 'Search by name, email, or uid',
-              onChanged: (v) => ref.read(_roleManagementSearchProvider.notifier).state = v,
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: profilesAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, stack) {
-                  appLogger.e('[role-mgmt] Failed to load accounts', error: error, stackTrace: stack);
-                  return EmptyState(
-                    icon: Icons.lock_outline_rounded,
-                    title: 'Couldn\'t load accounts',
-                    message: friendlyError(error),
-                  );
-                },
-                data: (profiles) {
-                  final filtered = filterBySearch(
-                    profiles,
-                    query,
-                    (p) => [p.displayName, p.email, p.uid, p.role.label],
-                  );
-                  if (filtered.isEmpty) {
-                    return EmptyState(
-                      icon: Icons.people_outline_rounded,
-                      title: profiles.isEmpty ? 'No accounts yet' : 'No matches',
-                      message: profiles.isEmpty ? 'Accounts show up here once someone signs up.' : 'Try a different search term.',
-                    );
-                  }
-                  return ListView.separated(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    itemCount: filtered.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 10),
-                    itemBuilder: (context, index) {
-                      final profile = filtered[index];
-                      return _AccountRow(profile: profile, isSelf: profile.uid == myUid);
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1200),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Role management',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Every account in the system. Assign or change anyone else\'s role — you can\'t change your own here.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                LiveSearchField(
+                  hintText: 'Search by name, email, or uid',
+                  onChanged: (v) =>
+                      ref.read(_roleManagementSearchProvider.notifier).state =
+                          v,
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: profilesAsync.when(
+                    loading: () => const Center(
+                      child: CircularProgressIndicator(
+                        semanticsLabel: 'Loading',
+                      ),
+                    ),
+                    error: (error, stack) {
+                      appLogger.e(
+                        '[role-mgmt] Failed to load accounts',
+                        error: error,
+                        stackTrace: stack,
+                      );
+                      return EmptyState(
+                        icon: Icons.lock_outline_rounded,
+                        title: 'Couldn\'t load accounts',
+                        message: friendlyError(error),
+                        action: TextButton.icon(
+                          onPressed: () =>
+                              ref.invalidate(allUserProfilesProvider),
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: const Text('Retry'),
+                        ),
+                      );
                     },
-                  );
-                },
-              ),
+                    data: (profiles) {
+                      final filtered = filterBySearch(
+                        profiles,
+                        query,
+                        (p) => [p.displayName, p.email, p.uid, p.role.label],
+                      );
+                      if (filtered.isEmpty) {
+                        return EmptyState(
+                          icon: Icons.people_outline_rounded,
+                          title: profiles.isEmpty
+                              ? 'No accounts yet'
+                              : 'No matches',
+                          message: profiles.isEmpty
+                              ? 'Accounts show up here once someone signs up.'
+                              : 'Try a different search term.',
+                        );
+                      }
+                      return LayoutBuilder(
+                        builder: (context, constraints) {
+                          if (constraints.maxWidth < _twoColumnBreakpoint) {
+                            return ListView.separated(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              itemCount: filtered.length,
+                              separatorBuilder: (context, index) =>
+                                  const SizedBox(height: 10),
+                              itemBuilder: (context, index) {
+                                final profile = filtered[index];
+                                return _AccountRow(
+                                  profile: profile,
+                                  isSelf: profile.uid == myUid,
+                                );
+                              },
+                            );
+                          }
+                          final columnWidth = (constraints.maxWidth - 12) / 2;
+                          return SingleChildScrollView(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Wrap(
+                              spacing: 12,
+                              runSpacing: 10,
+                              children: [
+                                for (final profile in filtered)
+                                  SizedBox(
+                                    width: columnWidth,
+                                    child: _AccountRow(
+                                      profile: profile,
+                                      isSelf: profile.uid == myUid,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
             ),
-            const SizedBox(height: 12),
-          ],
+          ),
         ),
       ),
     );
@@ -116,15 +178,22 @@ class _AccountRow extends StatelessWidget {
                     children: [
                       Flexible(
                         child: Text(
-                          profile.displayName.isEmpty ? profile.email : profile.displayName,
-                          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                          profile.displayName.isEmpty
+                              ? profile.email
+                              : profile.displayName,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       if (isSelf) ...[
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: theme.colorScheme.secondaryContainer,
                             borderRadius: BorderRadius.circular(20),
@@ -134,10 +203,18 @@ class _AccountRow extends StatelessWidget {
                       ],
                     ],
                   ),
-                  Text(profile.email, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                  Text(
+                    profile.email,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                   Text(
                     'uid: ${profile.uid}',
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontSize: 11),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontSize: 11,
+                    ),
                   ),
                 ],
               ),
@@ -166,7 +243,11 @@ class _AccountRow extends StatelessWidget {
               ),
             ] else if (profile.uid == foundingDeveloperUid) ...[
               const SizedBox(width: 4),
-              Icon(Icons.lock_outline_rounded, size: 18, color: theme.colorScheme.onSurfaceVariant),
+              Icon(
+                Icons.lock_outline_rounded,
+                size: 18,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ],
           ],
         ),
@@ -175,12 +256,12 @@ class _AccountRow extends StatelessWidget {
   }
 
   IconData _iconFor(AppRole role) => switch (role) {
-        AppRole.user => Icons.person_outline,
-        AppRole.deliveryStaff => Icons.local_shipping_outlined,
-        AppRole.systemManager => Icons.dashboard_outlined,
-        AppRole.admin => Icons.insights_outlined,
-        AppRole.developer => Icons.code_rounded,
-      };
+    AppRole.user => Icons.person_outline,
+    AppRole.deliveryStaff => Icons.local_shipping_outlined,
+    AppRole.systemManager => Icons.dashboard_outlined,
+    AppRole.admin => Icons.insights_outlined,
+    AppRole.developer => Icons.code_rounded,
+  };
 
   void _showRolePicker(BuildContext context, UserProfile profile) {
     showModalBottomSheet(
@@ -201,41 +282,58 @@ class _AccountRow extends StatelessWidget {
                   children: [
                     Text(
                       'Set role for ${profile.displayName.isEmpty ? profile.email : profile.displayName}',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     for (final role in AppRole.values)
                       if (role != AppRole.developer || canGrantDeveloper)
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: Icon(
-                          role == profile.role ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                          color: role == profile.role ? Theme.of(context).colorScheme.primary : null,
-                        ),
-                        title: Text(role.label),
-                        onTap: () async {
-                          Navigator.of(context).pop();
-                          if (role == profile.role) return;
-                          final myUid = ref.read(currentUidProvider);
-                          try {
-                            appLogger.i('[role-mgmt] Setting ${profile.uid} -> ${role.name}');
-                            await ref.read(userProfileRepositoryProvider).updateRole(
-                                  uid: profile.uid,
-                                  role: role,
-                                  changedByUid: myUid ?? 'unknown',
-                                );
-                          } catch (error, stack) {
-                            appLogger.e('[role-mgmt] Failed to set role for ${profile.uid}', error: error, stackTrace: stack);
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                    content: Text('Couldn\'t change role: ${friendlyError(error)}'),
-                                    behavior: SnackBarBehavior.floating),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            role == profile.role
+                                ? Icons.radio_button_checked
+                                : Icons.radio_button_unchecked,
+                            color: role == profile.role
+                                ? Theme.of(context).colorScheme.primary
+                                : null,
+                          ),
+                          title: Text(role.label),
+                          onTap: () async {
+                            Navigator.of(context).pop();
+                            if (role == profile.role) return;
+                            final myUid = ref.read(currentUidProvider);
+                            try {
+                              appLogger.i(
+                                '[role-mgmt] Setting ${profile.uid} -> ${role.name}',
                               );
+                              await ref
+                                  .read(userProfileRepositoryProvider)
+                                  .updateRole(
+                                    uid: profile.uid,
+                                    role: role,
+                                    changedByUid: myUid ?? 'unknown',
+                                  );
+                            } catch (error, stack) {
+                              appLogger.e(
+                                '[role-mgmt] Failed to set role for ${profile.uid}',
+                                error: error,
+                                stackTrace: stack,
+                              );
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Couldn\'t change role: ${friendlyError(error)}',
+                                    ),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
                             }
-                          }
-                        },
-                      ),
+                          },
+                        ),
                   ],
                 ),
               ),

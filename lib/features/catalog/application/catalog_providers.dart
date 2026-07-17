@@ -52,22 +52,30 @@ final allPackagesProvider = StreamProvider<List<PackageModel>>((ref) {
 });
 
 final catalogSearchQueryProvider = StateProvider<String>((ref) => '');
-final catalogCategoryFilterProvider = StateProvider<CatalogCategory?>((ref) => null);
+final catalogCategoryFilterProvider = StateProvider<CatalogCategory?>(
+  (ref) => null,
+);
 
 /// Live-filtered catalog: search query (substring, any position) combined
 /// with an optional category chip filter. Recomputes on every keystroke.
-final filteredCatalogItemsProvider = Provider<AsyncValue<List<CatalogItem>>>((ref) {
+final filteredCatalogItemsProvider = Provider<AsyncValue<List<CatalogItem>>>((
+  ref,
+) {
   final query = ref.watch(catalogSearchQueryProvider);
   final category = ref.watch(catalogCategoryFilterProvider);
   return ref.watch(activeCatalogItemsProvider).whenData((items) {
-    final categoryFiltered = category == null ? items : items.where((i) => i.category == category).toList();
+    final categoryFiltered = category == null
+        ? items
+        : items.where((i) => i.category == category).toList();
     return filterBySearch(categoryFiltered, query, (item) => item.searchFields);
   });
 });
 
 final packagesSearchQueryProvider = StateProvider<String>((ref) => '');
 
-final filteredPackagesProvider = Provider<AsyncValue<List<PackageModel>>>((ref) {
+final filteredPackagesProvider = Provider<AsyncValue<List<PackageModel>>>((
+  ref,
+) {
   final query = ref.watch(packagesSearchQueryProvider);
   return ref.watch(activePackagesProvider).whenData((packages) {
     return filterBySearch(packages, query, (p) => p.searchFields);

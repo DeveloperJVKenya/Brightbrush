@@ -28,14 +28,23 @@ Future<void> _showAnswerDialog(
     barrierLabel: 'Answer',
     barrierColor: Colors.black.withValues(alpha: 0.45),
     transitionDuration: const Duration(milliseconds: 260),
-    pageBuilder: (context, animation, secondaryAnimation) => const SizedBox.shrink(),
+    pageBuilder: (context, animation, secondaryAnimation) =>
+        const SizedBox.shrink(),
     transitionBuilder: (context, animation, secondaryAnimation, child) {
-      final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutBack, reverseCurve: Curves.easeIn);
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutBack,
+        reverseCurve: Curves.easeIn,
+      );
       return Opacity(
         opacity: animation.value.clamp(0, 1),
         child: Transform.scale(
           scale: 0.85 + (0.15 * curved.value.clamp(0, 1)),
-          child: _AnswerCard(question: question, answer: answer, fromCache: fromCache),
+          child: _AnswerCard(
+            question: question,
+            answer: answer,
+            fromCache: fromCache,
+          ),
         ),
       );
     },
@@ -43,7 +52,11 @@ Future<void> _showAnswerDialog(
 }
 
 class _AnswerCard extends StatelessWidget {
-  const _AnswerCard({required this.question, required this.answer, required this.fromCache});
+  const _AnswerCard({
+    required this.question,
+    required this.answer,
+    required this.fromCache,
+  });
 
   final String question;
   final String answer;
@@ -72,7 +85,10 @@ class _AnswerCard extends StatelessWidget {
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [theme.colorScheme.primaryContainer, theme.colorScheme.tertiaryContainer],
+                      colors: [
+                        theme.colorScheme.primaryContainer,
+                        theme.colorScheme.tertiaryContainer,
+                      ],
                     ),
                   ),
                   child: Row(
@@ -80,8 +96,14 @@ class _AnswerCard extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         radius: 20,
-                        backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.85),
-                        child: Icon(Icons.auto_awesome_rounded, color: theme.colorScheme.primary, size: 20),
+                        backgroundColor: theme.colorScheme.surface.withValues(
+                          alpha: 0.85,
+                        ),
+                        child: Icon(
+                          Icons.auto_awesome_rounded,
+                          color: theme.colorScheme.primary,
+                          size: 20,
+                        ),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -100,14 +122,23 @@ class _AnswerCard extends StatelessWidget {
                   Container(
                     width: double.infinity,
                     color: theme.colorScheme.secondaryContainer,
-                    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 22,
+                      vertical: 8,
+                    ),
                     child: Row(
                       children: [
-                        Icon(Icons.offline_bolt_rounded, size: 15, color: theme.colorScheme.onSecondaryContainer),
+                        Icon(
+                          Icons.offline_bolt_rounded,
+                          size: 15,
+                          color: theme.colorScheme.onSecondaryContainer,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           'Saved answer — shown while offline',
-                          style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSecondaryContainer),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.onSecondaryContainer,
+                          ),
                         ),
                       ],
                     ),
@@ -170,18 +201,25 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
 
     setState(() => _asking = true);
     try {
-      final answer = await ref.read(guideAssistantServiceProvider).ask(
-            question: question,
-            role: role,
-            knownArticles: knownArticles,
-          );
+      final answer = await ref
+          .read(guideAssistantServiceProvider)
+          .ask(question: question, role: role, knownArticles: knownArticles);
       _askController.clear();
-      if (mounted) _showAnswerDialog(context, question: question, answer: answer);
+      if (mounted) {
+        _showAnswerDialog(context, question: question, answer: answer);
+      }
     } catch (error, stack) {
-      appLogger.e('[guide] Assistant question failed', error: error, stackTrace: stack);
+      appLogger.e(
+        '[guide] Assistant question failed',
+        error: error,
+        stackTrace: stack,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(friendlyError(error)), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text(friendlyError(error)),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -189,7 +227,12 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
     }
   }
 
-  Widget _buildArticleList(BuildContext context, List<GuideArticle> articles, String query, {required bool offline}) {
+  Widget _buildArticleList(
+    BuildContext context,
+    List<GuideArticle> articles,
+    String query, {
+    required bool offline,
+  }) {
     final theme = Theme.of(context);
     final filtered = filterBySearch(articles, query, (a) => a.searchFields);
     if (filtered.isEmpty) {
@@ -201,8 +244,16 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
             : 'Try a different search, or ask below.',
       );
     }
-    final palette = [theme.colorScheme.primaryContainer, theme.colorScheme.tertiaryContainer, theme.colorScheme.secondaryContainer];
-    final onPalette = [theme.colorScheme.onPrimaryContainer, theme.colorScheme.onTertiaryContainer, theme.colorScheme.onSecondaryContainer];
+    final palette = [
+      theme.colorScheme.primaryContainer,
+      theme.colorScheme.tertiaryContainer,
+      theme.colorScheme.secondaryContainer,
+    ];
+    final onPalette = [
+      theme.colorScheme.onPrimaryContainer,
+      theme.colorScheme.onTertiaryContainer,
+      theme.colorScheme.onSecondaryContainer,
+    ];
     return ListView.separated(
       padding: const EdgeInsets.only(bottom: 12),
       itemCount: filtered.length,
@@ -215,7 +266,12 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
           borderRadius: BorderRadius.circular(18),
           child: InkWell(
             borderRadius: BorderRadius.circular(18),
-            onTap: () => _showAnswerDialog(context, question: article.question, answer: article.answer, fromCache: offline),
+            onTap: () => _showAnswerDialog(
+              context,
+              question: article.question,
+              answer: article.answer,
+              fromCache: offline,
+            ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Row(
@@ -223,7 +279,11 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
                   CircleAvatar(
                     radius: 19,
                     backgroundColor: palette[tone],
-                    child: Icon(Icons.help_rounded, size: 18, color: onPalette[tone]),
+                    child: Icon(
+                      Icons.help_rounded,
+                      size: 18,
+                      color: onPalette[tone],
+                    ),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -233,7 +293,9 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
                       children: [
                         Text(
                           article.question,
-                          style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                         if (article.answer.isNotEmpty) ...[
                           const SizedBox(height: 3),
@@ -241,13 +303,18 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
                             article.answer,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ],
                       ],
                     ),
                   ),
-                  Icon(Icons.chevron_right_rounded, color: theme.colorScheme.onSurfaceVariant),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ],
               ),
             ),
@@ -281,18 +348,28 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [theme.colorScheme.primaryContainer.withValues(alpha: 0.5), theme.colorScheme.tertiaryContainer.withValues(alpha: 0.35)],
+                    colors: [
+                      theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
+                      theme.colorScheme.tertiaryContainer.withValues(
+                        alpha: 0.35,
+                      ),
+                    ],
                   ),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.lightbulb_outline_rounded, color: theme.colorScheme.primary),
+                    Icon(
+                      Icons.lightbulb_outline_rounded,
+                      color: theme.colorScheme.primary,
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         'Answers for what you can do here — search below, or ask your own question.',
-                        style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ],
@@ -301,17 +378,36 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
               const SizedBox(height: 16),
               LiveSearchField(
                 hintText: 'Search questions, e.g. "assign order"',
-                onChanged: (v) => ref.read(_guideSearchProvider.notifier).state = v,
+                onChanged: (v) =>
+                    ref.read(_guideSearchProvider.notifier).state = v,
               ),
               const SizedBox(height: 12),
               Expanded(
                 child: articlesAsync.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+                  ),
                   error: (error, stack) {
-                    appLogger.e('[guide] Failed to load articles', error: error, stackTrace: stack);
-                    final cached = role == null ? const <GuideArticle>[] : readCachedGuideArticles(ref, role);
+                    appLogger.e(
+                      '[guide] Failed to load articles',
+                      error: error,
+                      stackTrace: stack,
+                    );
+                    final cached = role == null
+                        ? const <GuideArticle>[]
+                        : readCachedGuideArticles(ref, role);
                     if (cached.isEmpty) {
-                      return EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load the guide', message: friendlyError(error));
+                      return EmptyState(
+                        icon: Icons.cloud_off_rounded,
+                        title: 'Couldn\'t load the guide',
+                        message: friendlyError(error),
+                        action: TextButton.icon(
+                          onPressed: () =>
+                              ref.invalidate(myGuideArticlesProvider),
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: const Text('Retry'),
+                        ),
+                      );
                     }
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,29 +415,51 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
                         Container(
                           width: double.infinity,
                           margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: theme.colorScheme.secondaryContainer,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.wifi_off_rounded, size: 16, color: theme.colorScheme.onSecondaryContainer),
+                              Icon(
+                                Icons.wifi_off_rounded,
+                                size: 16,
+                                color: theme.colorScheme.onSecondaryContainer,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   'You\'re offline — showing saved answers. Asking something new needs a connection.',
-                                  style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSecondaryContainer),
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color:
+                                        theme.colorScheme.onSecondaryContainer,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        Expanded(child: _buildArticleList(context, cached, query, offline: true)),
+                        Expanded(
+                          child: _buildArticleList(
+                            context,
+                            cached,
+                            query,
+                            offline: true,
+                          ),
+                        ),
                       ],
                     );
                   },
-                  data: (articles) => _buildArticleList(context, articles, query, offline: false),
+                  data: (articles) => _buildArticleList(
+                    context,
+                    articles,
+                    query,
+                    offline: false,
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -351,7 +469,14 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
                   gradient: LinearGradient(
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
-                    colors: [theme.colorScheme.tertiaryContainer.withValues(alpha: 0.55), theme.colorScheme.primaryContainer.withValues(alpha: 0.55)],
+                    colors: [
+                      theme.colorScheme.tertiaryContainer.withValues(
+                        alpha: 0.55,
+                      ),
+                      theme.colorScheme.primaryContainer.withValues(
+                        alpha: 0.55,
+                      ),
+                    ],
                   ),
                   borderRadius: BorderRadius.circular(22),
                   border: Border.all(color: theme.colorScheme.outlineVariant),
@@ -362,7 +487,11 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.auto_awesome_rounded, size: 16, color: theme.colorScheme.primary),
+                        Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 16,
+                          color: theme.colorScheme.primary,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           'Ask something else — needs internet',
@@ -379,12 +508,19 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
                       children: [
                         Expanded(
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: theme.colorScheme.surface,
                               borderRadius: BorderRadius.circular(26),
                               boxShadow: [
-                                BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 6, offset: const Offset(0, 2)),
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
                               ],
                             ),
                             child: TextField(
@@ -393,10 +529,14 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
                                 hintText: 'Type your question…',
                                 border: InputBorder.none,
                                 isDense: true,
-                                contentPadding: EdgeInsets.symmetric(vertical: 12),
+                                contentPadding: EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                               ),
                               textInputAction: TextInputAction.send,
-                              onSubmitted: (_) => _askSomethingElse(articlesAsync.valueOrNull ?? const []),
+                              onSubmitted: (_) => _askSomethingElse(
+                                articlesAsync.valueOrNull ?? const [],
+                              ),
                             ),
                           ),
                         ),
@@ -407,10 +547,16 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
                                 height: 46,
                                 child: Padding(
                                   padding: EdgeInsets.all(12),
-                                  child: CircularProgressIndicator(strokeWidth: 2.4),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.4,
+                                  ),
                                 ),
                               )
-                            : _SendButton(onPressed: () => _askSomethingElse(articlesAsync.valueOrNull ?? const [])),
+                            : _SendButton(
+                                onPressed: () => _askSomethingElse(
+                                  articlesAsync.valueOrNull ?? const [],
+                                ),
+                              ),
                       ],
                     ),
                   ],
@@ -447,7 +593,11 @@ class _SendButton extends StatelessWidget {
             colors: [theme.colorScheme.primary, theme.colorScheme.tertiary],
           ),
           boxShadow: [
-            BoxShadow(color: theme.colorScheme.primary.withValues(alpha: 0.35), blurRadius: 10, offset: const Offset(0, 3)),
+            BoxShadow(
+              color: theme.colorScheme.primary.withValues(alpha: 0.35),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
           ],
         ),
         child: InkWell(

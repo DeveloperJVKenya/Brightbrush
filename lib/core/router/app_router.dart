@@ -26,7 +26,10 @@ import '../logging/app_logger.dart';
 /// so navigation reacts to role/auth changes without rebuilding the router.
 class _RoleRefreshNotifier extends ChangeNotifier {
   _RoleRefreshNotifier(this._ref) {
-    _ref.listen<AsyncValue<AppRole?>>(resolvedRoleProvider, (_, _) => notifyListeners());
+    _ref.listen<AsyncValue<AppRole?>>(
+      resolvedRoleProvider,
+      (_, _) => notifyListeners(),
+    );
   }
 
   final Ref _ref;
@@ -74,30 +77,35 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       final requiredRole = _roleFor(path);
       if (requiredRole != null && requiredRole != role) {
-        appLogger.w('[router] role=$role blocked from $path (requires $requiredRole) -> redirecting to ${role.homePath}');
+        appLogger.w(
+          '[router] role=$role blocked from $path (requires $requiredRole) -> redirecting to ${role.homePath}',
+        );
         return role.homePath;
       }
       return null;
     },
     routes: [
-      GoRoute(path: '/splash', builder: (context, state) => const SplashScreen()),
+      GoRoute(
+        path: '/splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
-      GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
+      ),
       GoRoute(path: '/help', builder: (context, state) => const GuideScreen()),
-      GoRoute(path: '/developer', builder: (context, state) => const DeveloperHomeScreen()),
+      GoRoute(
+        path: '/developer',
+        builder: (context, state) => const DeveloperHomeScreen(),
+      ),
       _roleShellRoute(
         role: AppRole.user,
         modules: customerModules,
         extraRoutes: customerExtraRoutes,
       ),
-      _roleShellRoute(
-        role: AppRole.deliveryStaff,
-        modules: staffModules,
-      ),
-      _roleShellRoute(
-        role: AppRole.systemManager,
-        modules: managerModules,
-      ),
+      _roleShellRoute(role: AppRole.deliveryStaff, modules: staffModules),
+      _roleShellRoute(role: AppRole.systemManager, modules: managerModules),
       _roleShellRoute(
         role: AppRole.admin,
         modules: adminModules,
@@ -125,7 +133,9 @@ ShellRoute _roleShellRoute({
           final isDeveloperViewing = actualRole == AppRole.developer;
 
           return AdaptiveRoleShell(
-            roleLabel: isDeveloperViewing ? '${role.label} · Developer view' : role.label,
+            roleLabel: isDeveloperViewing
+                ? '${role.label} · Developer view'
+                : role.label,
             items: [
               for (final module in modules)
                 RoleNavItem(
@@ -142,7 +152,9 @@ ShellRoute _roleShellRoute({
             onOpenHelp: () => context.push('/help'),
             onSwitchView: isDeveloperViewing
                 ? () {
-                    appLogger.i('[developer] Switching view back to picker from ${state.matchedLocation}');
+                    appLogger.i(
+                      '[developer] Switching view back to picker from ${state.matchedLocation}',
+                    );
                     context.go('/developer');
                   }
                 : null,
@@ -159,12 +171,13 @@ ShellRoute _roleShellRoute({
       for (final module in modules)
         GoRoute(
           path: module.path,
-          builder: module.screenBuilder ??
+          builder:
+              module.screenBuilder ??
               (context, state) => PlaceholderScreen(
-                    title: module.label,
-                    description: module.description,
-                    icon: module.icon,
-                  ),
+                title: module.label,
+                description: module.description,
+                icon: module.icon,
+              ),
         ),
       ...extraRoutes,
     ],

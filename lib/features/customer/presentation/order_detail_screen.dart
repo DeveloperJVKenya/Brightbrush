@@ -16,7 +16,6 @@ class OrderDetailScreen extends ConsumerWidget {
 
   final String orderId;
 
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ordersAsync = ref.watch(myOrdersProvider);
@@ -31,10 +30,25 @@ class OrderDetailScreen extends ConsumerWidget {
         title: const Text('Order details'),
       ),
       body: ordersAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(
+          child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+        ),
         error: (error, stack) {
-          appLogger.e('[orders] Failed to load order detail', error: error, stackTrace: stack);
-          return EmptyState(icon: Icons.cloud_off_rounded, title: 'Failed to load', message: friendlyError(error));
+          appLogger.e(
+            '[orders] Failed to load order detail',
+            error: error,
+            stackTrace: stack,
+          );
+          return EmptyState(
+            icon: Icons.cloud_off_rounded,
+            title: 'Failed to load',
+            message: friendlyError(error),
+            action: TextButton.icon(
+              onPressed: () => ref.invalidate(myOrdersProvider),
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Retry'),
+            ),
+          );
         },
         data: (orders) {
           final matches = orders.where((o) => o.id == orderId);
@@ -73,7 +87,7 @@ class _OrderDetailBody extends ConsumerWidget {
               const SizedBox(height: 16),
               _ItemsSection(order: order),
               const SizedBox(height: 16),
-              _DeliverySection(order: order, ref: ref),
+              _DeliverySection(order: order),
             ],
           );
         }
@@ -90,7 +104,7 @@ class _OrderDetailBody extends ConsumerWidget {
                   children: [
                     Expanded(flex: 3, child: _ItemsSection(order: order)),
                     const SizedBox(width: 20),
-                    Expanded(flex: 2, child: _DeliverySection(order: order, ref: ref)),
+                    Expanded(flex: 2, child: _DeliverySection(order: order)),
                   ],
                 ),
               ],
@@ -130,7 +144,12 @@ class _ItemsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Items', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+        Text(
+          'Items',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         const SizedBox(height: 8),
         Card(
           margin: EdgeInsets.zero,
@@ -139,7 +158,9 @@ class _ItemsSection extends StatelessWidget {
               for (final item in order.items) ...[
                 ListTile(
                   title: Text(item.name),
-                  subtitle: Text('${item.quantity} × ${currencyFormat.format(item.unitPrice)}'),
+                  subtitle: Text(
+                    '${item.quantity} × ${currencyFormat.format(item.unitPrice)}',
+                  ),
                   trailing: Text(
                     currencyFormat.format(item.lineTotal),
                     style: const TextStyle(fontWeight: FontWeight.w700),
@@ -149,10 +170,17 @@ class _ItemsSection extends StatelessWidget {
               ],
               const Divider(height: 1),
               ListTile(
-                title: const Text('Total', style: TextStyle(fontWeight: FontWeight.w700)),
+                title: const Text(
+                  'Total',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
                 trailing: Text(
                   currencyFormat.format(order.total),
-                  style: TextStyle(fontWeight: FontWeight.w700, color: theme.colorScheme.primary, fontSize: 16),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.primary,
+                    fontSize: 16,
+                  ),
                 ),
               ),
             ],
@@ -163,11 +191,60 @@ class _ItemsSection extends StatelessWidget {
   }
 }
 
-class _DeliverySection extends StatelessWidget {
-  const _DeliverySection({required this.order, required this.ref});
+class _DeliverySection extends ConsumerStatefulWidget {
+  const _DeliverySection({required this.order});
 
   final OrderModel order;
-  final WidgetRef ref;
+
+  @override
+  ConsumerState<_DeliverySection> createState() => _DeliverySectionState();
+}
+
+class _DeliverySectionState extends ConsumerState<_DeliverySection> {
+  bool _cancelling = false;
+
+  OrderModel get order => widget.order;
+
+  Future<void> _cancel() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancel this order?'),
+        content: const Text('This can\'t be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Keep order'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Cancel order'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    setState(() => _cancelling = true);
+    try {
+      await ref.read(ordersRepositoryProvider).cancel(order.id);
+    } catch (error, stack) {
+      appLogger.e(
+        '[orders] Failed to cancel order ${order.id}',
+        error: error,
+        stackTrace: stack,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Couldn\'t cancel: ${friendlyError(error)}'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _cancelling = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -175,7 +252,12 @@ class _DeliverySection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Delivery', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+        Text(
+          'Delivery',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         const SizedBox(height: 8),
         Card(
           margin: EdgeInsets.zero,
@@ -186,8 +268,12 @@ class _DeliverySection extends StatelessWidget {
               children: [
                 _InfoRow(icon: Icons.person_outline, label: order.contactName),
                 _InfoRow(icon: Icons.call_outlined, label: order.contactPhone),
-                _InfoRow(icon: Icons.location_on_outlined, label: order.deliveryAddress),
-                if (order.notes.isNotEmpty) _InfoRow(icon: Icons.notes_rounded, label: order.notes),
+                _InfoRow(
+                  icon: Icons.location_on_outlined,
+                  label: order.deliveryAddress,
+                ),
+                if (order.notes.isNotEmpty)
+                  _InfoRow(icon: Icons.notes_rounded, label: order.notes),
                 _InfoRow(
                   icon: Icons.payments_outlined,
                   label: 'Payment: ${order.paymentStatus.label}',
@@ -199,23 +285,14 @@ class _DeliverySection extends StatelessWidget {
         if (order.status == OrderStatus.pendingReview) ...[
           const SizedBox(height: 20),
           OutlinedButton.icon(
-            onPressed: () async {
-              final confirmed = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Cancel this order?'),
-                  content: const Text('This can\'t be undone.'),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Keep order')),
-                    FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Cancel order')),
-                  ],
-                ),
-              );
-              if (confirmed == true) {
-                await ref.read(ordersRepositoryProvider).cancel(order.id);
-              }
-            },
-            icon: const Icon(Icons.cancel_outlined),
+            onPressed: _cancelling ? null : _cancel,
+            icon: _cancelling
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.cancel_outlined),
             label: const Text('Cancel order'),
           ),
         ],

@@ -18,5 +18,9 @@ final assetsSearchQueryProvider = StateProvider<String>((ref) => '');
 
 final filteredAssetsProvider = Provider<AsyncValue<List<CompanyAsset>>>((ref) {
   final query = ref.watch(assetsSearchQueryProvider);
-  return ref.watch(allAssetsProvider).whenData((assets) => filterBySearch(assets, query, (a) => a.searchFields));
+  return ref
+      .watch(allAssetsProvider)
+      .whenData(
+        (assets) => filterBySearch(assets, query, (a) => a.searchFields),
+      );
 });

@@ -21,7 +21,8 @@ final List<ModuleSpec> managerModules = [
     label: 'Dashboard',
     icon: Icons.dashboard_outlined,
     selectedIcon: Icons.dashboard,
-    description: 'Snapshot of today\'s new orders, production load, and what needs review.',
+    description:
+        'Snapshot of today\'s new orders, production load, and what needs review.',
     screenBuilder: (context, state) => const ManagerDashboardScreen(),
   ),
   ModuleSpec(
@@ -39,7 +40,8 @@ final List<ModuleSpec> managerModules = [
     label: 'Packages',
     icon: Icons.card_giftcard_outlined,
     selectedIcon: Icons.card_giftcard,
-    description: 'Create and schedule seasonal/campaign bundles (Valentine\'s, elections, etc).',
+    description:
+        'Create and schedule seasonal/campaign bundles (Valentine\'s, elections, etc).',
     screenBuilder: (context, state) => const ManagerPackagesScreen(),
   ),
   ModuleSpec(
@@ -47,7 +49,8 @@ final List<ModuleSpec> managerModules = [
     label: 'Orders',
     icon: Icons.list_alt_outlined,
     selectedIcon: Icons.list_alt,
-    description: 'Incoming, in-production and completed orders across all clients.',
+    description:
+        'Incoming, in-production and completed orders across all clients.',
     screenBuilder: (context, state) => const ManagerOrdersScreen(),
   ),
   ModuleSpec(
@@ -55,7 +58,8 @@ final List<ModuleSpec> managerModules = [
     label: 'Service History',
     icon: Icons.fact_check_outlined,
     selectedIcon: Icons.fact_check,
-    description: 'Archive of completed jobs for reference, reprints and client history lookups.',
+    description:
+        'Archive of completed jobs for reference, reprints and client history lookups.',
     screenBuilder: (context, state) => const ManagerHistoryScreen(),
   ),
   ModuleSpec(
@@ -63,7 +67,8 @@ final List<ModuleSpec> managerModules = [
     label: 'Inventory',
     icon: Icons.inventory_outlined,
     selectedIcon: Icons.inventory,
-    description: 'Paint, blanks, thread and other materials — stock levels and reorder points.',
+    description:
+        'Paint, blanks, thread and other materials — stock levels and reorder points.',
     screenBuilder: (context, state) => const InventoryScreen(),
   ),
   ModuleSpec(
@@ -71,7 +76,8 @@ final List<ModuleSpec> managerModules = [
     label: 'Staff Assignment',
     icon: Icons.groups_2_outlined,
     selectedIcon: Icons.groups_2,
-    description: 'Assign delivery staff to ready orders and see each staff member\'s current workload.',
+    description:
+        'Assign delivery staff to ready orders and see each staff member\'s current workload.',
     screenBuilder: (context, state) => const ManagerStaffScreen(),
   ),
   ModuleSpec(

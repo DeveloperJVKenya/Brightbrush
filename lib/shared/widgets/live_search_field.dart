@@ -21,7 +21,8 @@ class LiveSearchField extends StatefulWidget {
 }
 
 class _LiveSearchFieldState extends State<LiveSearchField> {
-  late final TextEditingController _controller = widget.controller ?? TextEditingController();
+  late final TextEditingController _controller =
+      widget.controller ?? TextEditingController();
   late final FocusNode _focusNode = FocusNode();
   bool _hasText = false;
   bool _focused = false;
@@ -31,7 +32,9 @@ class _LiveSearchFieldState extends State<LiveSearchField> {
     super.initState();
     _hasText = _controller.text.isNotEmpty;
     _controller.addListener(_handleTextChange);
-    _focusNode.addListener(() => setState(() => _focused = _focusNode.hasFocus));
+    _focusNode.addListener(
+      () => setState(() => _focused = _focusNode.hasFocus),
+    );
   }
 
   void _handleTextChange() {
@@ -62,28 +65,35 @@ class _LiveSearchFieldState extends State<LiveSearchField> {
           width: _focused ? 1.5 : 1,
         ),
       ),
-      child: TextField(
-        controller: _controller,
-        focusNode: _focusNode,
-        textInputAction: TextInputAction.search,
-        decoration: InputDecoration(
-          hintText: widget.hintText,
-          prefixIcon: Icon(Icons.search_rounded, color: scheme.onSurfaceVariant),
-          suffixIcon: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 150),
-            child: _hasText
-                ? IconButton(
-                    key: const ValueKey('clear'),
-                    tooltip: 'Clear search',
-                    icon: const Icon(Icons.close_rounded),
-                    onPressed: () => _controller.clear(),
-                  )
-                : const SizedBox(key: ValueKey('empty'), width: 0),
+      child: Semantics(
+        label: widget.hintText,
+        textField: true,
+        child: TextField(
+          controller: _controller,
+          focusNode: _focusNode,
+          textInputAction: TextInputAction.search,
+          decoration: InputDecoration(
+            hintText: widget.hintText,
+            prefixIcon: Icon(
+              Icons.search_rounded,
+              color: scheme.onSurfaceVariant,
+            ),
+            suffixIcon: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 150),
+              child: _hasText
+                  ? IconButton(
+                      key: const ValueKey('clear'),
+                      tooltip: 'Clear search',
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => _controller.clear(),
+                    )
+                  : const SizedBox(key: ValueKey('empty'), width: 0),
+            ),
+            border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(vertical: 14),
           ),
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 14),
         ),
       ),
     );

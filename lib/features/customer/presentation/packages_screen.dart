@@ -24,12 +24,22 @@ void _showPackageSheet(BuildContext context, PackageModel package) {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(package.name, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+            Text(
+              package.name,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const SizedBox(height: 4),
-            Chip(label: Text(package.season), visualDensity: VisualDensity.compact),
+            Chip(
+              label: Text(package.season),
+              visualDensity: VisualDensity.compact,
+            ),
             const SizedBox(height: 12),
             Text(
-              package.description.isEmpty ? 'No description provided yet.' : package.description,
+              package.description.isEmpty
+                  ? 'No description provided yet.'
+                  : package.description,
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
@@ -37,7 +47,9 @@ void _showPackageSheet(BuildContext context, PackageModel package) {
               package.itemIds.isEmpty
                   ? 'This package doesn\'t list specific catalog items yet.'
                   : 'Includes ${package.itemIds.length} catalog item(s).',
-              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 20),
             SizedBox(
@@ -77,31 +89,55 @@ class PackagesScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Seasonal packages', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+            Text(
+              'Seasonal packages',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const SizedBox(height: 4),
             Text(
               'Curated bundles for campaigns and seasons — Valentine\'s, elections, and more.',
-              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 16),
             LiveSearchField(
               hintText: 'Search packages, e.g. "valentines"',
-              onChanged: (value) => ref.read(packagesSearchQueryProvider.notifier).state = value,
+              onChanged: (value) =>
+                  ref.read(packagesSearchQueryProvider.notifier).state = value,
             ),
             const SizedBox(height: 16),
             Expanded(
               child: filtered.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
+                loading: () => const Center(
+                  child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+                ),
                 error: (error, stack) {
-                  appLogger.e('[packages] Failed to load packages', error: error, stackTrace: stack);
+                  appLogger.e(
+                    '[packages] Failed to load packages',
+                    error: error,
+                    stackTrace: stack,
+                  );
                   return EmptyState(
-                      icon: Icons.cloud_off_rounded, title: 'Couldn\'t load packages', message: friendlyError(error));
+                    icon: Icons.cloud_off_rounded,
+                    title: 'Couldn\'t load packages',
+                    message: friendlyError(error),
+                    action: TextButton.icon(
+                      onPressed: () => ref.invalidate(filteredPackagesProvider),
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Retry'),
+                    ),
+                  );
                 },
                 data: (packages) {
                   if (packages.isEmpty) {
                     return EmptyState(
                       icon: Icons.card_giftcard_outlined,
-                      title: ref.read(packagesSearchQueryProvider).isEmpty ? 'No packages yet' : 'No matches',
+                      title: ref.read(packagesSearchQueryProvider).isEmpty
+                          ? 'No packages yet'
+                          : 'No matches',
                       message: ref.read(packagesSearchQueryProvider).isEmpty
                           ? 'Seasonal packages set up by the System Manager will appear here live.'
                           : 'Try a different search term.',
@@ -109,12 +145,13 @@ class PackagesScreen extends ConsumerWidget {
                   }
                   return GridView.builder(
                     padding: const EdgeInsets.only(bottom: 24),
-                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 340,
-                      mainAxisSpacing: 16,
-                      crossAxisSpacing: 16,
-                      childAspectRatio: 0.95,
-                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 340,
+                          mainAxisSpacing: 16,
+                          crossAxisSpacing: 16,
+                          childAspectRatio: 0.95,
+                        ),
                     itemCount: packages.length,
                     itemBuilder: (context, index) {
                       final package = packages[index];

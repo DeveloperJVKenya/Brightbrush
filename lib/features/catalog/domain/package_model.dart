@@ -33,7 +33,9 @@ class PackageModel {
 
   List<String> get searchFields => [name, season, description];
 
-  factory PackageModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory PackageModel.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final d = doc.data() ?? {};
     return PackageModel(
       id: doc.id,
@@ -47,8 +49,12 @@ class PackageModel {
       validFrom: (d['validFrom'] as Timestamp?)?.toDate(),
       validTo: (d['validTo'] as Timestamp?)?.toDate(),
       createdBy: d['createdBy'] as String? ?? '',
-      createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0),
-      updatedAt: (d['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0),
+      createdAt:
+          (d['createdAt'] as Timestamp?)?.toDate() ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      updatedAt:
+          (d['updatedAt'] as Timestamp?)?.toDate() ??
+          DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
 

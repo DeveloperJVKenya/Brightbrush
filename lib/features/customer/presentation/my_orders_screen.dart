@@ -28,28 +28,54 @@ class MyOrdersScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('My orders', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+            Text(
+              'My orders',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const SizedBox(height: 4),
             Text(
               'Every order you\'ve placed, with live status as it moves through production.',
-              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 16),
             LiveSearchField(
               hintText: 'Search your orders',
-              onChanged: (v) => ref.read(_myOrdersSearchProvider.notifier).state = v,
+              onChanged: (v) =>
+                  ref.read(_myOrdersSearchProvider.notifier).state = v,
             ),
             const SizedBox(height: 12),
             Expanded(
               child: ordersAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
+                loading: () => const Center(
+                  child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+                ),
                 error: (error, stack) {
-                  appLogger.e('[orders] Failed to load my orders', error: error, stackTrace: stack);
+                  appLogger.e(
+                    '[orders] Failed to load my orders',
+                    error: error,
+                    stackTrace: stack,
+                  );
                   return EmptyState(
-                      icon: Icons.cloud_off_rounded, title: 'Couldn\'t load orders', message: friendlyError(error));
+                    icon: Icons.cloud_off_rounded,
+                    title: 'Couldn\'t load orders',
+                    message: friendlyError(error),
+                    action: TextButton.icon(
+                      onPressed: () => ref.invalidate(myOrdersProvider),
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Retry'),
+                    ),
+                  );
                 },
                 data: (orders) {
-                  final filtered = filterBySearch(orders, query, (o) => o.searchFields);
+                  final filtered = filterBySearch(
+                    orders,
+                    query,
+                    (o) => o.searchFields,
+                  );
                   if (filtered.isEmpty) {
                     return EmptyState(
                       icon: Icons.receipt_long_outlined,
@@ -62,14 +88,16 @@ class MyOrdersScreen extends ConsumerWidget {
                   return ListView.separated(
                     padding: const EdgeInsets.only(bottom: 24),
                     itemCount: filtered.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 12),
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final order = filtered[index];
                       return StaggeredEntrance(
                         index: index,
                         child: OrderCard(
                           order: order,
-                          onTap: () => context.push('/customer/orders/${order.id}'),
+                          onTap: () =>
+                              context.push('/customer/orders/${order.id}'),
                         ),
                       );
                     },

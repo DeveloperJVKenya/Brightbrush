@@ -33,7 +33,9 @@ class InventoryMaterial {
 
   List<String> get searchFields => [name, category, supplierName];
 
-  factory InventoryMaterial.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory InventoryMaterial.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final d = doc.data() ?? {};
     return InventoryMaterial(
       id: doc.id,
@@ -46,8 +48,12 @@ class InventoryMaterial {
       supplierContact: d['supplierContact'] as String? ?? '',
       notes: d['notes'] as String? ?? '',
       createdBy: d['createdBy'] as String? ?? '',
-      createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0),
-      updatedAt: (d['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0),
+      createdAt:
+          (d['createdAt'] as Timestamp?)?.toDate() ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      updatedAt:
+          (d['updatedAt'] as Timestamp?)?.toDate() ??
+          DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
 

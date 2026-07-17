@@ -16,7 +16,8 @@ final List<ModuleSpec> staffModules = [
     label: 'My Deliveries',
     icon: Icons.inventory_2_outlined,
     selectedIcon: Icons.inventory_2,
-    description: 'Deliveries assigned to you today, grouped by route and priority.',
+    description:
+        'Deliveries assigned to you today, grouped by route and priority.',
     screenBuilder: (context, state) => const MyDeliveriesScreen(),
   ),
   ModuleSpec(

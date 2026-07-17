@@ -50,7 +50,12 @@ class _TypewriterTextState extends ConsumerState<TypewriterText> {
         timer.cancel();
         return;
       }
-      setState(() => _charsShown = (_charsShown + _charsPerTick).clamp(0, widget.text.length));
+      setState(
+        () => _charsShown = (_charsShown + _charsPerTick).clamp(
+          0,
+          widget.text.length,
+        ),
+      );
       if (_charsShown >= widget.text.length) timer.cancel();
     });
   }

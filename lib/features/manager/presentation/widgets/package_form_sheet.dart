@@ -48,10 +48,14 @@ class _PackageFormSheetState extends ConsumerState<_PackageFormSheet> {
     try {
       final uid = ref.read(currentUidProvider);
       if (uid == null) {
-        appLogger.w('[packages] Save attempted with no signed-in uid — aborting before a doomed Firestore write');
+        appLogger.w(
+          '[packages] Save attempted with no signed-in uid — aborting before a doomed Firestore write',
+        );
         throw StateError('You need to be signed in to save a package.');
       }
-      final packageId = await ref.read(packagesRepositoryProvider).create(
+      final packageId = await ref
+          .read(packagesRepositoryProvider)
+          .create(
             PackageModel(
               id: '',
               name: _name.text.trim(),
@@ -70,12 +74,28 @@ class _PackageFormSheetState extends ConsumerState<_PackageFormSheet> {
             uid: uid,
           );
       appLogger.i('[packages] Created package $packageId (createdBy=$uid)');
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        final messenger = ScaffoldMessenger.of(context);
+        Navigator.of(context).pop();
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Package added'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } catch (error, stack) {
-      appLogger.e('[packages] Failed to save package', error: error, stackTrace: stack);
+      appLogger.e(
+        '[packages] Failed to save package',
+        error: error,
+        stackTrace: stack,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t save: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('Couldn\'t save: ${friendlyError(error)}'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -99,19 +119,30 @@ class _PackageFormSheetState extends ConsumerState<_PackageFormSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Add seasonal package', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+              Text(
+                'Add seasonal package',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _name,
                 autofocus: true,
                 decoration: const InputDecoration(labelText: 'Name'),
-                validator: (v) => (v == null || v.trim().length < 2) ? 'Enter a name (2+ chars)' : null,
+                validator: (v) => (v == null || v.trim().length < 2)
+                    ? 'Enter a name (2+ chars)'
+                    : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _season,
-                decoration: const InputDecoration(labelText: 'Season / campaign tag (e.g. valentines)'),
-                validator: (v) => (v == null || v.trim().length < 2) ? 'Enter a tag (2+ chars)' : null,
+                decoration: const InputDecoration(
+                  labelText: 'Season / campaign tag (e.g. valentines)',
+                ),
+                validator: (v) => (v == null || v.trim().length < 2)
+                    ? 'Enter a tag (2+ chars)'
+                    : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -147,7 +178,10 @@ class _PackageFormSheetState extends ConsumerState<_PackageFormSheet> {
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                       : const Text('Add package'),
                 ),

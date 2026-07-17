@@ -11,7 +11,10 @@ enum ExpenseCategory {
   final String label;
 
   static ExpenseCategory fromName(String name) {
-    return ExpenseCategory.values.firstWhere((c) => c.name == name, orElse: () => ExpenseCategory.misc);
+    return ExpenseCategory.values.firstWhere(
+      (c) => c.name == name,
+      orElse: () => ExpenseCategory.misc,
+    );
   }
 }
 
@@ -36,17 +39,25 @@ class ExpenseModel {
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  factory ExpenseModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory ExpenseModel.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final d = doc.data() ?? {};
     return ExpenseModel(
       id: doc.id,
       category: ExpenseCategory.fromName(d['category'] as String? ?? 'misc'),
       amount: d['amount'] as num? ?? 0,
       note: d['note'] as String? ?? '',
-      date: (d['date'] as Timestamp?)?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0),
+      date:
+          (d['date'] as Timestamp?)?.toDate() ??
+          DateTime.fromMillisecondsSinceEpoch(0),
       createdBy: d['createdBy'] as String? ?? '',
-      createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0),
-      updatedAt: (d['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0),
+      createdAt:
+          (d['createdAt'] as Timestamp?)?.toDate() ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      updatedAt:
+          (d['updatedAt'] as Timestamp?)?.toDate() ??
+          DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
 

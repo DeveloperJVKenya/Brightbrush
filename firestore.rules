@@ -64,6 +64,14 @@ rules_version = '2';
 // Note: Firestore rules can't loop over `items` to validate each entry's inner fields (itemId/unitPrice/
 // etc.) — only the list's size is bounded here. Treat that as a known prototype limitation.
 //
+// Collection: Carts
+// Document ID: {uid} (the account's Firebase Auth uid) — one cart per customer
+// Fields:
+//   - items: map<string, number> (required, catalog item id -> quantity, each quantity a positive integer)
+//   - updatedAt: timestamp (required)
+// Owner-only in every direction (read/write) — never shared, never staff-visible; this is
+// working-draft basket state, not an Order (which is the durable, staff-visible record).
+//
 // Collection: Users
 // Document ID: {uid} (the account's Firebase Auth uid)
 // Fields:
@@ -297,6 +305,14 @@ service cloud.firestore {
             (!('itemIds' in d) || isValidStringList('itemIds', 30, 100)) &&
             (!('validFrom' in d) || d.validFrom is timestamp) &&
             (!('validTo' in d) || d.validTo is timestamp);
+    }
+
+    function isValidCart() {
+      let d = request.resource.data;
+      return hasOnlyAllowedFields(['items', 'updatedAt']) &&
+            hasRequiredFields(['items', 'updatedAt']) &&
+            d.items is map &&
+            d.updatedAt is timestamp;
     }
 
     function isValidOrderStatus(value) {
@@ -556,6 +572,15 @@ service cloud.firestore {
         );
 
       allow delete: if false;
+    }
+
+    match /Carts/{uid} {
+      // Purely a personal working draft — never read or written by anyone
+      // but the owning customer, not even Admin/Developer.
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid) && isValidCart();
+      allow update: if isOwner(uid) && isValidCart();
+      allow delete: if isOwner(uid);
     }
 
     match /Users/{uid} {
