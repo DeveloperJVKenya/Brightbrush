@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/errors/user_facing_error.dart';
+import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/live_search_field.dart';
 import '../../../shared/widgets/staggered_entrance.dart';
@@ -41,8 +43,11 @@ class MyOrdersScreen extends ConsumerWidget {
             Expanded(
               child: ordersAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, stack) =>
-                    EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load orders', message: '$error'),
+                error: (error, stack) {
+                  appLogger.e('[orders] Failed to load my orders', error: error, stackTrace: stack);
+                  return EmptyState(
+                      icon: Icons.cloud_off_rounded, title: 'Couldn\'t load orders', message: friendlyError(error));
+                },
                 data: (orders) {
                   final filtered = filterBySearch(orders, query, (o) => o.searchFields);
                   if (filtered.isEmpty) {

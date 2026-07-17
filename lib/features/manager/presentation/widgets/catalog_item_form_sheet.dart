@@ -8,6 +8,7 @@ import '../../../catalog/application/catalog_providers.dart';
 import '../../../catalog/domain/catalog_category.dart';
 import '../../../catalog/domain/catalog_item.dart';
 import '../../../../core/firebase/firebase_providers.dart';
+import '../../../../core/errors/user_facing_error.dart';
 import '../../../../core/logging/app_logger.dart';
 
 /// Create/edit form for a catalog item. Image upload degrades gracefully:
@@ -152,7 +153,7 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
       appLogger.e('[catalog] Failed to save catalog item', error: error, stackTrace: stack);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t save: $error'), behavior: SnackBarBehavior.floating),
+          SnackBar(content: Text('Couldn\'t save: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
         );
       }
     } finally {

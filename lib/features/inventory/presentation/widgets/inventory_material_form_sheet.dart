@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/firebase/firebase_providers.dart';
+import '../../../../core/errors/user_facing_error.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../application/inventory_providers.dart';
 import '../../domain/inventory_material.dart';
@@ -89,7 +90,7 @@ class _InventoryMaterialFormSheetState extends ConsumerState<_InventoryMaterialF
       appLogger.e('[inventory] Failed to save material', error: error, stackTrace: stack);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t save: $error'), behavior: SnackBarBehavior.floating),
+          SnackBar(content: Text('Couldn\'t save: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
         );
       }
     } finally {

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/errors/user_facing_error.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../catalog/application/ai_catalog_search_service.dart';
 import '../../../catalog/application/catalog_providers.dart';
 
@@ -48,8 +50,9 @@ class _AiSearchDialogState extends ConsumerState<AiSearchDialog> {
           ),
         );
       }
-    } catch (error) {
-      setState(() => _error = 'Couldn\'t reach the AI assistant: $error');
+    } catch (error, stack) {
+      appLogger.e('[ai-search] Failed to reach AI catalog search', error: error, stackTrace: stack);
+      setState(() => _error = 'Couldn\'t reach the AI assistant: ${friendlyError(error)}');
     } finally {
       if (mounted) setState(() => _loading = false);
     }

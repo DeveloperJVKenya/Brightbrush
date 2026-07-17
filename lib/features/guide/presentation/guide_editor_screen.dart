@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/app_role.dart';
+import '../../../core/errors/user_facing_error.dart';
+import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../application/guide_providers.dart';
 import '../domain/guide_article.dart';
@@ -41,8 +43,11 @@ class GuideEditorScreen extends ConsumerWidget {
               Expanded(
                 child: articlesAsync.when(
                   loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (error, stack) =>
-                      EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load articles', message: '$error'),
+                  error: (error, stack) {
+                    appLogger.e('[guide] Failed to load articles', error: error, stackTrace: stack);
+                    return EmptyState(
+                        icon: Icons.cloud_off_rounded, title: 'Couldn\'t load articles', message: friendlyError(error));
+                  },
                   data: (articles) {
                     if (articles.isEmpty) {
                       return const EmptyState(

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/auth/app_role.dart';
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/auth/founding_developer.dart';
+import '../../../core/errors/user_facing_error.dart';
 import '../../../core/firebase/firebase_providers.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../shared/search/search_utils.dart';
@@ -49,11 +50,14 @@ class RoleManagementScreen extends ConsumerWidget {
             Expanded(
               child: profilesAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, stack) => EmptyState(
-                  icon: Icons.lock_outline_rounded,
-                  title: 'Couldn\'t load accounts',
-                  message: '$error',
-                ),
+                error: (error, stack) {
+                  appLogger.e('[role-mgmt] Failed to load accounts', error: error, stackTrace: stack);
+                  return EmptyState(
+                    icon: Icons.lock_outline_rounded,
+                    title: 'Couldn\'t load accounts',
+                    message: friendlyError(error),
+                  );
+                },
                 data: (profiles) {
                   final filtered = filterBySearch(
                     profiles,
@@ -223,7 +227,9 @@ class _AccountRow extends StatelessWidget {
                             appLogger.e('[role-mgmt] Failed to set role for ${profile.uid}', error: error, stackTrace: stack);
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Couldn\'t change role: $error'), behavior: SnackBarBehavior.floating),
+                                SnackBar(
+                                    content: Text('Couldn\'t change role: ${friendlyError(error)}'),
+                                    behavior: SnackBarBehavior.floating),
                               );
                             }
                           }

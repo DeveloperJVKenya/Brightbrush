@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/formatting/currency.dart';
 
+import '../../../core/errors/user_facing_error.dart';
+import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/stat_card.dart';
 import '../../orders/application/orders_providers.dart';
@@ -19,8 +21,10 @@ class AdminOrdersScreen extends ConsumerWidget {
 
     return ordersAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) =>
-          EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load orders', message: '$error'),
+      error: (error, stack) {
+        appLogger.e('[orders] Failed to load orders overview', error: error, stackTrace: stack);
+        return EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load orders', message: friendlyError(error));
+      },
       data: (orders) {
         final byBucket = <OrderLifecycleBucket, List<OrderModel>>{
           for (final bucket in OrderLifecycleBucket.values) bucket: [],

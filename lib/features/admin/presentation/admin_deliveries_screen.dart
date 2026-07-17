@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/auth_providers.dart';
+import '../../../core/errors/user_facing_error.dart';
+import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/live_orders_map.dart';
 import '../../auth/domain/user_profile.dart';
@@ -23,8 +25,11 @@ class AdminDeliveriesScreen extends ConsumerWidget {
 
     return ordersAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) =>
-          EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load deliveries', message: '$error'),
+      error: (error, stack) {
+        appLogger.e('[delivery] Failed to load deliveries', error: error, stackTrace: stack);
+        return EmptyState(
+            icon: Icons.cloud_off_rounded, title: 'Couldn\'t load deliveries', message: friendlyError(error));
+      },
       data: (orders) {
         final staffByUid = {for (final s in staffAsync.valueOrNull ?? const <UserProfile>[]) s.uid: s};
 

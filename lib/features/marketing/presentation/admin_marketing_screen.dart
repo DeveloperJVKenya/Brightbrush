@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/errors/user_facing_error.dart';
+import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../application/marketing_providers.dart';
 import '../domain/announcement_model.dart';
@@ -36,8 +38,13 @@ class AdminMarketingScreen extends ConsumerWidget {
               Expanded(
                 child: announcementsAsync.when(
                   loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (error, stack) =>
-                      EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load announcements', message: '$error'),
+                  error: (error, stack) {
+                    appLogger.e('[marketing] Failed to load announcements', error: error, stackTrace: stack);
+                    return EmptyState(
+                        icon: Icons.cloud_off_rounded,
+                        title: 'Couldn\'t load announcements',
+                        message: friendlyError(error));
+                  },
                   data: (announcements) {
                     if (announcements.isEmpty) {
                       return const EmptyState(

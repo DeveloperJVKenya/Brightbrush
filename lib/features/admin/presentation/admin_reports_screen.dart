@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/auth_providers.dart';
+import '../../../core/errors/user_facing_error.dart';
 import '../../../core/formatting/currency.dart';
+import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/horizontal_bar_chart.dart';
 import '../../../shared/widgets/stat_card.dart';
@@ -26,8 +28,11 @@ class AdminReportsScreen extends ConsumerWidget {
 
     return ordersAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) =>
-          EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load reports', message: '$error'),
+      error: (error, stack) {
+        appLogger.e('[reports] Failed to load reports', error: error, stackTrace: stack);
+        return EmptyState(
+            icon: Icons.cloud_off_rounded, title: 'Couldn\'t load reports', message: friendlyError(error));
+      },
       data: (orders) {
         if (orders.isEmpty) {
           return const EmptyState(

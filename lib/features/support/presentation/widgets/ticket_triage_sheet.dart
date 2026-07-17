@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/errors/user_facing_error.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../application/support_providers.dart';
 import '../../domain/support_ticket.dart';
@@ -54,7 +55,7 @@ class _TicketTriageSheetState extends ConsumerState<_TicketTriageSheet> {
       appLogger.e('[support] Failed to triage ticket ${widget.ticket.id}', error: error, stackTrace: stack);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t save: $error'), behavior: SnackBarBehavior.floating),
+          SnackBar(content: Text('Couldn\'t save: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
         );
       }
     } finally {

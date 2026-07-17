@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/errors/user_facing_error.dart';
+import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/live_search_field.dart';
 import '../application/assets_providers.dart';
@@ -43,8 +45,11 @@ class AdminAssetsScreen extends ConsumerWidget {
               Expanded(
                 child: filtered.when(
                   loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (error, stack) =>
-                      EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load assets', message: '$error'),
+                  error: (error, stack) {
+                    appLogger.e('[assets] Failed to load assets', error: error, stackTrace: stack);
+                    return EmptyState(
+                        icon: Icons.cloud_off_rounded, title: 'Couldn\'t load assets', message: friendlyError(error));
+                  },
                   data: (assets) {
                     if (assets.isEmpty) {
                       return const EmptyState(

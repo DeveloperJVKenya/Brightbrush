@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/errors/user_facing_error.dart';
 import '../../../core/formatting/currency.dart';
+import '../../../core/logging/app_logger.dart';
 import '../../../shared/search/search_utils.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/live_search_field.dart';
@@ -45,8 +47,11 @@ class ManagerHistoryScreen extends ConsumerWidget {
             Expanded(
               child: ordersAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, stack) =>
-                    EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load history', message: '$error'),
+                error: (error, stack) {
+                  appLogger.e('[history] Failed to load service history', error: error, stackTrace: stack);
+                  return EmptyState(
+                      icon: Icons.cloud_off_rounded, title: 'Couldn\'t load history', message: friendlyError(error));
+                },
                 data: (orders) {
                   final done = orders
                       .where((o) => o.status == OrderStatus.completed || o.status == OrderStatus.cancelled)

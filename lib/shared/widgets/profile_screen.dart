@@ -10,6 +10,7 @@ import '../../core/auth/app_role.dart';
 import '../../core/auth/auth_providers.dart';
 import '../../core/firebase/firebase_providers.dart';
 import '../../core/formatting/currency.dart';
+import '../../core/errors/user_facing_error.dart';
 import '../../core/logging/app_logger.dart';
 import '../../features/catalog/application/catalog_providers.dart';
 import 'empty_state.dart';
@@ -64,7 +65,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       appLogger.e('[profile] Photo upload failed for uid=$uid', error: error, stackTrace: stack);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t upload photo: $error'), behavior: SnackBarBehavior.floating),
+          SnackBar(content: Text('Couldn\'t upload photo: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
         );
       }
     } finally {
@@ -91,10 +92,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           const SnackBar(content: Text('Profile updated'), behavior: SnackBarBehavior.floating),
         );
       }
-    } catch (error) {
+    } catch (error, stack) {
+      appLogger.e('[profile] Save failed', error: error, stackTrace: stack);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t save: $error'), behavior: SnackBarBehavior.floating),
+          SnackBar(content: Text('Couldn\'t save: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
         );
       }
     } finally {
@@ -120,8 +122,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return SafeArea(
       child: profileAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) =>
-            EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load your profile', message: '$error'),
+        error: (error, stack) {
+          appLogger.e('[profile] Failed to load profile', error: error, stackTrace: stack);
+          return EmptyState(
+              icon: Icons.cloud_off_rounded, title: 'Couldn\'t load your profile', message: friendlyError(error));
+        },
         data: (profile) {
           if (profile == null) {
             return const EmptyState(
@@ -366,7 +371,7 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
       setState(() => _error = error.message ?? 'Couldn\'t change password');
     } catch (error, stack) {
       appLogger.e('[auth] Password change failed', error: error, stackTrace: stack);
-      setState(() => _error = '$error');
+      setState(() => _error = friendlyError(error));
     } finally {
       if (mounted) setState(() => _saving = false);
     }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/auth/auth_providers.dart';
+import '../../../core/errors/user_facing_error.dart';
 import '../../../core/firebase/firebase_providers.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -63,7 +64,7 @@ class _CustomerSupportScreenState extends ConsumerState<CustomerSupportScreen> {
       appLogger.e('[support] Failed to submit ticket', error: error);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t send: $error'), behavior: SnackBarBehavior.floating),
+          SnackBar(content: Text('Couldn\'t send: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
         );
       }
     } finally {
@@ -132,8 +133,11 @@ class _CustomerSupportScreenState extends ConsumerState<CustomerSupportScreen> {
             const SizedBox(height: 12),
             ticketsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) =>
-                  EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load tickets', message: '$error'),
+              error: (error, stack) {
+                appLogger.e('[support] Failed to load tickets', error: error, stackTrace: stack);
+                return EmptyState(
+                    icon: Icons.cloud_off_rounded, title: 'Couldn\'t load tickets', message: friendlyError(error));
+              },
               data: (tickets) {
                 if (tickets.isEmpty) {
                   return const EmptyState(

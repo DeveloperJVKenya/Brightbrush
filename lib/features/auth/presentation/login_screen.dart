@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/auth_providers.dart';
+import '../../../core/errors/user_facing_error.dart';
 import '../../../core/firebase/firebase_providers.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../core/theme/app_theme.dart';
@@ -123,7 +124,7 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
       setState(() => _error = e.message ?? 'Something went wrong (${e.code}).');
     } catch (error, stack) {
       appLogger.e('[auth] Sign-in/sign-up failed with an unexpected error', error: error, stackTrace: stack);
-      setState(() => _error = '$error');
+      setState(() => _error = friendlyError(error));
     } finally {
       if (mounted) setState(() => _loading = false);
     }

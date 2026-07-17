@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/auth/app_role.dart';
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/firebase/firebase_providers.dart';
+import '../../../core/errors/user_facing_error.dart';
 import '../../../core/formatting/currency.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -29,8 +30,11 @@ class AdminEmployeesScreen extends ConsumerWidget {
     return SafeArea(
       child: profilesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) =>
-            EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load employees', message: '$error'),
+        error: (error, stack) {
+          appLogger.e('[employees] Failed to load employees', error: error, stackTrace: stack);
+          return EmptyState(
+              icon: Icons.cloud_off_rounded, title: 'Couldn\'t load employees', message: friendlyError(error));
+        },
         data: (profiles) {
           final staff = profiles.where((p) => p.role != AppRole.user).toList()
             ..sort((a, b) => a.role.index.compareTo(b.role.index));
@@ -139,7 +143,7 @@ class _EmployeeRowState extends ConsumerState<_EmployeeRow> {
       appLogger.e('[employees] Failed to update dailyWage for ${widget.person.uid}', error: error);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t save: $error'), behavior: SnackBarBehavior.floating),
+          SnackBar(content: Text('Couldn\'t save: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
         );
       }
     }
@@ -173,7 +177,7 @@ class _EmployeeRowState extends ConsumerState<_EmployeeRow> {
       appLogger.e('[employees] Failed to log daily pay for ${widget.person.uid}', error: error);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t log pay: $error'), behavior: SnackBarBehavior.floating),
+          SnackBar(content: Text('Couldn\'t log pay: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
         );
       }
     } finally {

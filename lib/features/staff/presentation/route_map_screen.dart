@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/errors/user_facing_error.dart';
+import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/live_orders_map.dart';
 import '../../orders/application/orders_providers.dart';
 import '../../orders/domain/order_model.dart';
@@ -16,8 +18,10 @@ class RouteMapScreen extends ConsumerWidget {
 
     return ordersAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) =>
-          Center(child: Text('Couldn\'t load your route: $error', textAlign: TextAlign.center)),
+      error: (error, stack) {
+        appLogger.e('[delivery] Failed to load route', error: error, stackTrace: stack);
+        return Center(child: Text('Couldn\'t load your route: ${friendlyError(error)}', textAlign: TextAlign.center));
+      },
       data: (orders) => LiveOrdersMap(
         orders: orders,
         emptyIcon: Icons.map_outlined,

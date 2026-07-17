@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/formatting/currency.dart';
 
+import '../../../core/errors/user_facing_error.dart';
+import '../../../core/logging/app_logger.dart';
 import '../../../shared/search/search_utils.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/live_search_field.dart';
@@ -51,8 +53,11 @@ class ManagerOrdersScreen extends ConsumerWidget {
             Expanded(
               child: ordersAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, stack) =>
-                    EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load orders', message: '$error'),
+                error: (error, stack) {
+                  appLogger.e('[orders] Failed to load orders', error: error, stackTrace: stack);
+                  return EmptyState(
+                      icon: Icons.cloud_off_rounded, title: 'Couldn\'t load orders', message: friendlyError(error));
+                },
                 data: (orders) {
                   final statusFiltered =
                       statusFilter == null ? orders : orders.where((o) => o.status == statusFilter).toList();

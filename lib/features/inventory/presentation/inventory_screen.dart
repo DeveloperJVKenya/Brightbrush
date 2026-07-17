@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/errors/user_facing_error.dart';
+import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/live_search_field.dart';
 import '../../../shared/widgets/stat_card.dart';
@@ -54,8 +56,11 @@ class InventoryScreen extends ConsumerWidget {
               Expanded(
                 child: filtered.when(
                   loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (error, stack) =>
-                      EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load inventory', message: '$error'),
+                  error: (error, stack) {
+                    appLogger.e('[inventory] Failed to load inventory', error: error, stackTrace: stack);
+                    return EmptyState(
+                        icon: Icons.cloud_off_rounded, title: 'Couldn\'t load inventory', message: friendlyError(error));
+                  },
                   data: (materials) {
                     if (materials.isEmpty) {
                       return EmptyState(

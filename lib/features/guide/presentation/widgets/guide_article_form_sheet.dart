@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/auth/app_role.dart';
 import '../../../../core/firebase/firebase_providers.dart';
+import '../../../../core/errors/user_facing_error.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../application/guide_providers.dart';
 import '../../domain/guide_article.dart';
@@ -90,7 +91,7 @@ class _GuideArticleFormSheetState extends ConsumerState<_GuideArticleFormSheet> 
       appLogger.e('[guide] Failed to save article', error: error, stackTrace: stack);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t save: $error'), behavior: SnackBarBehavior.floating),
+          SnackBar(content: Text('Couldn\'t save: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
         );
       }
     } finally {

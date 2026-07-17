@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/formatting/currency.dart';
 
+import '../../../core/errors/user_facing_error.dart';
 import '../../../core/firebase/firebase_providers.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/catalog_image.dart';
@@ -32,8 +33,11 @@ class CartCheckoutScreen extends ConsumerWidget {
 
     return catalogAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) =>
-          EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load your cart', message: '$error'),
+      error: (error, stack) {
+        appLogger.e('[checkout] Failed to load cart', error: error, stackTrace: stack);
+        return EmptyState(
+            icon: Icons.cloud_off_rounded, title: 'Couldn\'t load your cart', message: friendlyError(error));
+      },
       data: (catalogItems) {
         final byId = {for (final item in catalogItems) item.id: item};
         final lines = <MapEntry<CatalogItem, int>>[];
@@ -130,7 +134,7 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
       appLogger.e('[checkout] Failed to place order', error: error, stackTrace: stack);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t place order: $error'), behavior: SnackBarBehavior.floating),
+          SnackBar(content: Text('Couldn\'t place order: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
         );
       }
     } finally {

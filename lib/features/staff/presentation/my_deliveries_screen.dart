@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/firebase/firebase_providers.dart';
+import '../../../core/errors/user_facing_error.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../orders/application/orders_providers.dart';
@@ -68,7 +69,10 @@ class _AvailableTab extends ConsumerWidget {
     final ordersAsync = ref.watch(availableForDeliveryProvider);
     return ordersAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load orders', message: '$error'),
+      error: (error, stack) {
+        appLogger.e('[delivery] Failed to load available orders', error: error, stackTrace: stack);
+        return EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load orders', message: friendlyError(error));
+      },
       data: (orders) {
         if (orders.isEmpty) {
           return const EmptyState(
@@ -114,7 +118,7 @@ class _ClaimableCardState extends ConsumerState<_ClaimableCard> {
       appLogger.e('[delivery] Failed to claim order ${widget.order.id}', error: error, stackTrace: stack);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t claim: $error'), behavior: SnackBarBehavior.floating),
+          SnackBar(content: Text('Couldn\'t claim: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
         );
       }
     } finally {
@@ -141,7 +145,10 @@ class _ActiveTab extends ConsumerWidget {
     final ordersAsync = ref.watch(myActiveDeliveriesProvider);
     return ordersAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load orders', message: '$error'),
+      error: (error, stack) {
+        appLogger.e('[delivery] Failed to load active deliveries', error: error, stackTrace: stack);
+        return EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load orders', message: friendlyError(error));
+      },
       data: (orders) {
         if (orders.isEmpty) {
           return const EmptyState(
@@ -182,7 +189,7 @@ class _ActiveCardState extends ConsumerState<_ActiveCard> {
       appLogger.e('[delivery] Failed to mark order ${widget.order.id} delivered', error: error, stackTrace: stack);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t update: $error'), behavior: SnackBarBehavior.floating),
+          SnackBar(content: Text('Couldn\'t update: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
         );
       }
     } finally {

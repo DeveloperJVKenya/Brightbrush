@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/auth_providers.dart';
+import '../../../core/errors/user_facing_error.dart';
+import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../auth/domain/user_profile.dart';
 import '../../orders/application/orders_providers.dart';
@@ -63,7 +65,10 @@ class _UnassignedTab extends ConsumerWidget {
     final ordersAsync = ref.watch(availableForDeliveryProvider);
     return ordersAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load orders', message: '$error'),
+      error: (error, stack) {
+        appLogger.e('[staff] Failed to load unassigned orders', error: error, stackTrace: stack);
+        return EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load orders', message: friendlyError(error));
+      },
       data: (orders) {
         if (orders.isEmpty) {
           return const EmptyState(
@@ -137,10 +142,11 @@ class _AssignableCardState extends ConsumerState<_AssignableCard> {
     setState(() => _busy = true);
     try {
       await ref.read(ordersRepositoryProvider).claimForDelivery(widget.order.id, staffUid: picked.uid);
-    } catch (error) {
+    } catch (error, stack) {
+      appLogger.e('[staff] Failed to assign order ${widget.order.id}', error: error, stackTrace: stack);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t assign: $error'), behavior: SnackBarBehavior.floating),
+          SnackBar(content: Text('Couldn\'t assign: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
         );
       }
     } finally {
@@ -169,7 +175,10 @@ class _RosterTab extends ConsumerWidget {
 
     return staffAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load staff', message: '$error'),
+      error: (error, stack) {
+        appLogger.e('[staff] Failed to load staff roster', error: error, stackTrace: stack);
+        return EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load staff', message: friendlyError(error));
+      },
       data: (staff) {
         if (staff.isEmpty) {
           return const EmptyState(

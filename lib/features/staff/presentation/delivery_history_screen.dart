@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/errors/user_facing_error.dart';
+import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../orders/application/orders_providers.dart';
 import 'widgets/delivery_order_card.dart';
@@ -29,8 +31,11 @@ class DeliveryHistoryScreen extends ConsumerWidget {
             Expanded(
               child: ordersAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, stack) =>
-                    EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load history', message: '$error'),
+                error: (error, stack) {
+                  appLogger.e('[delivery] Failed to load delivery history', error: error, stackTrace: stack);
+                  return EmptyState(
+                      icon: Icons.cloud_off_rounded, title: 'Couldn\'t load history', message: friendlyError(error));
+                },
                 data: (orders) {
                   if (orders.isEmpty) {
                     return const EmptyState(

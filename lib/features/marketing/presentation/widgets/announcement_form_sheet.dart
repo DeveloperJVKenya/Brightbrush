@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/firebase/firebase_providers.dart';
+import '../../../../core/errors/user_facing_error.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../catalog/application/catalog_providers.dart';
 import '../../application/marketing_providers.dart';
@@ -127,7 +128,7 @@ class _AnnouncementFormSheetState extends ConsumerState<_AnnouncementFormSheet> 
       appLogger.e('[marketing] Failed to save announcement', error: error, stackTrace: stack);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn\'t save: $error'), behavior: SnackBarBehavior.floating),
+          SnackBar(content: Text('Couldn\'t save: ${friendlyError(error)}'), behavior: SnackBarBehavior.floating),
         );
       }
     } finally {

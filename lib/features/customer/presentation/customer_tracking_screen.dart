@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/errors/user_facing_error.dart';
+import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/live_orders_map.dart';
 import '../../orders/application/orders_providers.dart';
@@ -18,8 +20,11 @@ class CustomerTrackingScreen extends ConsumerWidget {
 
     return ordersAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) =>
-          EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load your orders', message: '$error'),
+      error: (error, stack) {
+        appLogger.e('[tracking] Failed to load orders', error: error, stackTrace: stack);
+        return EmptyState(
+            icon: Icons.cloud_off_rounded, title: 'Couldn\'t load your orders', message: friendlyError(error));
+      },
       data: (orders) {
         final outForDelivery = orders.where((o) => o.status == OrderStatus.outForDelivery).toList();
         return LiveOrdersMap(

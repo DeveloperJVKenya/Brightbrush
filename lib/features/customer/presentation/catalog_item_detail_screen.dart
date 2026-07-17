@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/formatting/currency.dart';
 
+import '../../../core/errors/user_facing_error.dart';
+import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/catalog_image.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../catalog/application/catalog_providers.dart';
@@ -29,7 +31,10 @@ class CatalogItemDetailScreen extends ConsumerWidget {
       ),
       body: itemsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => EmptyState(icon: Icons.cloud_off_rounded, title: 'Failed to load', message: '$error'),
+        error: (error, stack) {
+          appLogger.e('[catalog] Failed to load catalog item detail', error: error, stackTrace: stack);
+          return EmptyState(icon: Icons.cloud_off_rounded, title: 'Failed to load', message: friendlyError(error));
+        },
         data: (items) {
           final matches = items.where((i) => i.id == itemId);
           final item = matches.isEmpty ? null : matches.first;

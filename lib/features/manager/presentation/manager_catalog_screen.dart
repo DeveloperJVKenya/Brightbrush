@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/formatting/currency.dart';
 
+import '../../../core/errors/user_facing_error.dart';
+import '../../../core/logging/app_logger.dart';
 import '../../../shared/search/search_utils.dart';
 import '../../../shared/widgets/catalog_image.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -49,8 +51,11 @@ class ManagerCatalogScreen extends ConsumerWidget {
               Expanded(
                 child: itemsAsync.when(
                   loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (error, stack) =>
-                      EmptyState(icon: Icons.cloud_off_rounded, title: 'Couldn\'t load catalog', message: '$error'),
+                  error: (error, stack) {
+                    appLogger.e('[catalog] Failed to load catalog', error: error, stackTrace: stack);
+                    return EmptyState(
+                        icon: Icons.cloud_off_rounded, title: 'Couldn\'t load catalog', message: friendlyError(error));
+                  },
                   data: (items) {
                     final filtered = filterBySearch(items, query, (i) => i.searchFields);
                     if (filtered.isEmpty) {

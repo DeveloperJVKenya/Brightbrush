@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/errors/user_facing_error.dart';
+import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/announcement_banner.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/live_search_field.dart';
@@ -87,11 +89,14 @@ class CustomerCatalogScreen extends ConsumerWidget {
               Expanded(
                 child: filtered.when(
                   loading: () => const _CatalogGridSkeleton(),
-                  error: (error, stack) => EmptyState(
-                    icon: Icons.cloud_off_rounded,
-                    title: 'Couldn\'t load the catalog',
-                    message: '$error',
-                  ),
+                  error: (error, stack) {
+                    appLogger.e('[catalog] Failed to load catalog', error: error, stackTrace: stack);
+                    return EmptyState(
+                      icon: Icons.cloud_off_rounded,
+                      title: 'Couldn\'t load the catalog',
+                      message: friendlyError(error),
+                    );
+                  },
                   data: (items) {
                     if (items.isEmpty) {
                       return EmptyState(

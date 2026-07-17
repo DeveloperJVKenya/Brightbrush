@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/formatting/currency.dart';
 
+import '../../../core/errors/user_facing_error.dart';
+import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/order_status_timeline.dart';
 import '../../orders/application/orders_providers.dart';
@@ -26,7 +28,10 @@ class OrderDetailScreen extends ConsumerWidget {
       ),
       body: ordersAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => EmptyState(icon: Icons.cloud_off_rounded, title: 'Failed to load', message: '$error'),
+        error: (error, stack) {
+          appLogger.e('[orders] Failed to load order detail', error: error, stackTrace: stack);
+          return EmptyState(icon: Icons.cloud_off_rounded, title: 'Failed to load', message: friendlyError(error));
+        },
         data: (orders) {
           final matches = orders.where((o) => o.id == orderId);
           final order = matches.isEmpty ? null : matches.first;
