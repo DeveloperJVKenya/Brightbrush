@@ -25,7 +25,7 @@ class AnnouncementBanner extends ConsumerWidget {
 
     final textScale = MediaQuery.textScalerOf(context).scale(1.0);
     return SizedBox(
-      height: 78 * textScale.clamp(1.0, 1.6),
+      height: 90 * textScale.clamp(1.0, 1.6),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: announcements.length,

@@ -87,6 +87,11 @@ rules_version = '2';
 //     roles; NOT owner-editable, only Admin/CEO/Developer can set it)
 //   - vehiclePlate: string (optional, Delivery Staff, owner-editable)
 //   - availability: bool (optional, Delivery Staff, owner-editable)
+//   - disabled: bool (optional, defaults false — NOT owner-editable, only
+//     Admin/CEO/Developer can set it for someone else. A disabled account
+//     immediately loses every hasStaffRole()-derived permission (manager/
+//     admin/delivery-staff/catalog-manager/order-staff all check it), so
+//     suspension takes effect mid-session, not just on next sign-in)
 // A client can only ever self-register as 'user' (the default, unprivileged
 // role — labeled "User" in the app; never a staff role, and never
 // 'developer') — every other role is assigned afterward by an Admin/CEO or
@@ -191,6 +196,7 @@ service cloud.firestore {
     function hasStaffRole(allowedRoles) {
       return isAuthenticated() &&
         exists(/databases/$(database)/documents/Users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/Users/$(request.auth.uid)).data.get('disabled', false) == false &&
         (
           get(/databases/$(database)/documents/Users/$(request.auth.uid)).data.role in allowedRoles ||
           get(/databases/$(database)/documents/Users/$(request.auth.uid)).data.role == 'developer'
@@ -334,7 +340,8 @@ service cloud.firestore {
       let d = request.resource.data;
       return hasOnlyAllowedFields([
               'email', 'displayName', 'role', 'createdAt', 'updatedAt',
-              'phone', 'photoUrl', 'dailyWage', 'vehiclePlate', 'availability'
+              'phone', 'photoUrl', 'dailyWage', 'vehiclePlate', 'availability',
+              'disabled'
             ]) &&
         hasRequiredFields(['email', 'displayName', 'role', 'createdAt', 'updatedAt']) &&
         d.email is string && d.email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$') &&
@@ -345,7 +352,8 @@ service cloud.firestore {
         (!('photoUrl' in d) || isValidUrl(d.photoUrl)) &&
         (!('dailyWage' in d) || (d.dailyWage is number && d.dailyWage >= 0 && d.dailyWage <= 1000000)) &&
         (!('vehiclePlate' in d) || validStringLength('vehiclePlate', 0, 20)) &&
-        (!('availability' in d) || d.availability is bool);
+        (!('availability' in d) || d.availability is bool) &&
+        (!('disabled' in d) || d.disabled is bool);
     }
 
     function isValidOrder() {
@@ -620,7 +628,7 @@ service cloud.firestore {
       allow update: if isValidUserProfile() &&
         request.resource.data.updatedAt == request.time &&
         (
-          (isOwner(uid) && areImmutableFieldsUnchanged(['role', 'email', 'createdAt', 'dailyWage'])) ||
+          (isOwner(uid) && areImmutableFieldsUnchanged(['role', 'email', 'createdAt', 'dailyWage', 'disabled'])) ||
           (isAdminOrDeveloper() &&
             uid != request.auth.uid &&
             uid != 'ZQ1sVcS9YfbmyLv8m8gBdFiiVD83' &&

@@ -49,6 +49,13 @@ dependencies:
   cloud_functions: ^6.3.3
   firebase_ai: ^3.5.0
 
+  # Required by the Gemini/AI features (ai_catalog_search_service,
+  # guide_assistant_service): App Check is ENFORCED on firebaseml.googleapis.com
+  # for this project, so every generateContent() call needs a valid App Check
+  # token or Firebase rejects it with a permission error before it ever
+  # reaches Gemini.
+  firebase_app_check: ^0.4.1+2
+
   # Persists Settings (theme mode, font choice) locally per-device so every
   # role/user gets their own look without needing to be signed in.
   shared_preferences: ^2.3.4

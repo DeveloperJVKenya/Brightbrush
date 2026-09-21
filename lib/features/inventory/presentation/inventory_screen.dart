@@ -5,7 +5,6 @@ import '../../../core/errors/user_facing_error.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/live_search_field.dart';
-import '../../../shared/widgets/stat_card.dart';
 import '../application/inventory_providers.dart';
 import '../domain/inventory_material.dart';
 import 'widgets/inventory_material_form_sheet.dart';
@@ -141,14 +140,7 @@ class _MaterialRow extends ConsumerWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            StatCard(
-              label: 'On hand',
-              value: '${material.quantityOnHand} ${material.unit}',
-              icon: material.isLowStock
-                  ? Icons.warning_amber_rounded
-                  : Icons.inventory_2_outlined,
-              accent: material.isLowStock,
-            ),
+            _StockBadge(material: material),
             IconButton(
               tooltip: 'Edit',
               icon: const Icon(Icons.edit_outlined),
@@ -190,5 +182,51 @@ class _MaterialRow extends ConsumerWidget {
     if (confirmed == true) {
       await ref.read(inventoryRepositoryProvider).delete(material.id);
     }
+  }
+}
+
+/// Compact on-hand quantity badge sized to fit a [ListTile.trailing] slot
+/// (unlike [StatCard], which is built for dashboard grids and overflows
+/// that much smaller trailing height constraint).
+class _StockBadge extends StatelessWidget {
+  const _StockBadge({required this.material});
+
+  final InventoryMaterial material;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final low = material.isLowStock;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: low
+            ? theme.colorScheme.errorContainer
+            : theme.colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            low ? Icons.warning_amber_rounded : Icons.inventory_2_outlined,
+            size: 16,
+            color: low
+                ? theme.colorScheme.onErrorContainer
+                : theme.colorScheme.primary,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '${material.quantityOnHand} ${material.unit}',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: low
+                  ? theme.colorScheme.onErrorContainer
+                  : theme.colorScheme.onSurface,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

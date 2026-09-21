@@ -15,6 +15,7 @@ class UserProfile {
     required this.dailyWage,
     required this.vehiclePlate,
     required this.availability,
+    required this.disabled,
   });
 
   final String uid;
@@ -34,6 +35,11 @@ class UserProfile {
   /// Delivery Staff-only self-reported fields.
   final String vehiclePlate;
   final bool availability;
+
+  /// Set by Admin/CEO/Developer only (never self-editable). A disabled
+  /// account is force-signed-out and loses every staff/manager/admin
+  /// permission immediately — see hasStaffRole() in firestore.rules.
+  final bool disabled;
 
   factory UserProfile.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> doc,
@@ -55,6 +61,7 @@ class UserProfile {
       dailyWage: d['dailyWage'] as num?,
       vehiclePlate: d['vehiclePlate'] as String? ?? '',
       availability: d['availability'] as bool? ?? true,
+      disabled: d['disabled'] as bool? ?? false,
     );
   }
 

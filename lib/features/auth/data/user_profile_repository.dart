@@ -199,4 +199,27 @@ class UserProfileRepository {
       rethrow;
     }
   }
+
+  /// Admin/CEO/Developer only — suspends or reactivates someone else's
+  /// access. firestore.rules blocks this on both the owner's own update path
+  /// and against the acting admin's own uid, so nobody can disable
+  /// themselves; a disabled account loses every staff/manager/admin
+  /// permission immediately via hasStaffRole(), not just on next sign-in.
+  Future<void> setDisabled({required String uid, required bool disabled}) async {
+    appLogger.i('[users] setDisabled(uid=$uid, disabled=$disabled)');
+    try {
+      await _doc(uid).update({
+        'disabled': disabled,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      appLogger.i('[users] disabled updated uid=$uid -> $disabled');
+    } catch (error, stack) {
+      appLogger.e(
+        '[users] setDisabled(uid=$uid) failed',
+        error: error,
+        stackTrace: stack,
+      );
+      rethrow;
+    }
+  }
 }

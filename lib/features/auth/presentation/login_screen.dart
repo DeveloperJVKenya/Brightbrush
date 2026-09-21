@@ -180,6 +180,13 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Surfaces the reason a just-disabled account got bounced here by
+    // resolvedRoleProvider's force sign-out, instead of landing silently.
+    ref.listen(accountDisabledMessageProvider, (previous, next) {
+      if (next == null) return;
+      setState(() => _error = next);
+      ref.read(accountDisabledMessageProvider.notifier).state = null;
+    });
     return Form(
       key: _formKey,
       child: Column(

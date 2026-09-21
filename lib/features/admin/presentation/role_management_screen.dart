@@ -12,6 +12,8 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/live_search_field.dart';
 import '../../auth/domain/user_profile.dart';
 
+enum _AccountAction { changeRole, revoke, suspend, reactivate }
+
 final _roleManagementSearchProvider = StateProvider<String>((ref) => '');
 
 const _twoColumnBreakpoint = 700.0;
@@ -153,14 +155,14 @@ class RoleManagementScreen extends ConsumerWidget {
   }
 }
 
-class _AccountRow extends StatelessWidget {
+class _AccountRow extends ConsumerWidget {
   const _AccountRow({required this.profile, required this.isSelf});
 
   final UserProfile profile;
   final bool isSelf;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     return Card(
       margin: EdgeInsets.zero,
@@ -223,23 +225,63 @@ class _AccountRow extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
+                color: profile.disabled
+                    ? theme.colorScheme.errorContainer
+                    : theme.colorScheme.primaryContainer,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                profile.role.label,
+                profile.disabled ? 'Suspended' : profile.role.label,
                 style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.onPrimaryContainer,
+                  color: profile.disabled
+                      ? theme.colorScheme.onErrorContainer
+                      : theme.colorScheme.onPrimaryContainer,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
             if (!isSelf && profile.uid != foundingDeveloperUid) ...[
               const SizedBox(width: 4),
-              IconButton(
-                tooltip: 'Change role',
-                icon: const Icon(Icons.edit_outlined),
-                onPressed: () => _showRolePicker(context, profile),
+              PopupMenuButton<_AccountAction>(
+                tooltip: 'Account actions',
+                icon: const Icon(Icons.more_vert_rounded),
+                onSelected: (action) {
+                  switch (action) {
+                    case _AccountAction.changeRole:
+                      _showRolePicker(context, profile);
+                    case _AccountAction.revoke:
+                      _confirmRevoke(context, ref, profile);
+                    case _AccountAction.suspend:
+                      _confirmSetDisabled(context, ref, profile, true);
+                    case _AccountAction.reactivate:
+                      _confirmSetDisabled(context, ref, profile, false);
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: _AccountAction.changeRole,
+                    child: Text('Change role...'),
+                  ),
+                  if (profile.role != AppRole.user)
+                    const PopupMenuItem(
+                      value: _AccountAction.revoke,
+                      child: Text('Revoke to User'),
+                    ),
+                  const PopupMenuDivider(),
+                  if (profile.disabled)
+                    const PopupMenuItem(
+                      value: _AccountAction.reactivate,
+                      child: Text('Reactivate account'),
+                    )
+                  else
+                    PopupMenuItem(
+                      value: _AccountAction.suspend,
+                      child: Text(
+                        'Suspend account',
+                        style: TextStyle(color: theme.colorScheme.error),
+                      ),
+                    ),
+                ],
               ),
             ] else if (profile.uid == foundingDeveloperUid) ...[
               const SizedBox(width: 4),
@@ -263,23 +305,140 @@ class _AccountRow extends StatelessWidget {
     AppRole.developer => Icons.code_rounded,
   };
 
+  Future<void> _confirmRevoke(
+    BuildContext context,
+    WidgetRef ref,
+    UserProfile profile,
+  ) async {
+    final name = profile.displayName.isEmpty
+        ? profile.email
+        : profile.displayName;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Revoke role?'),
+        content: Text(
+          '$name will be demoted from ${profile.role.label} back to a plain User, '
+          'losing all staff/manager/admin access immediately.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton.tonal(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Revoke'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final myUid = ref.read(currentUidProvider);
+    try {
+      appLogger.i('[role-mgmt] Revoking ${profile.uid} -> user');
+      await ref
+          .read(userProfileRepositoryProvider)
+          .updateRole(
+            uid: profile.uid,
+            role: AppRole.user,
+            changedByUid: myUid ?? 'unknown',
+          );
+    } catch (error, stack) {
+      appLogger.e(
+        '[role-mgmt] Failed to revoke role for ${profile.uid}',
+        error: error,
+        stackTrace: stack,
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Couldn\'t revoke role: ${friendlyError(error)}'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmSetDisabled(
+    BuildContext context,
+    WidgetRef ref,
+    UserProfile profile,
+    bool disable,
+  ) async {
+    final name = profile.displayName.isEmpty
+        ? profile.email
+        : profile.displayName;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(disable ? 'Suspend account?' : 'Reactivate account?'),
+        content: Text(
+          disable
+              ? '$name will be signed out immediately and blocked from signing back in '
+                    'or using any staff/manager/admin permission, until reactivated.'
+              : '$name will be able to sign in and use their ${profile.role.label} '
+                    'permissions again.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton.tonal(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(disable ? 'Suspend' : 'Reactivate'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      appLogger.i('[role-mgmt] Setting ${profile.uid} disabled=$disable');
+      await ref
+          .read(userProfileRepositoryProvider)
+          .setDisabled(uid: profile.uid, disabled: disable);
+    } catch (error, stack) {
+      appLogger.e(
+        '[role-mgmt] Failed to set disabled=$disable for ${profile.uid}',
+        error: error,
+        stackTrace: stack,
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Couldn\'t ${disable ? "suspend" : "reactivate"} account: ${friendlyError(error)}',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   void _showRolePicker(BuildContext context, UserProfile profile) {
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
+      isScrollControlled: true,
       constraints: const BoxConstraints(maxWidth: 560),
       builder: (context) {
         return Consumer(
           builder: (context, ref, _) {
-            final myUid = ref.watch(currentUidProvider);
-            final canGrantDeveloper = myUid == foundingDeveloperUid;
+            // The Developer role is never offered here, even to the founding
+            // developer — it's the widest-access role in the system, so
+            // granting it is deliberately kept out of this general-purpose
+            // picker and only ever done directly against Firestore.
             return SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                     Text(
                       'Set role for ${profile.displayName.isEmpty ? profile.email : profile.displayName}',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -288,7 +447,7 @@ class _AccountRow extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     for (final role in AppRole.values)
-                      if (role != AppRole.developer || canGrantDeveloper)
+                      if (role != AppRole.developer)
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: Icon(
@@ -334,7 +493,8 @@ class _AccountRow extends StatelessWidget {
                             }
                           },
                         ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             );

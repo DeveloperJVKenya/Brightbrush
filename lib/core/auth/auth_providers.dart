@@ -12,6 +12,11 @@ final userProfileRepositoryProvider = Provider<UserProfileRepository>((ref) {
   return UserProfileRepository(ref.watch(firestoreProvider));
 });
 
+/// Set right before [resolvedRoleProvider] force-signs-out a disabled
+/// account, so the login screen can show *why* it just landed there instead
+/// of silently bouncing back with no explanation. Cleared once shown.
+final accountDisabledMessageProvider = StateProvider<String?>((ref) => null);
+
 /// The signed-in account's own profile document (displayName/email/role) —
 /// used by the shared Profile screen. Watches [currentUidProvider] (not a
 /// manual subscription) so it tears down and resubscribes cleanly on every
@@ -76,7 +81,20 @@ final resolvedRoleProvider = StreamProvider<AppRole?>((ref) {
       final repo = ref.watch(userProfileRepositoryProvider);
       return repo
           .streamProfile(user.uid)
-          .map((profile) {
+          .map<AppRole?>((profile) {
+            if (profile?.disabled == true) {
+              appLogger.w(
+                '[role] users/${user.uid} is disabled -> forcing sign-out',
+              );
+              ref.read(accountDisabledMessageProvider.notifier).state =
+                  'Your account has been disabled. Contact an admin if you believe this is a mistake.';
+              // Fire-and-forget: the auth state change this triggers is what
+              // actually redirects the router to /login, not this return
+              // value — but return null too so nothing briefly renders a
+              // stale role shell before that sign-out lands.
+              unawaited(ref.read(firebaseAuthProvider).signOut());
+              return null;
+            }
             final role = profile?.role ?? AppRole.user;
             appLogger.i(
               '[role] users/${user.uid} -> role=$role (profile ${profile == null ? "missing, defaulted" : "found"})',
@@ -84,7 +102,7 @@ final resolvedRoleProvider = StreamProvider<AppRole?>((ref) {
             return role;
           })
           .transform(
-            StreamTransformer<AppRole, AppRole?>.fromHandlers(
+            StreamTransformer<AppRole?, AppRole?>.fromHandlers(
               handleError: (error, stack, sink) {
                 appLogger.e(
                   '[role] streamProfile(${user.uid}) failed — treating as signed-out so the router falls back to /login',
