@@ -503,10 +503,11 @@ service cloud.firestore {
     // ===============================================================
 
     match /CatalogItems/{itemId} {
-      // Read requires auth (anonymous sign-in satisfies this); the catalog
-      // has no PII, so this is intentionally permissive across roles. The
+      // Fully public — guests browse the catalog with no account at all,
+      // only creating one when they act (add to cart / place an order). No
+      // PII here, so there's nothing to protect by gating the read. The
       // client filters isActive for customer-facing views.
-      allow read: if isAuthenticated();
+      allow read: if true;
 
       allow create: if isCatalogManager() &&
         isValidCatalogItem() &&
@@ -522,7 +523,8 @@ service cloud.firestore {
     }
 
     match /Packages/{packageId} {
-      allow read: if isAuthenticated();
+      // Public for the same reason as CatalogItems — guests browse freely.
+      allow read: if true;
 
       allow create: if isCatalogManager() &&
         isValidPackage() &&
@@ -695,10 +697,9 @@ service cloud.firestore {
     }
 
     match /Announcements/{announcementId} {
-      // Read is permissive like Catalog/Packages — every signed-in role
-      // (including plain 'user') sees active announcements on their Home/
-      // Notifications feed. Authoring is Admin/CEO-level ("Marketing").
-      allow read: if isAuthenticated();
+      // Public like Catalog/Packages — guests see the same Home banner as
+      // signed-in users. Authoring is Admin/CEO-level ("Marketing").
+      allow read: if true;
 
       allow create: if isAdminOrDeveloper() &&
         isValidAnnouncement() &&

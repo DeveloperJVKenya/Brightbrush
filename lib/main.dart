@@ -20,13 +20,15 @@ void main() async {
   // bright-brush.web.app in Firebase App Check); other platforms fall back
   // to the debug provider so local builds there aren't blocked.
   await FirebaseAppCheck.instance.activate(
-    webProvider: ReCaptchaEnterpriseProvider(
+    providerWeb: ReCaptchaEnterpriseProvider(
       '6LeR-7wtAAAAADqJWHzTD9nug4Rz9ZG6V3yCYa5f',
     ),
-    androidProvider: kDebugMode
-        ? AndroidProvider.debug
-        : AndroidProvider.playIntegrity,
-    appleProvider: kDebugMode ? AppleProvider.debug : AppleProvider.appAttest,
+    providerAndroid: kDebugMode
+        ? const AndroidDebugProvider()
+        : const AndroidPlayIntegrityProvider(),
+    providerApple: kDebugMode
+        ? const AppleDebugProvider()
+        : const AppleAppAttestProvider(),
   );
   final prefs = await SharedPreferences.getInstance();
   runApp(

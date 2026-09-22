@@ -44,6 +44,20 @@ AppRole? _roleFor(String path) {
   return null;
 }
 
+/// Reachable with no account at all: browsing (Home/catalog, item detail,
+/// Packages) plus the two neutral top-level utility routes. Everything else
+/// under `/customer` (cart, orders, tracking, notifications, support,
+/// profile) — and every staff/manager/admin/developer shell — requires
+/// signing in, which is the "only act, not browse, requires an account"
+/// behavior this app is built around.
+bool _isGuestAccessible(String path) {
+  return path == '/customer' ||
+      path == '/customer/packages' ||
+      path.startsWith('/customer/catalog/') ||
+      path == '/settings' ||
+      path == '/help';
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = _RoleRefreshNotifier(ref);
 
@@ -56,16 +70,22 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (path == '/splash') {
         // Anonymous sign-in is disabled project-wide, so there's nothing to
         // bootstrap here anymore — just wait for the real auth state (if
-        // any) to resolve to a role.
+        // any) to resolve to a role. A signed-out visitor lands straight on
+        // the public catalog rather than being forced through /login —
+        // browsing needs no account; only acting does.
         final role = await ref.read(resolvedRoleProvider.future);
         appLogger.i('[router] splash resolved role=$role');
-        return role == null ? '/login' : role.homePath;
+        return role == null ? '/customer' : role.homePath;
       }
 
       final role = ref.read(resolvedRoleProvider).valueOrNull;
 
       if (role == null) {
-        return path == '/login' ? null : '/login';
+        if (path == '/login' || _isGuestAccessible(path)) return null;
+        appLogger.i(
+          '[router] guest blocked from $path -> redirecting to /login',
+        );
+        return '/login';
       }
 
       if (path == '/login') return role.homePath;
@@ -131,11 +151,19 @@ ShellRoute _roleShellRoute({
         builder: (context, ref, _) {
           final actualRole = ref.watch(resolvedRoleProvider).valueOrNull;
           final isDeveloperViewing = actualRole == AppRole.developer;
+          // Only ever true for the /customer shell — the router only lets a
+          // signed-out visitor reach guest-accessible paths there, so this
+          // is the "browsing without an account" state, not an auth error.
+          final isGuest = actualRole == null;
 
           return AdaptiveRoleShell(
-            roleLabel: isDeveloperViewing
+            roleLabel: isGuest
+                ? 'Browsing as guest'
+                : isDeveloperViewing
                 ? '${role.label} · Developer view'
                 : role.label,
+            isGuest: isGuest,
+            onSignIn: () => context.go('/login'),
             items: [
               for (final module in modules)
                 RoleNavItem(

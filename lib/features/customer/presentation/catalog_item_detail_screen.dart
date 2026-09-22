@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import '../../../core/formatting/currency.dart';
 
 import '../../../core/errors/user_facing_error.dart';
+import '../../../core/firebase/firebase_providers.dart';
 import '../../../core/logging/app_logger.dart';
+import '../../../shared/widgets/auth_required_sheet.dart';
 import '../../../shared/widgets/catalog_image.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../catalog/application/catalog_providers.dart';
@@ -153,6 +155,14 @@ class _DetailBody extends ConsumerWidget {
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () async {
+                if (ref.read(currentUidProvider) == null) {
+                  showAuthRequiredSheet(
+                    context,
+                    message:
+                        'Sign in or create an account to add "${item.name}" to your cart.',
+                  );
+                  return;
+                }
                 try {
                   await ref.read(cartActionsProvider).add(item.id);
                   if (context.mounted) {

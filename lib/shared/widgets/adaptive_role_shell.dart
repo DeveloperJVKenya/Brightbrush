@@ -24,6 +24,8 @@ class AdaptiveRoleShell extends StatelessWidget {
     required this.onOpenHelp,
     required this.child,
     this.onSwitchView,
+    this.isGuest = false,
+    this.onSignIn,
   });
 
   final String roleLabel;
@@ -40,6 +42,11 @@ class AdaptiveRoleShell extends StatelessWidget {
   final VoidCallback onOpenSettings;
   final VoidCallback onOpenHelp;
   final Widget child;
+
+  /// True only for a signed-out visitor browsing the public catalog — swaps
+  /// the "Sign out" action for a "Sign in" one ([onSignIn]) instead.
+  final bool isGuest;
+  final VoidCallback? onSignIn;
 
   // Picks the item whose path is the *longest* matching prefix, not the
   // first one found: '/customer' is a prefix of every path under it, so a
@@ -76,6 +83,8 @@ class AdaptiveRoleShell extends StatelessWidget {
             onSwitchView: onSwitchView,
             onOpenSettings: onOpenSettings,
             onOpenHelp: onOpenHelp,
+            isGuest: isGuest,
+            onSignIn: onSignIn,
             child: child,
           );
         }
@@ -89,6 +98,8 @@ class AdaptiveRoleShell extends StatelessWidget {
           onOpenSettings: onOpenSettings,
           onOpenHelp: onOpenHelp,
           bottomBarItemCount: _bottomBarItemCount,
+          isGuest: isGuest,
+          onSignIn: onSignIn,
           child: child,
         );
       },
@@ -125,6 +136,8 @@ class _WideLayout extends StatelessWidget {
     required this.onOpenHelp,
     required this.child,
     this.onSwitchView,
+    this.isGuest = false,
+    this.onSignIn,
   });
 
   final String roleLabel;
@@ -136,6 +149,8 @@ class _WideLayout extends StatelessWidget {
   final VoidCallback onOpenSettings;
   final VoidCallback onOpenHelp;
   final Widget child;
+  final bool isGuest;
+  final VoidCallback? onSignIn;
 
   @override
   Widget build(BuildContext context) {
@@ -176,11 +191,21 @@ class _WideLayout extends StatelessWidget {
               onPressed: onSwitchView,
               icon: const Icon(Icons.swap_horiz_rounded),
             ),
-          IconButton(
-            tooltip: 'Sign out',
-            onPressed: onSignOut,
-            icon: const Icon(Icons.logout_rounded),
-          ),
+          if (isGuest)
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: FilledButton.tonalIcon(
+                onPressed: onSignIn,
+                icon: const Icon(Icons.login_rounded, size: 18),
+                label: const Text('Sign in'),
+              ),
+            )
+          else
+            IconButton(
+              tooltip: 'Sign out',
+              onPressed: onSignOut,
+              icon: const Icon(Icons.logout_rounded),
+            ),
           const SizedBox(width: 8),
         ],
       ),
@@ -367,6 +392,8 @@ class _NarrowLayout extends StatelessWidget {
     required this.bottomBarItemCount,
     required this.child,
     this.onSwitchView,
+    this.isGuest = false,
+    this.onSignIn,
   });
 
   final String roleLabel;
@@ -379,6 +406,8 @@ class _NarrowLayout extends StatelessWidget {
   final VoidCallback onOpenHelp;
   final int bottomBarItemCount;
   final Widget child;
+  final bool isGuest;
+  final VoidCallback? onSignIn;
 
   @override
   Widget build(BuildContext context) {
@@ -419,11 +448,21 @@ class _NarrowLayout extends StatelessWidget {
               onPressed: onSwitchView,
               icon: const Icon(Icons.swap_horiz_rounded),
             ),
-          IconButton(
-            tooltip: 'Sign out',
-            onPressed: onSignOut,
-            icon: const Icon(Icons.logout_rounded),
-          ),
+          if (isGuest)
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: FilledButton.tonalIcon(
+                onPressed: onSignIn,
+                icon: const Icon(Icons.login_rounded, size: 18),
+                label: const Text('Sign in'),
+              ),
+            )
+          else
+            IconButton(
+              tooltip: 'Sign out',
+              onPressed: onSignOut,
+              icon: const Icon(Icons.logout_rounded),
+            ),
         ],
       ),
       drawer: overflowItems.isEmpty

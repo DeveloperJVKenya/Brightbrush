@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/errors/user_facing_error.dart';
+import '../../../core/firebase/firebase_providers.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/announcement_banner.dart';
+import '../../../shared/widgets/auth_required_sheet.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/live_search_field.dart';
 import '../../../shared/widgets/staggered_entrance.dart';
@@ -159,6 +161,14 @@ class CustomerCatalogScreen extends ConsumerWidget {
                                   '/customer/catalog/${item.id}',
                                 ),
                                 onAddToCart: () async {
+                                  if (ref.read(currentUidProvider) == null) {
+                                    showAuthRequiredSheet(
+                                      context,
+                                      message:
+                                          'Sign in or create an account to add "${item.name}" to your cart.',
+                                    );
+                                    return;
+                                  }
                                   try {
                                     await ref
                                         .read(cartActionsProvider)
