@@ -10,6 +10,7 @@ import '../../../shared/widgets/order_status_timeline.dart';
 import '../../orders/application/orders_providers.dart';
 import '../../orders/domain/order_model.dart';
 import '../../orders/domain/order_status.dart';
+import '../../commerce/presentation/order_documents_panel.dart';
 import '../../customization/presentation/widgets/customization_summary.dart';
 import '../../payments/presentation/widgets/order_payment_panel.dart';
 import '../../proofs/presentation/proof_widgets.dart';
@@ -103,6 +104,8 @@ class _OrderDetailBody extends ConsumerWidget {
               const SizedBox(height: 16),
               OrderPaymentPanel(order: order),
               const SizedBox(height: 16),
+              OrderDocumentsPanel(order: order),
+              const SizedBox(height: 16),
               _ItemsSection(order: order),
               const SizedBox(height: 16),
               _DeliverySection(order: order),
@@ -137,6 +140,8 @@ class _OrderDetailBody extends ConsumerWidget {
                       child: Column(
                         children: [
                           OrderPaymentPanel(order: order),
+                          const SizedBox(height: 16),
+                          OrderDocumentsPanel(order: order),
                           const SizedBox(height: 16),
                           _DeliverySection(order: order),
                         ],

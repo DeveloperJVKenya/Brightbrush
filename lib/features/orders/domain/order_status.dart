@@ -66,7 +66,9 @@ enum PaymentStatus {
   unpaid(label: 'Unpaid'),
   invoiced(label: 'Invoiced'),
   partiallyPaid(label: 'Partially paid'),
-  paid(label: 'Paid');
+  paid(label: 'Paid'),
+  partiallyRefunded(label: 'Partly refunded'),
+  refunded(label: 'Refunded');
 
   const PaymentStatus({required this.label});
 

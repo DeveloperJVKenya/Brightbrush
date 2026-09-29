@@ -4,25 +4,29 @@ import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { db } from '../core/app';
 import { loadCaller } from '../core/authz';
 import {
-  asObject,
-  optionalString,
-  requireEnum,
-  requireString,
-} from '../core/validate';
+  loadCustomerAccount,
+  normalizeCouponCode,
+  outstandingBalance,
+  readCoupon,
+  redeemCoupon,
+} from '../accounts/accounts';
+import { asObject, requireEnum } from '../core/validate';
 import { loadBusinessSettings } from '../settings/business_settings';
 import {
   loadDecorationPricing,
   parseCartLines,
   priceCartLines,
 } from '../customization/cart_lines';
+import { fulfilmentFields, readContact, readFulfilment } from './fulfilment';
 import {
-  OrderContact,
   PricedLine,
   lineTotalOf,
   nextOrderNumber,
   writeOrder,
 } from './order_writer';
-import { computeTotals } from './pricing';
+import { computeDiscount, computeTotals } from './pricing';
+
+export { readContact } from './fulfilment';
 
 /// Cart keys with this prefix are seasonal packages; everything else is a
 /// CatalogItems id. Mirrors `packageCartKeyPrefix` in cart_providers.dart.
@@ -31,33 +35,33 @@ export const PACKAGE_PREFIX = 'pkg:';
 const MAX_LINES = 50;
 const MAX_QUANTITY = 100000;
 
-export function readContact(data: Record<string, unknown>): OrderContact {
-  return {
-    contactName: requireString(data, 'contactName', 'Contact name', 2, 80),
-    contactPhone: requireString(data, 'contactPhone', 'Contact phone', 3, 30),
-    deliveryAddress: requireString(
-      data,
-      'deliveryAddress',
-      'Delivery address',
-      5,
-      300,
-    ),
-    notes: optionalString(data, 'notes', 'Notes', 1000),
-  };
-}
-
 /// Places an order from the caller's *saved* cart (Carts/{uid}). The client
 /// sends only contact details and a payment plan — never items, prices or
 /// totals — so nothing about what's charged can be tampered with.
 export const placeOrder = onCall(async (request) => {
   const caller = await loadCaller(request);
   const data = asObject(request.data);
-  const contact = readContact(data);
-  const paymentPlan = requireEnum(data, 'paymentPlan', ['full', 'deposit'], 'full');
-  const [settings, decorationPricing] = await Promise.all([
+  const paymentPlan = requireEnum(data, 'paymentPlan', ['full', 'deposit', 'credit'], 'full');
+  const couponCode = normalizeCouponCode(
+    typeof data.couponCode === 'string' ? data.couponCode : '',
+  );
+  const [settings, decorationPricing, account] = await Promise.all([
     loadBusinessSettings(),
     loadDecorationPricing(),
+    loadCustomerAccount(caller.uid),
   ]);
+  const fulfilment = readFulfilment(data, settings);
+  const contact = readContact(data, {
+    pickup: fulfilment.method === 'pickup',
+    pickupAddress: settings.pickupAddress,
+  });
+  if (paymentPlan === 'credit' && !account.creditEnabled) {
+    throw new HttpsError(
+      'failed-precondition',
+      'Credit terms aren\'t enabled on your account. Choose another way to pay.',
+    );
+  }
+  const owed = paymentPlan === 'credit' ? await outstandingBalance(caller.uid) : 0;
 
   const cartRef = db.collection('Carts').doc(caller.uid);
   const orderRef = db.collection('Orders').doc();
@@ -91,6 +95,9 @@ export const placeOrder = onCall(async (request) => {
       caller.uid,
       decorationPricing,
     );
+    const couponRead = couponCode
+      ? await readCoupon(tx, couponCode, caller.uid)
+      : null;
     const now = Date.now();
 
     const lines: PricedLine[] = entries.map(([key, rawQty], index) => {
@@ -147,10 +154,33 @@ export const placeOrder = onCall(async (request) => {
 
     lines.push(...pricedCustom);
     const subtotal = lines.reduce((s, l) => s + lineTotalOf(l), 0);
+    const discount = computeDiscount(subtotal, {
+      corporatePercent: account.discountPercent,
+      coupon: couponRead?.coupon,
+    });
+    if (couponRead && discount.coupon === 0) {
+      throw new HttpsError(
+        'failed-precondition',
+        `Spend at least KES ${couponRead.coupon.minSubtotal} to use "${couponCode}".`,
+      );
+    }
     const totals = computeTotals(subtotal, settings, {
       paymentPlan,
-      includeDelivery: true,
+      includeDelivery: fulfilment.method === 'delivery',
+      deliveryFee: fulfilment.deliveryFee,
+      discount: discount.total,
+      creditAllowed: account.creditEnabled,
     });
+    if (
+      totals.paymentPlan === 'credit' &&
+      account.creditLimit > 0 &&
+      owed + totals.total > account.creditLimit
+    ) {
+      throw new HttpsError(
+        'failed-precondition',
+        `This order would take you over your credit limit (KES ${account.creditLimit}; KES ${Math.round(owed)} already outstanding). Pay a deposit or in full instead.`,
+      );
+    }
     const orderNumber = await nextOrderNumber(tx);
 
     writeOrder(tx, {
@@ -165,7 +195,20 @@ export const placeOrder = onCall(async (request) => {
       requiresProof: pricedCustom.some(
         (l) => ((l.customization?.decorations as unknown[]) ?? []).length > 0,
       ),
+      extra: {
+        ...fulfilmentFields(fulfilment),
+        ...(discount.corporate > 0 ? { corporateDiscount: discount.corporate } : {}),
+        ...(couponRead ? { couponCode, couponDiscount: discount.coupon } : {}),
+        ...(account.companyName ? { customerCompany: account.companyName } : {}),
+        ...(account.kraPin ? { customerKraPin: account.kraPin } : {}),
+        ...(totals.paymentPlan === 'credit'
+          ? { dueDate: new Date(now + account.paymentTermsDays * 86400000) }
+          : {}),
+      },
     });
+    if (couponRead) {
+      redeemCoupon(tx, couponCode, caller.uid, couponRead.redemptionCount, orderRef.id);
+    }
     tx.set(cartRef, { items: {}, lines: {}, updatedAt: new Date() });
     return { orderNumber, totals };
   });

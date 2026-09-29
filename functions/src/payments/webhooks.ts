@@ -156,7 +156,10 @@ export const paypalReturn = onRequest(async (req, res) => {
       amount: p.amount as number,
     });
     if (result.state === 'succeeded') {
-      await markPaymentSucceeded(paymentId, { receipt: result.receipt });
+      await markPaymentSucceeded(paymentId, {
+      receipt: result.receipt,
+      providerTxnId: result.providerTxnId,
+    });
       res.redirect(orderPageUrl(settings, orderId, 'success'));
     } else {
       if (result.state !== 'pending') {
@@ -183,7 +186,10 @@ async function settleFlutterwave(paymentId: string): Promise<string | undefined>
     amount: p.amount as number,
   });
   if (result.state === 'succeeded') {
-    await markPaymentSucceeded(paymentId, { receipt: result.receipt });
+    await markPaymentSucceeded(paymentId, {
+      receipt: result.receipt,
+      providerTxnId: result.providerTxnId,
+    });
   } else if (result.state === 'failed' || result.state === 'cancelled') {
     await markPaymentClosed(paymentId, result.state, result.message);
   }

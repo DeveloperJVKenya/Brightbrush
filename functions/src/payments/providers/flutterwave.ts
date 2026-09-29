@@ -63,7 +63,11 @@ export const flutterwaveProvider: PaymentProvider = {
             message: 'Amount paid did not match the amount due. Contact support.',
           };
         }
-        return { state: 'succeeded', receipt: String(d.flw_ref ?? d.id) };
+        return {
+          state: 'succeeded',
+          receipt: String(d.flw_ref ?? d.id),
+          providerTxnId: String(d.id),
+        };
       }
       if (d.status === 'failed') return { state: 'failed', message: d.processor_response };
       return { state: 'pending' };
@@ -75,6 +79,15 @@ export const flutterwaveProvider: PaymentProvider = {
       }
       throw error;
     }
+  },
+
+  async refund(config, payment, amountKes) {
+    if (!payment.providerTxnId) throw new Error('No Flutterwave transaction id on record.');
+    const res = await callProvider<Record<string, any>>(
+      `${API}/transactions/${encodeURIComponent(payment.providerTxnId)}/refund`,
+      { headers: auth(config.values.secretKey), json: { amount: Math.round(amountKes) } },
+    );
+    return String(res.data?.id ?? res.data?.flw_ref ?? 'refund');
   },
 
   async test(config) {

@@ -51,7 +51,18 @@ class OrderMoneyBreakdown extends StatelessWidget {
     return Column(
       children: [
         row('Subtotal', order.subtotal),
-        if (order.deliveryFee > 0) row('Delivery', order.deliveryFee),
+        if (order.corporateDiscount > 0)
+          row('Account discount', -order.corporateDiscount),
+        if (order.couponDiscount > 0)
+          row('Promo ${order.couponCode ?? ''}', -order.couponDiscount),
+        if (order.deliveryFee > 0)
+          row(
+            order.deliveryZoneName == null
+                ? 'Delivery'
+                : 'Delivery (${order.deliveryZoneName})',
+            order.deliveryFee,
+          ),
+        if (order.isPickup) row('Store pickup', 0),
         if (order.taxAmount > 0)
           row(
             vatInclusive ? 'Includes VAT ($vatPercent%)' : 'VAT ($vatPercent%)',
@@ -60,6 +71,21 @@ class OrderMoneyBreakdown extends StatelessWidget {
         const Divider(),
         row('Total', order.total, bold: true, color: theme.colorScheme.primary),
         if (order.amountPaid > 0) row('Paid', order.amountPaid),
+        if (order.refundedAmount > 0) row('Refunded', -order.refundedAmount),
+        if (order.cancellationFee > 0)
+          row('Cancellation fee kept', order.cancellationFee),
+        if (order.isCredit && order.dueDate != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              order.overdue
+                  ? 'Overdue — was due ${DateFormat('d MMM y').format(order.dueDate!)}'
+                  : 'On account · due ${DateFormat('d MMM y').format(order.dueDate!)}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: order.overdue ? theme.colorScheme.error : null,
+              ),
+            ),
+          ),
         if (order.amountPaid > 0 || order.isDepositPlan)
           row('Balance due', order.balanceDue, bold: true),
         if (order.isDepositPlan)

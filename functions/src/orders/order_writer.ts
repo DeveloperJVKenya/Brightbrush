@@ -62,11 +62,16 @@ export function writeOrder(
     /// Decorated orders need a customer-approved proof before production
     /// (enforced in firestore.rules).
     requiresProof?: boolean;
+    /// Commercial extras: delivery method/zone, discounts, coupon, business
+    /// account details and credit due date.
+    extra?: Record<string, unknown>;
   },
 ): void {
   const { totals } = params;
   tx.create(params.ref, {
     orderNumber: params.orderNumber,
+    // One invoice per order, numbered in step with the order (gapless).
+    invoiceNumber: params.orderNumber.replace(/^BB-/, 'INV-'),
     customerId: params.customerId,
     customerEmail: params.customerEmail,
     contactName: params.contact.contactName,
@@ -94,6 +99,9 @@ export function writeOrder(
     paymentPlan: totals.paymentPlan,
     depositAmount: totals.depositAmount,
     amountPaid: 0,
+    refundedAmount: 0,
+    discountAmount: totals.discountAmount,
+    ...(params.extra ?? {}),
     status: 'pendingReview',
     paymentStatus: 'unpaid',
     assignedStaffId: null,

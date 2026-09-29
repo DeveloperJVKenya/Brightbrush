@@ -30,6 +30,9 @@ export interface VerifyResult {
   state: 'succeeded' | 'pending' | 'failed' | 'cancelled';
   receipt?: string;
   message?: string;
+  /// Provider-side id needed later for refunds (e.g. Flutterwave's numeric
+  /// transaction id).
+  providerTxnId?: string;
 }
 
 export interface PaymentProvider {
@@ -44,4 +47,18 @@ export interface PaymentProvider {
   /// Cheapest authenticated call the provider offers — proves the saved
   /// credentials work without moving money.
   test(config: GatewayRuntimeConfig): Promise<string>;
+  /// Returns money to the customer through the provider. Absent for
+  /// gateways without an automatic refund API we can use (M-Pesa reversals
+  /// need separate initiator credentials) — those are refunded manually.
+  refund?(config: GatewayRuntimeConfig, payment: RefundablePayment, amountKes: number): Promise<string>;
+}
+
+export interface RefundablePayment {
+  id: string;
+  amount: number;
+  receipt?: string;
+  providerTxnId?: string;
+  providerRef?: string;
+  chargedAmount?: number;
+  chargedCurrency?: string;
 }

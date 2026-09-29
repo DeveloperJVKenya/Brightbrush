@@ -94,10 +94,16 @@ class PaymentRecord {
     required this.message,
     required this.mode,
     required this.createdAt,
+    this.receiptNumber,
+    this.refundedAmount = 0,
   });
 
   final String id;
   final String orderId;
+
+  /// Sequential receipt number (RCT-000123) assigned when it succeeded.
+  final String? receiptNumber;
+  final num refundedAmount;
   final String gateway;
   final String? method;
   final num amount;
@@ -143,6 +149,8 @@ class PaymentRecord {
       createdAt:
           (d['createdAt'] as Timestamp?)?.toDate() ??
           DateTime.fromMillisecondsSinceEpoch(0),
+      receiptNumber: d['receiptNumber'] as String?,
+      refundedAmount: d['refundedAmount'] as num? ?? 0,
     );
   }
 }

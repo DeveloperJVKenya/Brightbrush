@@ -89,4 +89,19 @@ void main() {
     expect(off.paymentPlan, 'full');
     expect(off.depositAmount, 1000);
   });
+
+  test('discount before delivery and VAT; zone fee; pickup; credit', () {
+    final vatEx = copy(vatEnabled: true, pricesIncludeVat: false, freeDeliveryThreshold: 9500);
+    final t = OrderPricing.compute(10000, vatEx, paymentPlan: 'full', deliveryFee: 600, discount: 1000);
+    expect(t.discountAmount, 1000);
+    expect(t.deliveryFee, 600);
+    expect(t.total, (9600 * 1.16).round());
+    final flat = copy(deliveryFlatFee: 300);
+    expect(OrderPricing.compute(1000, flat, paymentPlan: 'full', deliveryFee: 800).deliveryFee, 800);
+    expect(OrderPricing.compute(1000, flat, paymentPlan: 'full', includeDelivery: false).deliveryFee, 0);
+    final credit = OrderPricing.compute(5000, base, paymentPlan: 'credit', creditAllowed: true);
+    expect(credit.paymentPlan, 'credit');
+    expect(credit.depositAmount, 0);
+    expect(OrderPricing.compute(5000, base, paymentPlan: 'credit').paymentPlan, 'full');
+  });
 }

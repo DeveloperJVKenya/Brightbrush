@@ -7,6 +7,7 @@ import '../../../core/errors/user_facing_error.dart';
 import '../../../core/firebase/firebase_providers.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../commerce/presentation/etims_card.dart';
 import '../../customization/presentation/decoration_pricing_card.dart';
 import '../application/payments_providers.dart';
 import '../domain/business_settings.dart';
@@ -53,6 +54,8 @@ class AdminPaymentsScreen extends ConsumerWidget {
                 const _BusinessSettingsCard(),
                 const SizedBox(height: 16),
                 const DecorationPricingCard(),
+                const SizedBox(height: 16),
+                const EtimsCard(),
                 const SizedBox(height: 28),
                 Text(
                   'Payment gateways',
@@ -494,6 +497,12 @@ class _BusinessSettingsCardState extends ConsumerState<_BusinessSettingsCard> {
   final _deliveryFee = TextEditingController();
   final _freeDelivery = TextEditingController();
   final _depositPercent = TextEditingController();
+  final _physicalAddress = TextEditingController();
+  final _paymentInstructions = TextEditingController();
+  final _invoiceFooter = TextEditingController();
+  final _pickupAddress = TextEditingController();
+  bool _allowPickup = false;
+  List<DeliveryZone> _zones = [];
   bool _vatEnabled = false;
   bool _pricesIncludeVat = true;
   bool _allowDeposit = true;
@@ -512,6 +521,10 @@ class _BusinessSettingsCardState extends ConsumerState<_BusinessSettingsCard> {
       _deliveryFee,
       _freeDelivery,
       _depositPercent,
+      _physicalAddress,
+      _paymentInstructions,
+      _invoiceFooter,
+      _pickupAddress,
     ]) {
       c.dispose();
     }
@@ -533,6 +546,88 @@ class _BusinessSettingsCardState extends ConsumerState<_BusinessSettingsCard> {
     _vatEnabled = s.vatEnabled;
     _pricesIncludeVat = s.pricesIncludeVat;
     _allowDeposit = s.allowDeposit;
+    _physicalAddress.text = s.physicalAddress;
+    _paymentInstructions.text = s.paymentInstructions;
+    _invoiceFooter.text = s.invoiceFooter;
+    _pickupAddress.text = s.pickupAddress;
+    _allowPickup = s.allowPickup;
+    _zones = [...s.deliveryZones];
+  }
+
+  Future<void> _editZone([DeliveryZone? existing]) async {
+    final name = TextEditingController(text: existing?.name ?? '');
+    final fee = TextEditingController(text: existing?.fee.toString() ?? '');
+    final eta = TextEditingController(
+      text: existing?.etaDays.toString() ?? '1',
+    );
+    final zone = await showDialog<DeliveryZone>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          existing == null ? 'Add delivery area' : 'Edit delivery area',
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: name,
+              decoration: const InputDecoration(
+                labelText: 'Area name',
+                hintText: 'e.g. Nairobi CBD, Westlands, Countrywide courier',
+              ),
+            ),
+            TextField(
+              controller: fee,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: const InputDecoration(
+                labelText: 'Delivery fee (KES)',
+              ),
+            ),
+            TextField(
+              controller: eta,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: const InputDecoration(
+                labelText: 'Typical days to deliver',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (name.text.trim().length < 2) return;
+              Navigator.pop(
+                context,
+                DeliveryZone(
+                  id:
+                      existing?.id ??
+                      DateTime.now().millisecondsSinceEpoch.toRadixString(36),
+                  name: name.text.trim(),
+                  fee: int.tryParse(fee.text.trim()) ?? 0,
+                  etaDays: int.tryParse(eta.text.trim()) ?? 0,
+                ),
+              );
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (zone == null) return;
+    setState(() {
+      final i = _zones.indexWhere((z) => z.id == zone.id);
+      if (i >= 0) {
+        _zones[i] = zone;
+      } else {
+        _zones.add(zone);
+      }
+    });
   }
 
   Future<void> _save() async {
@@ -560,6 +655,12 @@ class _BusinessSettingsCardState extends ConsumerState<_BusinessSettingsCard> {
               freeDeliveryThreshold: num.parse(_freeDelivery.text.trim()),
               allowDeposit: _allowDeposit,
               depositPercent: num.parse(_depositPercent.text.trim()),
+              physicalAddress: _physicalAddress.text.trim(),
+              paymentInstructions: _paymentInstructions.text.trim(),
+              invoiceFooter: _invoiceFooter.text.trim(),
+              pickupAddress: _pickupAddress.text.trim(),
+              allowPickup: _allowPickup,
+              deliveryZones: _zones,
             ),
             uid: uid,
           );
@@ -724,6 +825,68 @@ class _BusinessSettingsCardState extends ConsumerState<_BusinessSettingsCard> {
                   ),
                   validator: (v) => _number(v),
                 ),
+              ),
+              const SizedBox(height: 12),
+              Text('Delivery areas', style: theme.textTheme.labelLarge),
+              Text(
+                'Customers pick one at checkout and pay its fee (the flat fee above applies when there are none).',
+                style: theme.textTheme.bodySmall,
+              ),
+              for (final z in _zones)
+                ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(z.name),
+                  subtitle: Text('KES ${z.fee} · ~${z.etaDays} day(s)'),
+                  onTap: () => _editZone(z),
+                  trailing: IconButton(
+                    tooltip: 'Remove',
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => setState(() => _zones.remove(z)),
+                  ),
+                ),
+              TextButton.icon(
+                onPressed: () => _editZone(),
+                icon: const Icon(Icons.add_location_alt_outlined),
+                label: const Text('Add delivery area'),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Offer store pickup'),
+                value: _allowPickup,
+                onChanged: (v) => setState(() => _allowPickup = v),
+              ),
+              if (_allowPickup)
+                TextFormField(
+                  controller: _pickupAddress,
+                  maxLength: 300,
+                  decoration: const InputDecoration(
+                    labelText: 'Pickup location',
+                  ),
+                ),
+              const Divider(height: 32),
+              Text('Invoices & receipts', style: theme.textTheme.labelLarge),
+              TextFormField(
+                controller: _physicalAddress,
+                maxLength: 300,
+                decoration: const InputDecoration(
+                  labelText: 'Business address',
+                ),
+              ),
+              TextFormField(
+                controller: _paymentInstructions,
+                maxLength: 1000,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: 'Payment instructions on invoices',
+                  hintText:
+                      'e.g. M-Pesa Paybill 123456, Acc: invoice no. · Bank: ...',
+                ),
+              ),
+              TextFormField(
+                controller: _invoiceFooter,
+                maxLength: 500,
+                decoration: const InputDecoration(labelText: 'Invoice footer'),
               ),
               const Divider(height: 32),
               SwitchListTile(

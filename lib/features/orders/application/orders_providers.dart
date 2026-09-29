@@ -51,7 +51,9 @@ final availableForDeliveryProvider = Provider<AsyncValue<List<OrderModel>>>((
             .where(
               (o) =>
                   o.status == OrderStatus.readyForDelivery &&
-                  o.assignedStaffId == null,
+                  o.assignedStaffId == null &&
+                  // Pickup orders are collected in store, not delivered.
+                  !o.isPickup,
             )
             .toList(),
       );

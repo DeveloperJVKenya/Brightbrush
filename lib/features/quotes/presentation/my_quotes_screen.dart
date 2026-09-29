@@ -8,6 +8,8 @@ import '../../../core/firebase/firebase_providers.dart';
 import '../../../core/formatting/currency.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../commerce/application/commerce_providers.dart';
+import '../../commerce/data/commerce_repository.dart';
 import '../../payments/application/payments_providers.dart';
 import '../../payments/domain/business_settings.dart';
 import '../application/quotes_providers.dart';
@@ -213,6 +215,17 @@ class _QuoteCard extends ConsumerWidget {
                       ),
                       icon: const Icon(Icons.check_rounded),
                       label: const Text('Accept & order'),
+                    ),
+                  if (quote.quotedTotal != null)
+                    TextButton.icon(
+                      onPressed: () => openDocument(
+                        context,
+                        ref,
+                        DocumentKind.quote,
+                        quote.id,
+                      ),
+                      icon: const Icon(Icons.picture_as_pdf_outlined),
+                      label: const Text('Quote PDF'),
                     ),
                   if (quote.orderId != null)
                     OutlinedButton.icon(

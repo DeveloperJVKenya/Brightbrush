@@ -22,3 +22,15 @@ export {
 } from './payments/webhooks';
 export { acceptQuote } from './quotes/accept_quote';
 export { respondToProof, sendProof } from './proofs/proofs';
+export { issueRefund } from './payments/refunds';
+export { previewDiscount } from './accounts/accounts';
+export {
+  adminGetEtims,
+  adminInitEtims,
+  adminSaveEtims,
+  etimsOnOrderUpdate,
+  etimsOnRefund,
+  submitEtimsInvoice,
+} from './etims/etims';
+export { getDocument } from './documents/documents';
+export { exportAccounting, markOverdueInvoices } from './accounts/receivables';

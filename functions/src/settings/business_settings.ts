@@ -5,8 +5,24 @@ import { PricingSettings } from '../orders/pricing';
 /// readable by everyone (checkout shows the same VAT/delivery/deposit
 /// preview the server computes). Every field has a safe default so a fresh
 /// project works before anyone opens the settings screen.
+export interface DeliveryZone {
+  id: string;
+  name: string;
+  fee: number;
+  etaDays: number;
+}
+
 export interface BusinessSettings extends PricingSettings {
   businessName: string;
+  /// Printed on invoices/receipts.
+  physicalAddress: string;
+  /// Bank / Paybill details printed on invoices for offline payment.
+  paymentInstructions: string;
+  invoiceFooter: string;
+  /// Checkout options. With no zones, the flat delivery fee applies.
+  deliveryZones: DeliveryZone[];
+  allowPickup: boolean;
+  pickupAddress: string;
   appBaseUrl: string;
   supportPhone: string;
   supportEmail: string;
@@ -15,6 +31,12 @@ export interface BusinessSettings extends PricingSettings {
 
 export const DEFAULT_BUSINESS_SETTINGS: BusinessSettings = {
   businessName: 'BrightBrush Creations',
+  physicalAddress: '',
+  paymentInstructions: '',
+  invoiceFooter: 'Thank you for your business.',
+  deliveryZones: [],
+  allowPickup: false,
+  pickupAddress: '',
   appBaseUrl: 'https://bright-brush.web.app',
   supportPhone: '',
   supportEmail: '',
@@ -48,6 +70,19 @@ export async function loadBusinessSettings(): Promise<BusinessSettings> {
   const f = DEFAULT_BUSINESS_SETTINGS;
   return {
     businessName: str(d.businessName, f.businessName),
+    physicalAddress: str(d.physicalAddress, f.physicalAddress),
+    paymentInstructions: str(d.paymentInstructions, f.paymentInstructions),
+    invoiceFooter: str(d.invoiceFooter, f.invoiceFooter),
+    deliveryZones: (Array.isArray(d.deliveryZones) ? d.deliveryZones : [])
+      .filter((z: any) => typeof z?.id === 'string' && typeof z?.name === 'string')
+      .map((z: any) => ({
+        id: z.id,
+        name: z.name,
+        fee: num(z.fee, 0, 0, 1e7),
+        etaDays: num(z.etaDays, 0, 0, 365),
+      })),
+    allowPickup: bool(d.allowPickup, f.allowPickup),
+    pickupAddress: str(d.pickupAddress, f.pickupAddress),
     appBaseUrl: str(d.appBaseUrl, f.appBaseUrl).replace(/\/+$/, ''),
     supportPhone: str(d.supportPhone, f.supportPhone),
     supportEmail: str(d.supportEmail, f.supportEmail),

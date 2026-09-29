@@ -3,6 +3,7 @@ import { logger } from 'firebase-functions/v2';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 
 import { db } from '../core/app';
+import { loadCustomerAccount } from '../accounts/accounts';
 import { loadCaller } from '../core/authz';
 import { asObject, requireEnum, requireString } from '../core/validate';
 import { nextOrderNumber, writeOrder } from '../orders/order_writer';
@@ -20,8 +21,11 @@ export const acceptQuote = onCall(async (request) => {
   const data = asObject(request.data);
   const quoteId = requireString(data, 'quoteId', 'Quote', 1, 100);
   const contact = readContact(data);
-  const paymentPlan = requireEnum(data, 'paymentPlan', ['full', 'deposit'], 'full');
-  const settings = await loadBusinessSettings();
+  const paymentPlan = requireEnum(data, 'paymentPlan', ['full', 'deposit', 'credit'], 'full');
+  const [settings, account] = await Promise.all([
+    loadBusinessSettings(),
+    loadCustomerAccount(caller.uid),
+  ]);
 
   const quoteRef = db.collection('QuoteRequests').doc(quoteId);
   const orderRef = db.collection('Orders').doc();
@@ -55,6 +59,7 @@ export const acceptQuote = onCall(async (request) => {
     const totals = computeTotals(quotedTotal, settings, {
       paymentPlan,
       includeDelivery: false,
+      creditAllowed: account.creditEnabled,
     });
     const number = await nextOrderNumber(tx);
     const quantity =
@@ -78,6 +83,14 @@ export const acceptQuote = onCall(async (request) => {
       totals,
       source: 'quote',
       quoteId,
+      extra: {
+        deliveryMethod: 'delivery',
+        ...(account.companyName ? { customerCompany: account.companyName } : {}),
+        ...(account.kraPin ? { customerKraPin: account.kraPin } : {}),
+        ...(totals.paymentPlan === 'credit'
+          ? { dueDate: new Date(Date.now() + account.paymentTermsDays * 86400000) }
+          : {}),
+      },
     });
     tx.update(quoteRef, {
       status: 'accepted',

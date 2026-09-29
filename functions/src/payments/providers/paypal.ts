@@ -114,6 +114,23 @@ export const paypalProvider: PaymentProvider = {
     return { state: 'pending' };
   },
 
+  async refund(config, payment, amountKes) {
+    if (!payment.receipt) throw new Error('No PayPal capture on record.');
+    // Refund in the currency PayPal charged, pro rata to the KES amount.
+    const ratio = payment.chargedAmount && payment.amount ? payment.chargedAmount / payment.amount : 0;
+    const value = Math.round(amountKes * ratio * 100) / 100;
+    if (value <= 0) throw new Error('Could not work out the PayPal refund amount.');
+    const token = await accessToken(config);
+    const res = await callProvider<Record<string, any>>(
+      `${baseUrl(config)}/v2/payments/captures/${encodeURIComponent(payment.receipt)}/refund`,
+      {
+        headers: { Authorization: `Bearer ${token}`, 'PayPal-Request-Id': `bb-refund-${payment.id}-${amountKes}` },
+        json: { amount: { value: value.toFixed(2), currency_code: payment.chargedCurrency ?? 'USD' } },
+      },
+    );
+    return String(res.id);
+  },
+
   async test(config) {
     await accessToken(config);
     return `PayPal ${config.mode} credentials accepted.`;

@@ -26,6 +26,16 @@ Ordering, production and delivery app for a Kenyan embroidery and branding busin
 - **Proof approval.** Staff send a proof from the order (`sendProof`) and the customer approves it or asks for changes (`respondToProof`). The rules keep a decorated order out of production until its proof is approved.
 - **Order again** puts a past order's lines back in the cart, with the same artwork and placements. Prices are recalculated at checkout.
 
+## Money, tax and documents
+
+- **PDFs** (`getDocument`): the tax invoice (`INV-` number, same sequence as orders), a receipt per payment (`RCT-`), credit notes (`CN-`), quotes and account statements. They are generated on the server with pdfkit and downloaded or shared from the order page, Profile, or the staff screens.
+- **KRA eTIMS** (Payments & Settings → KRA eTIMS): enter the OSCU details from your eTIMS registration, then **Initialise device**, which fetches the `cmcKey` and tests the connection, then switch it on. Invoices are submitted automatically once an order is paid (or confirmed on credit terms), or manually from the order. Refunds are submitted as credit notes. Invoice numbers have no gaps, as KRA requires, and the invoice PDF prints KRA's signature and verification QR code. Every line is reported under one item that you register in eTIMS.
+- **Delivery**: delivery areas with their own fees and ETAs, plus store pickup (Payments & Settings → Business).
+- **Discounts**: promo codes (Accounts & Receivables → Promo codes) are validated on the server and can't be read by customers. Business accounts can also get a standing discount.
+- **Refunds**: from the order's ⋯ menu. Stripe, PayPal and Flutterwave payments are refunded automatically; M-Pesa, cash and bank refunds are recorded for staff to pay out. You can cancel with a cancellation fee, and a credit note is always issued.
+- **Credit terms**: business accounts can pay "on account" with net-X terms and a credit limit. A daily job (06:00 Nairobi time) marks unpaid invoices overdue. The Receivables tab shows aging, statements and a pre-filled WhatsApp reminder.
+- **Accounting export**: CSVs of sales (Xero sales-invoice layout, which QuickBooks also imports), payments, refunds and expenses, with a cash-basis profit & loss summary.
+
 ## Payment gateways
 
 M-Pesa (Daraja STK Push), Stripe Checkout, PayPal and Flutterwave are fully implemented. Each stays hidden from customers until an **Admin** opens **Payments & Settings**, pastes that provider's credentials, passes **Test connection**, and switches it on.

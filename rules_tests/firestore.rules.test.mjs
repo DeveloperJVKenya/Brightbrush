@@ -370,3 +370,66 @@ describe('Phase 2: artwork, proofs, customised carts', () => {
     );
   });
 });
+
+describe('Phase 3: accounts, coupons, refunds, integrations', () => {
+  const account = {
+    companyName: 'Acme Ltd', kraPin: 'P051234567X', discountPercent: 10,
+    creditEnabled: true, creditLimit: 100000, paymentTermsDays: 30, notes: '',
+  };
+  const coupon = {
+    code: 'VALENTINE10', description: '10% off', type: 'percent', value: 10,
+    minSubtotal: 0, maxDiscount: 0, usageLimit: 0, perCustomerLimit: 1, usedCount: 0, active: true,
+  };
+
+  beforeEach(async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, 'CustomerAccounts/alice'), { ...account, updatedBy: 'admin', updatedAt: now });
+      await setDoc(doc(db, 'Coupons/SAVE5'), { ...coupon, code: 'SAVE5', createdAt: now, updatedAt: now });
+      await setDoc(doc(db, 'Refunds/r1'), { orderId: 'o1', customerId: 'alice', amount: 100 });
+      await setDoc(doc(db, 'Integrations/etims'), { enabled: true });
+    });
+  });
+
+  it('only admins set business terms; the customer can read but not change their own', async () => {
+    await assertSucceeds(getDoc(doc(as('alice'), 'CustomerAccounts/alice')));
+    await assertFails(getDoc(doc(as('bob'), 'CustomerAccounts/alice')));
+    await assertFails(
+      setDoc(doc(as('alice'), 'CustomerAccounts/alice'), { ...account, creditLimit: 9e9, updatedBy: 'alice', updatedAt: serverTimestamp() }),
+    );
+    await assertSucceeds(
+      setDoc(doc(as('admin'), 'CustomerAccounts/bob'), { ...account, updatedBy: 'admin', updatedAt: serverTimestamp() }),
+    );
+  });
+
+  it('coupon codes are invisible to customers and usage counts are server-only', async () => {
+    await assertFails(getDoc(doc(as('alice'), 'Coupons/SAVE5')));
+    await assertSucceeds(
+      setDoc(doc(as('admin'), 'Coupons/VALENTINE10'), { ...coupon, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }),
+    );
+    await assertFails(
+      setDoc(doc(as('admin'), 'Coupons/BAD1'), { ...coupon, code: 'BAD1', value: 150, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }),
+    );
+    await assertFails(updateDoc(doc(as('admin'), 'Coupons/SAVE5'), { usedCount: 0, updatedAt: serverTimestamp() }).then(() =>
+      updateDoc(doc(as('admin'), 'Coupons/SAVE5'), { usedCount: 99, updatedAt: serverTimestamp() })));
+  });
+
+  it('customers cannot grant themselves discounts, credit or refunds on orders', async () => {
+    for (const field of [{ discountAmount: 5000 }, { refundedAmount: 1 }, { dueDate: now }, { etims: { status: 'submitted' } }]) {
+      await assertFails(updateDoc(doc(as('alice'), 'Orders/o1'), { ...field, updatedAt: serverTimestamp() }));
+      await assertFails(updateDoc(doc(as('manager'), 'Orders/o1'), { ...field, updatedAt: serverTimestamp() }));
+    }
+  });
+
+  it('credit notes are readable by the customer and staff, never writable', async () => {
+    await assertSucceeds(getDoc(doc(as('alice'), 'Refunds/r1')));
+    await assertFails(getDoc(doc(as('bob'), 'Refunds/r1')));
+    await assertFails(setDoc(doc(as('admin'), 'Refunds/r2'), { orderId: 'o1', customerId: 'alice', amount: 1 }));
+  });
+
+  it('integration status is staff-only and credentials are unreachable', async () => {
+    await assertSucceeds(getDoc(doc(as('manager'), 'Integrations/etims')));
+    await assertFails(getDoc(doc(as('alice'), 'Integrations/etims')));
+    await assertFails(getDoc(doc(as('admin'), 'IntegrationSecrets/etims')));
+  });
+});

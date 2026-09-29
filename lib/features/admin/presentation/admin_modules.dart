@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/widgets/module_spec.dart';
 import '../../assets/presentation/admin_assets_screen.dart';
+import '../../commerce/presentation/accounts_receivables_screen.dart';
 import '../../financials/presentation/admin_financials_screen.dart';
 import '../../inventory/presentation/inventory_screen.dart';
 import '../../marketing/presentation/admin_marketing_screen.dart';
@@ -36,6 +37,16 @@ final List<ModuleSpec> adminModules = [
     description:
         'Revenue collected against logged expenses — materials, utilities, wages, delivery and misc.',
     screenBuilder: (context, state) => const AdminFinancialsScreen(),
+  ),
+  ModuleSpec(
+    path: '/admin/accounts',
+    label: 'Accounts & Receivables',
+    icon: Icons.request_page_outlined,
+    selectedIcon: Icons.request_page,
+    description:
+        'Money owed and aging, business customers'
+        ' discounts and credit terms, promo codes, and accounting export.',
+    screenBuilder: (context, state) => const AccountsReceivablesScreen(),
   ),
   ModuleSpec(
     path: '/admin/payments',

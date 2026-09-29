@@ -56,8 +56,11 @@ class OrdersRepository {
     required String deliveryAddress,
     required String notes,
     required String paymentPlan,
+    String deliveryMethod = 'delivery',
+    String? deliveryZoneId,
+    String couponCode = '',
   }) async {
-    appLogger.i('[orders] placeFromCart(plan=$paymentPlan)');
+    appLogger.i('[orders] placeFromCart(plan=$paymentPlan, $deliveryMethod)');
     try {
       final result = await _functions.httpsCallable('placeOrder').call({
         'contactName': contactName,
@@ -65,6 +68,9 @@ class OrdersRepository {
         'deliveryAddress': deliveryAddress,
         'notes': notes,
         'paymentPlan': paymentPlan,
+        'deliveryMethod': deliveryMethod,
+        'deliveryZoneId': ?deliveryZoneId,
+        if (couponCode.isNotEmpty) 'couponCode': couponCode,
       });
       final data = Map<String, dynamic>.from(result.data as Map);
       appLogger.i(

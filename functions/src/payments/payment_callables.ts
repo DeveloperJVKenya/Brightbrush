@@ -198,7 +198,10 @@ export const refreshPaymentStatus = onCall(async (request) => {
     amount: p.amount as number,
   });
   if (result.state === 'succeeded') {
-    await markPaymentSucceeded(paymentId, { receipt: result.receipt });
+    await markPaymentSucceeded(paymentId, {
+      receipt: result.receipt,
+      providerTxnId: result.providerTxnId,
+    });
   } else if (result.state === 'failed' || result.state === 'cancelled') {
     await markPaymentClosed(paymentId, result.state, result.message);
   }

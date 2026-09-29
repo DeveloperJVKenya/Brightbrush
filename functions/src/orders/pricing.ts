@@ -18,10 +18,15 @@ export interface PricingSettings {
   depositPercent: number;
 }
 
-export type PaymentPlan = 'full' | 'deposit';
+/// 'credit' is only granted to business accounts with credit terms: nothing
+/// is due upfront and the invoice is due after the account's terms.
+export type PaymentPlan = 'full' | 'deposit' | 'credit';
 
 export interface OrderTotals {
   subtotal: number;
+  /// Corporate discount + coupon, taken off the subtotal before delivery
+  /// and VAT.
+  discountAmount: number;
   deliveryFee: number;
   taxRate: number;
   taxAmount: number;
@@ -37,21 +42,73 @@ function roundMoney(value: number): number {
   return Math.round(value);
 }
 
+export interface Coupon {
+  type: 'percent' | 'fixed';
+  value: number;
+  minSubtotal: number;
+  /// Cap for percentage coupons. 0 = no cap.
+  maxDiscount: number;
+}
+
+export interface DiscountBreakdown {
+  corporate: number;
+  coupon: number;
+  total: number;
+}
+
+/// Corporate account discount first, then the coupon on what's left. A
+/// coupon whose minimum spend isn't met contributes nothing.
+export function computeDiscount(
+  subtotal: number,
+  options: { corporatePercent?: number; coupon?: Coupon | null },
+): DiscountBreakdown {
+  const pct = Math.min(100, Math.max(0, options.corporatePercent ?? 0));
+  const corporate = roundMoney((subtotal * pct) / 100);
+  let coupon = 0;
+  const c = options.coupon;
+  const remaining = subtotal - corporate;
+  if (c && subtotal >= c.minSubtotal) {
+    coupon =
+      c.type === 'percent'
+        ? roundMoney((remaining * Math.min(100, Math.max(0, c.value))) / 100)
+        : roundMoney(Math.max(0, c.value));
+    if (c.type === 'percent' && c.maxDiscount > 0) {
+      coupon = Math.min(coupon, c.maxDiscount);
+    }
+    coupon = Math.min(coupon, remaining);
+  }
+  return { corporate, coupon, total: corporate + coupon };
+}
+
 export function computeTotals(
   subtotal: number,
   settings: PricingSettings,
-  options: { paymentPlan: PaymentPlan; includeDelivery: boolean },
+  options: {
+    paymentPlan: PaymentPlan;
+    includeDelivery: boolean;
+    /// The chosen delivery zone's fee; undefined falls back to the flat
+    /// fee. Pickup orders pass includeDelivery: false.
+    deliveryFee?: number;
+    discount?: number;
+    creditAllowed?: boolean;
+  },
 ): OrderTotals {
   const cleanSubtotal = roundMoney(subtotal);
+  const discountAmount = Math.min(
+    cleanSubtotal,
+    Math.max(0, roundMoney(options.discount ?? 0)),
+  );
+  const netSubtotal = cleanSubtotal - discountAmount;
+  const baseFee = options.deliveryFee ?? settings.deliveryFlatFee;
   const deliveryFee =
     !options.includeDelivery ||
-    settings.deliveryFlatFee <= 0 ||
+    baseFee <= 0 ||
     (settings.freeDeliveryThreshold > 0 &&
-      cleanSubtotal >= settings.freeDeliveryThreshold)
+      netSubtotal >= settings.freeDeliveryThreshold)
       ? 0
-      : roundMoney(settings.deliveryFlatFee);
+      : roundMoney(baseFee);
 
-  const taxable = cleanSubtotal + deliveryFee;
+  const taxable = netSubtotal + deliveryFee;
   const taxRate = settings.vatEnabled ? settings.vatRate : 0;
   let taxAmount = 0;
   let total = taxable;
@@ -65,19 +122,24 @@ export function computeTotals(
   }
 
   const paymentPlan: PaymentPlan =
-    options.paymentPlan === 'deposit' &&
-    settings.allowDeposit &&
-    settings.depositPercent > 0 &&
-    settings.depositPercent < 100
-      ? 'deposit'
-      : 'full';
+    options.paymentPlan === 'credit' && options.creditAllowed
+      ? 'credit'
+      : options.paymentPlan === 'deposit' &&
+          settings.allowDeposit &&
+          settings.depositPercent > 0 &&
+          settings.depositPercent < 100
+        ? 'deposit'
+        : 'full';
   const depositAmount =
-    paymentPlan === 'deposit'
-      ? Math.ceil((total * settings.depositPercent) / 100)
-      : total;
+    paymentPlan === 'credit'
+      ? 0
+      : paymentPlan === 'deposit'
+        ? Math.ceil((total * settings.depositPercent) / 100)
+        : total;
 
   return {
     subtotal: cleanSubtotal,
+    discountAmount,
     deliveryFee,
     taxRate,
     taxAmount,

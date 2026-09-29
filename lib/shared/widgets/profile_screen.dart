@@ -14,6 +14,7 @@ import '../../core/formatting/currency.dart';
 import '../../core/errors/user_facing_error.dart';
 import '../../core/logging/app_logger.dart';
 import '../../features/auth/presentation/widgets/account_safety_section.dart';
+import '../../features/commerce/presentation/customer_account_tile.dart';
 import '../../features/catalog/application/catalog_providers.dart';
 import 'empty_state.dart';
 
@@ -446,6 +447,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                     ),
                   ],
+                  if (role == AppRole.user) const CustomerAccountTile(),
                   AccountSafetySection(role: role),
                   const SizedBox(height: 20),
                   SizedBox(

@@ -9,6 +9,8 @@ import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/catalog_image.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../catalog/application/catalog_providers.dart';
+import '../../commerce/application/commerce_providers.dart';
+import '../../commerce/data/commerce_repository.dart';
 import '../../customization/application/customization_providers.dart';
 import '../../customization/domain/customization_pricing.dart';
 import '../../customization/presentation/widgets/customization_summary.dart';
@@ -208,8 +210,17 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
   final _contactPhone = TextEditingController();
   final _deliveryAddress = TextEditingController();
   final _notes = TextEditingController();
+  final _coupon = TextEditingController();
   String _paymentPlan = 'full';
+  String _deliveryMethod = 'delivery';
+  String? _zoneId;
   bool _placing = false;
+
+  /// Result of checking the coupon against the server, and the subtotal it
+  /// was checked for (a changed cart needs a re-check).
+  DiscountPreview? _couponPreview;
+  num? _couponCheckedFor;
+  bool _checkingCoupon = false;
 
   @override
   void initState() {
@@ -225,7 +236,40 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
     _contactPhone.dispose();
     _deliveryAddress.dispose();
     _notes.dispose();
+    _coupon.dispose();
     super.dispose();
+  }
+
+  Future<void> _applyCoupon() async {
+    final code = _coupon.text.trim();
+    if (code.isEmpty) {
+      setState(() {
+        _couponPreview = null;
+        _couponCheckedFor = null;
+      });
+      return;
+    }
+    setState(() => _checkingCoupon = true);
+    try {
+      final preview = await ref
+          .read(commerceRepositoryProvider)
+          .previewDiscount(subtotal: _subtotal, couponCode: code);
+      setState(() {
+        _couponPreview = preview;
+        _couponCheckedFor = _subtotal;
+      });
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(friendlyError(error)),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _checkingCoupon = false);
+    }
   }
 
   num get _subtotal => widget.lines
@@ -260,6 +304,11 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
             deliveryAddress: _deliveryAddress.text.trim(),
             notes: _notes.text.trim(),
             paymentPlan: _paymentPlan,
+            deliveryMethod: _deliveryMethod,
+            deliveryZoneId: _deliveryMethod == 'delivery' ? _zoneId : null,
+            couponCode: _couponPreview?.valid == true
+                ? _coupon.text.trim()
+                : '',
           );
       // placeOrder empties the saved cart server-side in the same
       // transaction that creates the order.
@@ -293,12 +342,33 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
     final settings =
         ref.watch(businessSettingsProvider).valueOrNull ??
         const BusinessSettings();
+    final account = ref.watch(myAccountProvider).valueOrNull;
+    final zones = settings.deliveryZones;
+    final zone = zones.where((z) => z.id == _zoneId).firstOrNull;
+    final couponCurrent =
+        _couponPreview != null && _couponCheckedFor == _subtotal;
+    // Corporate discount is known locally; the coupon amount comes from
+    // the server check. placeOrder recomputes both authoritatively.
+    final corporate = account == null
+        ? 0
+        : (_subtotal * account.discountPercent / 100).round();
+    final couponAmount = couponCurrent && _couponPreview!.valid
+        ? _couponPreview!.coupon
+        : 0;
     final pricing = OrderPricing.compute(
       _subtotal,
       settings,
       paymentPlan: _paymentPlan,
+      includeDelivery: _deliveryMethod == 'delivery',
+      deliveryFee: zone?.fee,
+      discount: corporate + couponAmount,
+      creditAllowed: account?.creditEnabled ?? false,
     );
-    final problem = _blockingProblem;
+    final problem =
+        _blockingProblem ??
+        (_deliveryMethod == 'delivery' && zones.isNotEmpty && zone == null
+            ? 'Choose your delivery area.'
+            : null);
 
     final itemsList = ListView.separated(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
@@ -426,6 +496,53 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
                 fontWeight: FontWeight.w700,
               ),
             ),
+            if (settings.allowPickup) ...[
+              const SizedBox(height: 8),
+              SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(
+                    value: 'delivery',
+                    label: Text('Deliver to me'),
+                    icon: Icon(Icons.local_shipping_outlined),
+                  ),
+                  ButtonSegment(
+                    value: 'pickup',
+                    label: Text('I\'ll pick up'),
+                    icon: Icon(Icons.storefront_outlined),
+                  ),
+                ],
+                selected: {_deliveryMethod},
+                onSelectionChanged: (v) =>
+                    setState(() => _deliveryMethod = v.first),
+              ),
+              if (_deliveryMethod == 'pickup' &&
+                  settings.pickupAddress.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    'Pick up at: ${settings.pickupAddress}',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ),
+            ],
+            if (_deliveryMethod == 'delivery' && zones.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: _zoneId,
+                decoration: const InputDecoration(labelText: 'Delivery area'),
+                items: [
+                  for (final z in zones)
+                    DropdownMenuItem(
+                      value: z.id,
+                      child: Text(
+                        '${z.name} · ${z.fee > 0 ? currencyFormat.format(z.fee) : 'free'}'
+                        '${z.etaDays > 0 ? ' · ~${z.etaDays} day(s)' : ''}',
+                      ),
+                    ),
+                ],
+                onChanged: (v) => setState(() => _zoneId = v),
+              ),
+            ],
             const SizedBox(height: 12),
             TextFormField(
               controller: _contactName,
@@ -443,15 +560,18 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
                   : null,
             ),
             const SizedBox(height: 12),
-            TextFormField(
-              controller: _deliveryAddress,
-              decoration: const InputDecoration(labelText: 'Delivery address'),
-              maxLines: 2,
-              maxLength: 300,
-              validator: (v) => (v == null || v.trim().length < 5)
-                  ? 'Enter a delivery address'
-                  : null,
-            ),
+            if (_deliveryMethod == 'delivery')
+              TextFormField(
+                controller: _deliveryAddress,
+                decoration: const InputDecoration(
+                  labelText: 'Delivery address',
+                ),
+                maxLines: 2,
+                maxLength: 300,
+                validator: (v) => (v == null || v.trim().length < 5)
+                    ? 'Enter a delivery address'
+                    : null,
+              ),
             TextFormField(
               controller: _notes,
               decoration: const InputDecoration(
@@ -460,8 +580,52 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
               maxLines: 3,
               maxLength: 1000,
             ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _coupon,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: InputDecoration(
+                      labelText: 'Promo code',
+                      helperText: _couponPreview == null
+                          ? null
+                          : !couponCurrent
+                          ? 'Cart changed — apply again'
+                          : _couponPreview!.valid
+                          ? (_couponPreview!.message.isEmpty
+                                ? 'Code applied'
+                                : _couponPreview!.message)
+                          : null,
+                      errorText: couponCurrent && !_couponPreview!.valid
+                          ? _couponPreview!.message
+                          : null,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: OutlinedButton(
+                    onPressed: _checkingCoupon ? null : _applyCoupon,
+                    child: const Text('Apply'),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 12),
             moneyRow('Subtotal', pricing.subtotal),
+            if (corporate > 0)
+              moneyRow(
+                'Account discount (${account!.discountPercent}%)',
+                -corporate,
+              ),
+            if (couponAmount > 0)
+              moneyRow(
+                'Promo ${_coupon.text.trim().toUpperCase()}',
+                -couponAmount,
+              ),
             if (pricing.deliveryFee > 0)
               moneyRow('Delivery', pricing.deliveryFee)
             else if (settings.deliveryFlatFee > 0)
@@ -475,7 +639,8 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
               ),
             const Divider(),
             moneyRow('Total', pricing.total, bold: true),
-            if (settings.depositsAvailable) ...[
+            if (settings.depositsAvailable ||
+                (account?.creditEnabled ?? false)) ...[
               const SizedBox(height: 12),
               Text(
                 'How would you like to pay?',
@@ -488,15 +653,29 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
                     value: 'full',
                     label: Text('Pay in full'),
                   ),
-                  ButtonSegment(
-                    value: 'deposit',
-                    label: Text('${settings.depositPercent}% deposit'),
-                  ),
+                  if (settings.depositsAvailable)
+                    ButtonSegment(
+                      value: 'deposit',
+                      label: Text('${settings.depositPercent}% deposit'),
+                    ),
+                  if (account?.creditEnabled ?? false)
+                    ButtonSegment(
+                      value: 'credit',
+                      label: Text('On account (${account!.paymentTermsDays}d)'),
+                    ),
                 ],
                 selected: {_paymentPlan},
                 onSelectionChanged: (v) =>
                     setState(() => _paymentPlan = v.first),
               ),
+              if (pricing.paymentPlan == 'credit')
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    'Nothing to pay now — we\'ll invoice ${account?.companyName.isNotEmpty == true ? account!.companyName : 'your account'}, due in ${account?.paymentTermsDays ?? 30} days.',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ),
               if (pricing.paymentPlan == 'deposit')
                 Padding(
                   padding: const EdgeInsets.only(top: 6),

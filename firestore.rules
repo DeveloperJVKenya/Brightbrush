@@ -352,7 +352,7 @@ service cloud.firestore {
     // 'partiallyPaid'/'paid' are only ever set by Cloud Functions (the
     // payment ledger); staff may still flag an unpaid order 'invoiced'.
     function isValidPaymentStatus(value) {
-      return value in ['unpaid', 'invoiced', 'partiallyPaid', 'paid'];
+      return value in ['unpaid', 'invoiced', 'partiallyPaid', 'paid', 'partiallyRefunded', 'refunded'];
     }
 
     function isValidRole(value) {
@@ -388,7 +388,12 @@ service cloud.firestore {
               // Server-computed (placeOrder / acceptQuote / payment ledger):
               'orderNumber', 'customerEmail', 'deliveryFee', 'taxRate', 'taxAmount',
               'paymentPlan', 'depositAmount', 'amountPaid', 'source', 'quoteId',
-              'customerDeleted', 'requiresProof', 'proofStatus', 'proofVersion'
+              'customerDeleted', 'requiresProof', 'proofStatus', 'proofVersion',
+              // Phase 3 (server-written): invoicing, discounts, delivery, credit, eTIMS, refunds.
+              'invoiceNumber', 'refundedAmount', 'discountAmount', 'corporateDiscount',
+              'couponCode', 'couponDiscount', 'deliveryMethod', 'deliveryZoneId', 'deliveryZoneName',
+              'customerCompany', 'customerKraPin', 'dueDate', 'overdue', 'etims',
+              'cancellationFee', 'cancelReason'
             ]) &&
             hasRequiredFields([
               'customerId', 'contactName', 'contactPhone', 'deliveryAddress',
@@ -509,6 +514,8 @@ service cloud.firestore {
       let d = request.resource.data;
       return hasOnlyAllowedFields([
               'businessName', 'appBaseUrl', 'supportPhone', 'supportEmail', 'kraPin',
+              'physicalAddress', 'paymentInstructions', 'invoiceFooter',
+              'deliveryZones', 'allowPickup', 'pickupAddress',
               'vatEnabled', 'vatRate', 'pricesIncludeVat', 'deliveryFlatFee',
               'freeDeliveryThreshold', 'allowDeposit', 'depositPercent', 'updatedAt', 'updatedBy'
             ]) &&
@@ -524,6 +531,12 @@ service cloud.firestore {
             d.freeDeliveryThreshold is number && d.freeDeliveryThreshold >= 0 &&
             d.allowDeposit is bool &&
             d.depositPercent is number && d.depositPercent >= 0 && d.depositPercent <= 100 &&
+            (!('physicalAddress' in d) || validStringLength('physicalAddress', 0, 300)) &&
+            (!('paymentInstructions' in d) || validStringLength('paymentInstructions', 0, 1000)) &&
+            (!('invoiceFooter' in d) || validStringLength('invoiceFooter', 0, 500)) &&
+            (!('deliveryZones' in d) || (d.deliveryZones is list && d.deliveryZones.size() <= 30)) &&
+            (!('allowPickup' in d) || d.allowPickup is bool) &&
+            (!('pickupAddress' in d) || validStringLength('pickupAddress', 0, 300)) &&
             d.updatedBy == request.auth.uid;
     }
 
@@ -555,6 +568,29 @@ service cloud.firestore {
             (!('threadCount' in d) || (d.threadCount is int && d.threadCount >= 0 && d.threadCount <= 50)) &&
             (!('digitizedFiles' in d) || (d.digitizedFiles is list && d.digitizedFiles.size() <= 10)) &&
             (!('staffNotes' in d) || validStringLength('staffNotes', 0, 1000)) &&
+            d.createdAt is timestamp && d.updatedAt is timestamp;
+    }
+
+    function isValidCoupon() {
+      let d = request.resource.data;
+      return hasOnlyAllowedFields([
+              'code', 'description', 'type', 'value', 'minSubtotal', 'maxDiscount',
+              'validFrom', 'validTo', 'usageLimit', 'perCustomerLimit', 'usedCount',
+              'active', 'createdAt', 'updatedAt'
+            ]) &&
+            d.code is string && d.code.matches('^[A-Z0-9_-]{3,30}$') &&
+            (!('description' in d) || validStringLength('description', 0, 200)) &&
+            d.type in ['percent', 'fixed'] &&
+            d.value is number && d.value > 0 &&
+            (d.type != 'percent' || d.value <= 100) &&
+            d.minSubtotal is number && d.minSubtotal >= 0 &&
+            d.maxDiscount is number && d.maxDiscount >= 0 &&
+            d.usageLimit is int && d.usageLimit >= 0 &&
+            d.perCustomerLimit is int && d.perCustomerLimit >= 0 &&
+            d.usedCount is int &&
+            d.active is bool &&
+            (!('validFrom' in d) || d.validFrom is timestamp) &&
+            (!('validTo' in d) || d.validTo is timestamp) &&
             d.createdAt is timestamp && d.updatedAt is timestamp;
     }
 
@@ -671,7 +707,11 @@ service cloud.firestore {
           'notes', 'items', 'subtotal', 'total', 'createdAt',
           'orderNumber', 'customerEmail', 'deliveryFee', 'taxRate', 'taxAmount',
           'paymentPlan', 'depositAmount', 'amountPaid', 'source', 'quoteId',
-          'requiresProof', 'proofStatus', 'proofVersion'
+          'requiresProof', 'proofStatus', 'proofVersion',
+          'invoiceNumber', 'refundedAmount', 'discountAmount', 'corporateDiscount',
+          'couponCode', 'couponDiscount', 'deliveryMethod', 'deliveryZoneId', 'deliveryZoneName',
+          'customerCompany', 'customerKraPin', 'dueDate', 'overdue', 'etims',
+          'cancellationFee', 'cancelReason'
         ]) &&
         request.resource.data.updatedAt == request.time &&
         (
@@ -961,6 +1001,59 @@ service cloud.firestore {
       allow read: if isManagerOrAdmin() ||
         (isAuthenticated() &&
           get(/databases/$(database)/documents/Orders/$(orderId)).data.customerId == request.auth.uid);
+      allow write: if false;
+    }
+
+    match /CustomerAccounts/{uid} {
+      // Business account terms (company, KRA PIN, standing discount, credit
+      // limit and payment terms). Set by Admin/CEO; the customer can see
+      // their own terms but never change them.
+      allow read: if isOwner(uid) || isManagerOrAdmin();
+      allow create, update: if isAdminOrDeveloper() &&
+        request.resource.data.keys().hasOnly([
+          'companyName', 'kraPin', 'discountPercent', 'creditEnabled', 'creditLimit',
+          'paymentTermsDays', 'notes', 'updatedAt', 'updatedBy'
+        ]) &&
+        request.resource.data.discountPercent is number &&
+        request.resource.data.discountPercent >= 0 && request.resource.data.discountPercent <= 100 &&
+        request.resource.data.creditEnabled is bool &&
+        request.resource.data.creditLimit is number && request.resource.data.creditLimit >= 0 &&
+        request.resource.data.paymentTermsDays is int &&
+        request.resource.data.paymentTermsDays >= 0 && request.resource.data.paymentTermsDays <= 365 &&
+        request.resource.data.updatedBy == request.auth.uid &&
+        request.resource.data.updatedAt == request.time;
+      allow delete: if isAdminOrDeveloper();
+    }
+
+    match /Coupons/{code} {
+      // Codes are never readable by customers (they'd leak); checkout
+      // validates them through the previewDiscount/placeOrder functions.
+      // usedCount is only ever incremented server-side.
+      allow read: if isAdminOrDeveloper();
+      allow create: if isAdminOrDeveloper() && isValidCoupon() &&
+        request.resource.data.usedCount == 0 &&
+        request.resource.data.code == code;
+      allow update: if isAdminOrDeveloper() && isValidCoupon() &&
+        areImmutableFieldsUnchanged(['code', 'usedCount', 'createdAt']);
+      allow delete: if isAdminOrDeveloper();
+
+      match /Redemptions/{uid} {
+        allow read: if isAdminOrDeveloper();
+        allow write: if false;
+      }
+    }
+
+    match /Refunds/{refundId} {
+      // Credit notes. Written only by the issueRefund function.
+      allow read: if isOwner(resource.data.customerId) || isManagerOrAdmin();
+      allow write: if false;
+    }
+
+    match /Integrations/{integrationId} {
+      // Public status of back-office integrations (e.g. KRA eTIMS enabled)
+      // for staff screens. Credentials live in IntegrationSecrets, which the
+      // default deny keeps from every client.
+      allow read: if isManagerOrAdmin();
       allow write: if false;
     }
 

@@ -14,7 +14,7 @@ export const paymentRef = (id: string) => db.collection('Payments').doc(id);
 /// pending → succeeded transition ever adds to the order's amountPaid.
 export async function markPaymentSucceeded(
   paymentId: string,
-  details: { receipt?: string; message?: string } = {},
+  details: { receipt?: string; message?: string; providerTxnId?: string } = {},
 ): Promise<boolean> {
   const applied = await db.runTransaction(async (tx) => {
     const pRef = paymentRef(paymentId);
@@ -28,9 +28,17 @@ export async function markPaymentSucceeded(
     const o = oSnap.data();
     if (!oSnap.exists || !o) return false;
 
+    // Gapless receipt numbers (RCT-000001) for every money-in event.
+    const counterRef = db.collection('Counters').doc('receipts');
+    const counter = await tx.get(counterRef);
+    const receiptSeq = ((counter.data()?.value as number | undefined) ?? 0) + 1;
+
     const amountPaid = ((o.amountPaid as number | undefined) ?? 0) + (p.amount as number);
+    tx.set(counterRef, { value: receiptSeq, updatedAt: FieldValue.serverTimestamp() });
     tx.update(pRef, {
       status: 'succeeded',
+      receiptNumber: `RCT-${String(receiptSeq).padStart(6, '0')}`,
+      ...(details.providerTxnId ? { providerTxnId: details.providerTxnId } : {}),
       ...(details.receipt ? { receipt: details.receipt } : {}),
       ...(details.message ? { message: details.message } : {}),
       completedAt: FieldValue.serverTimestamp(),

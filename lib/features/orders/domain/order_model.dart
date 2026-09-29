@@ -107,6 +107,19 @@ class OrderModel {
     this.requiresProof = false,
     this.proofStatus = ProofStatus.notRequired,
     this.proofVersion = 0,
+    this.invoiceNumber = '',
+    this.refundedAmount = 0,
+    this.discountAmount = 0,
+    this.corporateDiscount = 0,
+    this.couponCode,
+    this.couponDiscount = 0,
+    this.deliveryMethod = 'delivery',
+    this.deliveryZoneName,
+    this.customerCompany,
+    this.dueDate,
+    this.overdue = false,
+    this.etims = const {},
+    this.cancellationFee = 0,
   }) : depositAmount = depositAmount ?? total;
 
   final String id;
@@ -150,6 +163,33 @@ class OrderModel {
   final ProofStatus proofStatus;
   final int proofVersion;
 
+  final String invoiceNumber;
+  final num refundedAmount;
+  final num discountAmount;
+  final num corporateDiscount;
+  final String? couponCode;
+  final num couponDiscount;
+
+  /// 'delivery' or 'pickup'.
+  final String deliveryMethod;
+  final String? deliveryZoneName;
+  final String? customerCompany;
+
+  /// Set for orders on credit terms.
+  final DateTime? dueDate;
+  final bool overdue;
+
+  /// KRA eTIMS submission result (status, invcNo, rcptNo, qrUrl, error).
+  final Map<String, dynamic> etims;
+  final num cancellationFee;
+
+  bool get isPickup => deliveryMethod == 'pickup';
+  bool get isCredit => paymentPlan == 'credit';
+  String get etimsStatus => etims['status'] as String? ?? 'none';
+
+  /// Money received and not refunded.
+  num get netPaid => amountPaid - refundedAmount;
+
   bool get proofBlocksProduction =>
       proofStatus != ProofStatus.notRequired &&
       proofStatus != ProofStatus.approved;
@@ -160,16 +200,18 @@ class OrderModel {
       ? orderNumber
       : '#${id.length > 6 ? id.substring(0, 6).toUpperCase() : id}';
 
-  num get balanceDue => (total - amountPaid) < 0 ? 0 : total - amountPaid;
+  num get balanceDue => status == OrderStatus.cancelled || (total - netPaid) < 0
+      ? 0
+      : total - netPaid;
 
   bool get isDepositPlan => paymentPlan == 'deposit' && depositAmount < total;
 
-  bool get depositCovered => amountPaid >= depositAmount;
+  bool get depositCovered => netPaid >= depositAmount;
 
   /// Money actually received on this order. Orders from before the payment
   /// ledger only carry a manual 'paid' flag, so those count in full.
   num get collectedAmount {
-    if (amountPaid > 0) return amountPaid;
+    if (amountPaid > 0) return amountPaid - refundedAmount;
     return paymentStatus == PaymentStatus.paid ? total : 0;
   }
 
@@ -225,6 +267,19 @@ class OrderModel {
       requiresProof: d['requiresProof'] as bool? ?? false,
       proofStatus: ProofStatus.fromName(d['proofStatus'] as String?),
       proofVersion: (d['proofVersion'] as num?)?.toInt() ?? 0,
+      invoiceNumber: d['invoiceNumber'] as String? ?? '',
+      refundedAmount: d['refundedAmount'] as num? ?? 0,
+      discountAmount: d['discountAmount'] as num? ?? 0,
+      corporateDiscount: d['corporateDiscount'] as num? ?? 0,
+      couponCode: d['couponCode'] as String?,
+      couponDiscount: d['couponDiscount'] as num? ?? 0,
+      deliveryMethod: d['deliveryMethod'] as String? ?? 'delivery',
+      deliveryZoneName: d['deliveryZoneName'] as String?,
+      customerCompany: d['customerCompany'] as String?,
+      dueDate: (d['dueDate'] as Timestamp?)?.toDate(),
+      overdue: d['overdue'] as bool? ?? false,
+      etims: Map<String, dynamic>.from((d['etims'] as Map?) ?? const {}),
+      cancellationFee: d['cancellationFee'] as num? ?? 0,
     );
   }
 }

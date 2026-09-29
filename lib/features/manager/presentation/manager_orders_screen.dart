@@ -12,6 +12,9 @@ import '../../../shared/widgets/order_status_timeline.dart';
 import '../../orders/application/orders_providers.dart';
 import '../../orders/domain/order_model.dart';
 import '../../orders/domain/order_status.dart';
+import '../../commerce/application/commerce_providers.dart';
+import '../../commerce/data/commerce_repository.dart';
+import '../../commerce/presentation/refund_dialog.dart';
 import '../../customization/presentation/widgets/customization_summary.dart';
 import '../../payments/presentation/widgets/record_payment_dialog.dart';
 import '../../proofs/presentation/proof_widgets.dart';
@@ -212,9 +215,44 @@ class _ManagerOrderRowState extends ConsumerState<_ManagerOrderRow> {
   /// attempt here, rather than flipping a status by hand.
   Future<void> _openPayments() => showRecordPaymentDialog(context, order);
 
+  Future<void> _onMenu(String action) async {
+    switch (action) {
+      case 'invoice':
+        await openDocument(context, ref, DocumentKind.invoice, order.id);
+      case 'refund':
+        await showRefundDialog(context, order);
+      case 'etims':
+        setState(() => _busy = true);
+        try {
+          await ref.read(commerceRepositoryProvider).submitEtims(order.id);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Invoice reported to KRA eTIMS'),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        } catch (error) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(friendlyError(error)),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        } finally {
+          if (mounted) setState(() => _busy = false);
+        }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Keeps the eTIMS status live for the 'Submit to KRA' menu item.
+    final etimsOn = ref.watch(etimsEnabledProvider).valueOrNull ?? false;
     return Card(
       margin: EdgeInsets.zero,
       child: Padding(
@@ -316,6 +354,45 @@ class _ManagerOrderRowState extends ConsumerState<_ManagerOrderRow> {
                     label: Text('Proof: ${order.proofStatus.label}'),
                     onPressed: () => showSendProofDialog(context, order),
                   ),
+                if (order.etimsStatus != 'none')
+                  Chip(
+                    avatar: Icon(
+                      order.etimsStatus == 'submitted'
+                          ? Icons.verified_outlined
+                          : Icons.error_outline_rounded,
+                      size: 16,
+                    ),
+                    label: Text('eTIMS: ${order.etimsStatus}'),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                if (order.overdue)
+                  Chip(
+                    avatar: const Icon(Icons.schedule_rounded, size: 16),
+                    label: const Text('Overdue'),
+                    visualDensity: VisualDensity.compact,
+                    backgroundColor: theme.colorScheme.errorContainer,
+                  ),
+                PopupMenuButton<String>(
+                  tooltip: 'More',
+                  icon: const Icon(Icons.more_horiz_rounded),
+                  onSelected: (v) => _onMenu(v),
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'invoice',
+                      child: Text('Invoice PDF'),
+                    ),
+                    if (order.netPaid > 0)
+                      const PopupMenuItem(
+                        value: 'refund',
+                        child: Text('Refund / cancel with fee'),
+                      ),
+                    if (etimsOn && order.etimsStatus != 'submitted')
+                      const PopupMenuItem(
+                        value: 'etims',
+                        child: Text('Submit to KRA eTIMS'),
+                      ),
+                  ],
+                ),
                 if (_busy)
                   const SizedBox(
                     width: 16,

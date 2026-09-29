@@ -66,6 +66,16 @@ export const stripeProvider: PaymentProvider = {
     return { state: 'pending' };
   },
 
+  async refund(config, payment, amountKes) {
+    const intent = payment.receipt;
+    if (!intent || !intent.startsWith('pi_')) throw new Error('No Stripe payment intent on record.');
+    const res = await callProvider<Record<string, any>>(`${API}/refunds`, {
+      headers: { ...auth(config.values.secretKey), 'Idempotency-Key': `bb-refund-${payment.id}-${amountKes}` },
+      form: { payment_intent: intent, amount: String(Math.round(amountKes) * 100) },
+    });
+    return String(res.id);
+  },
+
   async test(config) {
     const balance = await callProvider<Record<string, any>>(`${API}/balance`, {
       headers: auth(config.values.secretKey),
