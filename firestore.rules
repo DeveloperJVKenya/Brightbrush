@@ -38,7 +38,7 @@ rules_version = '2';
 //   - updatedAt: timestamp (required)
 //
 // Collection: Orders
-// Document ID: auto-generated
+// Document ID: auto-generated -- created ONLY by Cloud Functions (placeOrder / acceptQuote)
 // Fields:
 //   - customerId: string (required, immutable, Firebase Auth uid of the placing customer)
 //   - contactName: string (required, immutable, 2-80 chars)
@@ -47,22 +47,24 @@ rules_version = '2';
 //   - notes: string (optional, immutable, <= 1000 chars)
 //   - items: list<map> (required, immutable, 1-50 entries: {itemId, name, category, unitPrice, quantity})
 //   - subtotal: number (required, immutable, > 0)
-//   - total: number (required, immutable, > 0) -- no delivery fee/tax modeling yet, equals subtotal
+//   - total: number (required, immutable, > 0) -- subtotal + deliveryFee (+ VAT when prices exclude VAT)
+//   - orderNumber, customerEmail, deliveryFee, taxRate, taxAmount, paymentPlan (full|deposit),
+//     depositAmount, amountPaid, source (cart|quote), quoteId: all server-written, immutable to clients
 //   - status: string (required, one of ORDER_STATUSES) -- customer can only ever set 'pendingReview' (create)
 //     or move 'pendingReview' -> 'cancelled' (self-cancel). systemManager/admin can move it through the
 //     full pipeline freely. deliveryStaff can only do two exact moves: claim an unassigned
 //     'readyForDelivery' order for themselves (-> 'outForDelivery', setting assignedStaffId to their own
 //     uid), or mark their own 'outForDelivery' order 'completed'.
-//   - paymentStatus: string (required, one of 'unpaid' | 'invoiced' | 'paid') -- this pilot has no payment
-//     gateway; only systemManager/admin mark orders invoiced/paid manually against an offline payment
-//     (bank transfer, mobile money, in person) -- deliveryStaff cannot touch this field.
+//   - paymentStatus: string (required, one of 'unpaid' | 'invoiced' | 'partiallyPaid' | 'paid') -- driven by
+//     the server-side payment ledger (gateway payments + staff-recorded offline payments via the
+//     recordManualPayment function); staff may only toggle unpaid <-> invoiced by hand.
 //   - assignedStaffId: string (optional, the deliveryStaff uid handling this order)
 //   - deliveryLat/deliveryLng: number (optional, geocoded once from deliveryAddress for the Route Map;
 //     settable by any order-staff role since it's just a map pin, not sensitive)
 //   - createdAt: timestamp (required, immutable)
 //   - updatedAt: timestamp (required)
-// Note: Firestore rules can't loop over `items` to validate each entry's inner fields (itemId/unitPrice/
-// etc.) — only the list's size is bounded here. Treat that as a known prototype limitation.
+// Line items and every price are validated server-side in placeOrder/acceptQuote (rules can't loop over
+// `items`), which is why client creates are denied.
 //
 // Collection: Carts
 // Document ID: {uid} (the account's Firebase Auth uid) — one cart per customer
@@ -328,8 +330,10 @@ service cloud.firestore {
       ];
     }
 
+    // 'partiallyPaid'/'paid' are only ever set by Cloud Functions (the
+    // payment ledger); staff may still flag an unpaid order 'invoiced'.
     function isValidPaymentStatus(value) {
-      return value in ['unpaid', 'invoiced', 'paid'];
+      return value in ['unpaid', 'invoiced', 'partiallyPaid', 'paid'];
     }
 
     function isValidRole(value) {
@@ -361,7 +365,11 @@ service cloud.firestore {
       return hasOnlyAllowedFields([
               'customerId', 'contactName', 'contactPhone', 'deliveryAddress', 'notes',
               'items', 'subtotal', 'total', 'status', 'paymentStatus', 'assignedStaffId',
-              'deliveryLat', 'deliveryLng', 'createdAt', 'updatedAt'
+              'deliveryLat', 'deliveryLng', 'createdAt', 'updatedAt',
+              // Server-computed (placeOrder / acceptQuote / payment ledger):
+              'orderNumber', 'customerEmail', 'deliveryFee', 'taxRate', 'taxAmount',
+              'paymentPlan', 'depositAmount', 'amountPaid', 'source', 'quoteId',
+              'customerDeleted'
             ]) &&
             hasRequiredFields([
               'customerId', 'contactName', 'contactPhone', 'deliveryAddress',
@@ -478,6 +486,59 @@ service cloud.firestore {
             (!('response' in d) || validStringLength('response', 0, 2000));
     }
 
+    function isValidBusinessSettings() {
+      let d = request.resource.data;
+      return hasOnlyAllowedFields([
+              'businessName', 'appBaseUrl', 'supportPhone', 'supportEmail', 'kraPin',
+              'vatEnabled', 'vatRate', 'pricesIncludeVat', 'deliveryFlatFee',
+              'freeDeliveryThreshold', 'allowDeposit', 'depositPercent', 'updatedAt', 'updatedBy'
+            ]) &&
+            validStringLength('businessName', 2, 80) &&
+            isValidUrl(d.appBaseUrl) &&
+            validStringLength('supportPhone', 0, 30) &&
+            validStringLength('supportEmail', 0, 120) &&
+            validStringLength('kraPin', 0, 20) &&
+            d.vatEnabled is bool &&
+            d.vatRate is number && d.vatRate >= 0 && d.vatRate <= 1 &&
+            d.pricesIncludeVat is bool &&
+            d.deliveryFlatFee is number && d.deliveryFlatFee >= 0 && d.deliveryFlatFee <= 10000000 &&
+            d.freeDeliveryThreshold is number && d.freeDeliveryThreshold >= 0 &&
+            d.allowDeposit is bool &&
+            d.depositPercent is number && d.depositPercent >= 0 && d.depositPercent <= 100 &&
+            d.updatedBy == request.auth.uid;
+    }
+
+    function isValidQuoteStatus(value) {
+      return value in ['new', 'quoted', 'accepted', 'declined', 'rejected', 'cancelled'];
+    }
+
+    function isValidQuoteRequest() {
+      let d = request.resource.data;
+      return hasOnlyAllowedFields([
+              'customerId', 'customerName', 'customerEmail', 'title', 'packageId', 'itemId',
+              'quantity', 'details', 'status', 'quotedTotal', 'quoteMessage', 'validUntil',
+              'orderId', 'respondedBy', 'createdAt', 'updatedAt'
+            ]) &&
+            hasRequiredFields([
+              'customerId', 'customerName', 'title', 'quantity', 'details', 'status',
+              'createdAt', 'updatedAt'
+            ]) &&
+            d.customerId is string &&
+            validStringLength('customerName', 1, 80) &&
+            (!('customerEmail' in d) || validStringLength('customerEmail', 0, 120)) &&
+            validStringLength('title', 2, 120) &&
+            (!('packageId' in d) || validStringLength('packageId', 1, 100)) &&
+            (!('itemId' in d) || validStringLength('itemId', 1, 100)) &&
+            d.quantity is int && d.quantity >= 1 && d.quantity <= 100000 &&
+            validStringLength('details', 0, 2000) &&
+            isValidQuoteStatus(d.status) &&
+            (!('quotedTotal' in d) || (d.quotedTotal is number && d.quotedTotal > 0 && d.quotedTotal <= 1000000000)) &&
+            (!('quoteMessage' in d) || validStringLength('quoteMessage', 0, 2000)) &&
+            (!('validUntil' in d) || d.validUntil is timestamp) &&
+            (!('respondedBy' in d) || d.respondedBy is string) &&
+            d.createdAt is timestamp && d.updatedAt is timestamp;
+    }
+
     // Note: can't loop over `roles` to check each entry is a real AppRole
     // name (same limitation documented on isValidOrder() above) — bounded
     // by size/length only. Authored exclusively by Admin/CEO/Developer via
@@ -544,38 +605,44 @@ service cloud.firestore {
       // see everything — they need the full pipeline to fulfill orders.
       allow read: if isOwner(resource.data.customerId) || isOrderStaff();
 
-      // Customers place orders themselves; they always start unpaid and
-      // awaiting review — no client can create an order that's already
-      // 'confirmed'/'paid'/etc.
-      allow create: if isAuthenticated() &&
-        request.resource.data.customerId == request.auth.uid &&
-        isValidOrder() &&
-        request.resource.data.status == 'pendingReview' &&
-        request.resource.data.paymentStatus == 'unpaid' &&
-        request.resource.data.assignedStaffId == null &&
-        request.resource.data.createdAt == request.time;
+      // Orders are created ONLY by Cloud Functions (placeOrder from the
+      // customer's saved cart, acceptQuote from a staff-priced quote), which
+      // look every price up server-side. A client-created order could name
+      // its own prices, so direct creates are denied outright.
+      allow create: if false;
 
-      // Order contents/pricing/contact info are immutable after creation —
-      // regardless of who's updating. What each party may change beyond
-      // that differs a lot, so it's split by who's doing the updating:
+      // Order contents/pricing/contact info and every money field are
+      // immutable to clients after creation — amountPaid/paymentStatus
+      // 'paid' only ever move through the server-side payment ledger. What
+      // each party may change beyond that is split by who's updating:
       allow update: if isValidOrder() &&
         areImmutableFieldsUnchanged([
           'customerId', 'contactName', 'contactPhone', 'deliveryAddress',
-          'notes', 'items', 'subtotal', 'total', 'createdAt'
+          'notes', 'items', 'subtotal', 'total', 'createdAt',
+          'orderNumber', 'customerEmail', 'deliveryFee', 'taxRate', 'taxAmount',
+          'paymentPlan', 'depositAmount', 'amountPaid', 'source', 'quoteId'
         ]) &&
         request.resource.data.updatedAt == request.time &&
         (
-          // Manager/admin: full control over status/paymentStatus/assignment.
-          isManagerOrAdmin() ||
+          // Manager/admin: full control over status/assignment. Payment
+          // status is ledger-owned; staff may only toggle an order with
+          // nothing paid yet between 'unpaid' and 'invoiced'.
+          (isManagerOrAdmin() &&
+            (request.resource.data.paymentStatus == resource.data.paymentStatus ||
+              (request.resource.data.paymentStatus in ['unpaid', 'invoiced'] &&
+                resource.data.get('amountPaid', 0) == 0 &&
+                resource.data.paymentStatus in ['unpaid', 'invoiced']))) ||
           // Delivery staff: only the exact claim/complete moves, on their
           // own assignment, and payment status is completely off-limits.
           (isDeliveryStaffRole() &&
             isValidDeliveryClaimOrComplete() &&
             request.resource.data.paymentStatus == resource.data.paymentStatus) ||
           // Customers may only cancel their own order, and only while it's
-          // still pendingReview — once staff picks it up, it's staff-only.
+          // still pendingReview with nothing paid — once staff picks it up
+          // or money has moved, cancelling (and any refund) is staff-only.
           (isOwner(resource.data.customerId) &&
             resource.data.status == 'pendingReview' &&
+            resource.data.get('amountPaid', 0) == 0 &&
             request.resource.data.status == 'cancelled' &&
             request.resource.data.assignedStaffId == resource.data.assignedStaffId &&
             request.resource.data.paymentStatus == resource.data.paymentStatus)
@@ -756,6 +823,76 @@ service cloud.firestore {
 
       allow delete: if isAdminOrDeveloper();
     }
+
+    match /Settings/{docId} {
+      // Business settings (VAT, delivery fee, deposit %, business details)
+      // are public — checkout shows the same price breakdown the server
+      // computes, and invoices print the business details. Only Admin/CEO
+      // edits them, and only the one known document.
+      allow read: if true;
+      allow create, update: if isAdminOrDeveloper() &&
+        docId == 'business' &&
+        isValidBusinessSettings() &&
+        request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    match /QuoteRequests/{quoteId} {
+      allow read: if isOwner(resource.data.customerId) || isManagerOrAdmin();
+
+      // A customer asks for a price; it always starts 'new' with no staff
+      // pricing on it.
+      allow create: if isAuthenticated() &&
+        request.resource.data.customerId == request.auth.uid &&
+        isValidQuoteRequest() &&
+        request.resource.data.status == 'new' &&
+        !request.resource.data.keys().hasAny(['quotedTotal', 'quoteMessage', 'validUntil', 'orderId', 'respondedBy']) &&
+        request.resource.data.createdAt == request.time;
+
+      // Staff price or decline a request (never accept it — acceptance
+      // creates an Order, which only the acceptQuote function may do).
+      // The customer can only withdraw an open request or decline a price.
+      allow update: if isValidQuoteRequest() &&
+        request.resource.data.updatedAt == request.time &&
+        areImmutableFieldsUnchanged([
+          'customerId', 'customerName', 'customerEmail', 'title', 'packageId',
+          'itemId', 'quantity', 'details', 'createdAt', 'orderId'
+        ]) &&
+        (
+          (isManagerOrAdmin() &&
+            resource.data.status in ['new', 'quoted'] &&
+            request.resource.data.status in ['quoted', 'declined'] &&
+            (request.resource.data.status != 'quoted' ||
+              (request.resource.data.quotedTotal is number && request.resource.data.quotedTotal > 0)) &&
+            request.resource.data.respondedBy == request.auth.uid) ||
+          (isOwner(resource.data.customerId) &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']) &&
+            ((resource.data.status == 'new' && request.resource.data.status == 'cancelled') ||
+              (resource.data.status == 'quoted' && request.resource.data.status == 'rejected')))
+        );
+
+      allow delete: if false;
+    }
+
+    match /PaymentGateways/{gatewayId} {
+      // Public status only (enabled/configured/mode/label/public key) —
+      // checkout reads it to decide which payment buttons to show. Written
+      // exclusively by the adminSavePaymentGateway function.
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /Payments/{paymentId} {
+      // The payment ledger. Customers see their own attempts/receipts;
+      // managers and admins see all. Written only by Cloud Functions.
+      allow read: if isOwner(resource.data.customerId) || isManagerOrAdmin();
+      allow write: if false;
+    }
+
+    // PaymentGatewaySecrets (provider API keys), PaymentTokens (M-Pesa
+    // callback tokens) and Counters (order numbers) are deliberately NOT
+    // matched here: the default deny below keeps every client — including
+    // Admin/Developer — out. Only the Admin SDK in Cloud Functions reads them.
 
     // Default deny for anything not explicitly matched above.
     match /{document=**} {

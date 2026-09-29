@@ -170,16 +170,16 @@ class CustomerCatalogScreen extends ConsumerWidget {
                                     return;
                                   }
                                   try {
-                                    await ref
+                                    final qty = await ref
                                         .read(cartActionsProvider)
-                                        .add(item.id);
+                                        .addCatalogItem(item);
                                     if (context.mounted) {
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(
                                         SnackBar(
                                           content: Text(
-                                            '${item.name} added to cart',
+                                            '${item.name} added to cart ($qty)',
                                           ),
                                           duration: const Duration(seconds: 2),
                                           behavior: SnackBarBehavior.floating,

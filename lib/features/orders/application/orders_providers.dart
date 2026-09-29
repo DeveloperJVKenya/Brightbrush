@@ -8,7 +8,10 @@ import '../domain/order_model.dart';
 import '../domain/order_status.dart';
 
 final ordersRepositoryProvider = Provider<OrdersRepository>((ref) {
-  return OrdersRepository(ref.watch(firestoreProvider));
+  return OrdersRepository(
+    ref.watch(firestoreProvider),
+    ref.watch(firebaseFunctionsProvider),
+  );
 });
 
 final geocodingServiceProvider = Provider<GeocodingService>((ref) {

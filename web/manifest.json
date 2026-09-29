@@ -1,11 +1,11 @@
 {
-    "name": "brightbrush",
-    "short_name": "brightbrush",
+    "name": "BrightBrush Creations",
+    "short_name": "BrightBrush",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Custom embroidery and branding in Kenya — caps, T-shirts, hoodies, bottles and more. Order online and pay with M-Pesa or card.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

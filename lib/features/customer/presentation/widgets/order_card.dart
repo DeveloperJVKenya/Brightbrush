@@ -31,7 +31,7 @@ class OrderCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        'Order #${order.id.substring(0, order.id.length.clamp(0, 6))}',
+                        'Order ${order.displayNumber}',
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),

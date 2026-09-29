@@ -1,0 +1,88 @@
+import {
+  DocumentReference,
+  FieldValue,
+  Transaction,
+} from 'firebase-admin/firestore';
+
+import { db } from '../core/app';
+import { OrderTotals } from './pricing';
+
+export interface PricedLine {
+  kind: 'item' | 'package' | 'quote';
+  itemId: string;
+  name: string;
+  category: string;
+  unitPrice: number;
+  quantity: number;
+}
+
+export interface OrderContact {
+  contactName: string;
+  contactPhone: string;
+  deliveryAddress: string;
+  notes: string;
+}
+
+/// Human-friendly, gapless order numbers (BB-000123) for invoices, receipts
+/// and M-Pesa account references. Must be called inside the same
+/// transaction that creates the order so two concurrent checkouts can never
+/// share a number. Reads happen here, so call this before any tx writes.
+export async function nextOrderNumber(tx: Transaction): Promise<string> {
+  const ref = db.collection('Counters').doc('orders');
+  const snap = await tx.get(ref);
+  const next = ((snap.data()?.value as number | undefined) ?? 0) + 1;
+  tx.set(ref, { value: next, updatedAt: FieldValue.serverTimestamp() });
+  return `BB-${String(next).padStart(6, '0')}`;
+}
+
+/// The single place an Orders document is ever created — clients can no
+/// longer write Orders directly (firestore.rules denies create), so every
+/// price, total and deposit on an order was computed here.
+export function writeOrder(
+  tx: Transaction,
+  params: {
+    ref: DocumentReference;
+    orderNumber: string;
+    customerId: string;
+    customerEmail: string;
+    contact: OrderContact;
+    lines: PricedLine[];
+    totals: OrderTotals;
+    source: 'cart' | 'quote';
+    quoteId?: string;
+  },
+): void {
+  const { totals } = params;
+  tx.create(params.ref, {
+    orderNumber: params.orderNumber,
+    customerId: params.customerId,
+    customerEmail: params.customerEmail,
+    contactName: params.contact.contactName,
+    contactPhone: params.contact.contactPhone,
+    deliveryAddress: params.contact.deliveryAddress,
+    ...(params.contact.notes ? { notes: params.contact.notes } : {}),
+    items: params.lines.map((l) => ({
+      kind: l.kind,
+      itemId: l.itemId,
+      name: l.name,
+      category: l.category,
+      unitPrice: l.unitPrice,
+      quantity: l.quantity,
+    })),
+    subtotal: totals.subtotal,
+    deliveryFee: totals.deliveryFee,
+    taxRate: totals.taxRate,
+    taxAmount: totals.taxAmount,
+    total: totals.total,
+    paymentPlan: totals.paymentPlan,
+    depositAmount: totals.depositAmount,
+    amountPaid: 0,
+    status: 'pendingReview',
+    paymentStatus: 'unpaid',
+    assignedStaffId: null,
+    source: params.source,
+    ...(params.quoteId ? { quoteId: params.quoteId } : {}),
+    createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+}

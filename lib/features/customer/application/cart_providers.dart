@@ -1,7 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/firebase/firebase_providers.dart';
+import '../../catalog/domain/catalog_item.dart';
+import '../../catalog/domain/package_model.dart';
 import '../data/cart_repository.dart';
+
+/// Cart keys with this prefix are seasonal packages; every other key is a
+/// CatalogItems id. Must match PACKAGE_PREFIX in
+/// functions/src/orders/place_order.ts, which prices the cart server-side.
+const String packageCartKeyPrefix = 'pkg:';
+
+String packageCartKey(String packageId) => '$packageCartKeyPrefix$packageId';
 
 final cartRepositoryProvider = Provider<CartRepository>((ref) {
   return CartRepository(ref.watch(firestoreProvider));
@@ -37,6 +46,19 @@ class CartActions {
     final next = {...current, itemId: (current[itemId] ?? 0) + quantity};
     await _ref.read(cartRepositoryProvider).setItems(uid, next);
   }
+
+  /// Adds a catalog item, starting at its minimum order quantity the first
+  /// time (the server rejects anything below MOQ), then one more per tap.
+  Future<int> addCatalogItem(CatalogItem item) async {
+    final current =
+        _ref.read(cartProvider).valueOrNull?[item.id] ?? 0;
+    final next = current == 0 ? (item.moq < 1 ? 1 : item.moq) : current + 1;
+    await setQuantity(item.id, next);
+    return next;
+  }
+
+  Future<void> addPackage(PackageModel package) =>
+      add(packageCartKey(package.id));
 
   Future<void> setQuantity(String itemId, int quantity) async {
     final uid = _ref.read(currentUidProvider);

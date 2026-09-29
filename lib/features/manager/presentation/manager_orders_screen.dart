@@ -12,6 +12,7 @@ import '../../../shared/widgets/order_status_timeline.dart';
 import '../../orders/application/orders_providers.dart';
 import '../../orders/domain/order_model.dart';
 import '../../orders/domain/order_status.dart';
+import '../../payments/presentation/widgets/record_payment_dialog.dart';
 import 'widgets/order_status_filter_bar.dart';
 
 final _managerOrdersSearchProvider = StateProvider<String>((ref) => '');
@@ -159,35 +160,10 @@ class _ManagerOrderRowState extends ConsumerState<_ManagerOrderRow> {
     }
   }
 
-  Future<void> _cyclePaymentStatus() async {
-    final next = switch (order.paymentStatus) {
-      PaymentStatus.unpaid => PaymentStatus.invoiced,
-      PaymentStatus.invoiced => PaymentStatus.paid,
-      PaymentStatus.paid => PaymentStatus.unpaid,
-    };
-    setState(() => _busy = true);
-    try {
-      await ref
-          .read(ordersRepositoryProvider)
-          .updatePaymentStatus(order.id, next);
-    } catch (error, stack) {
-      appLogger.e(
-        '[orders] Failed to update payment status for order ${order.id}',
-        error: error,
-        stackTrace: stack,
-      );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Couldn\'t update payment: ${friendlyError(error)}'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
+  /// Payment status is owned by the server-side ledger now: staff record
+  /// money received (cash, bank, off-app M-Pesa) and see every gateway
+  /// attempt here, rather than flipping a status by hand.
+  Future<void> _openPayments() => showRecordPaymentDialog(context, order);
 
   @override
   Widget build(BuildContext context) {
@@ -262,9 +238,14 @@ class _ManagerOrderRowState extends ConsumerState<_ManagerOrderRow> {
                         },
                 ),
                 ChoiceChip(
-                  label: Text('Payment: ${order.paymentStatus.label}'),
+                  avatar: const Icon(Icons.payments_outlined, size: 16),
+                  label: Text(
+                    order.balanceDue > 0 && order.amountPaid > 0
+                        ? '${order.paymentStatus.label} · ${currencyFormat.format(order.balanceDue)} due'
+                        : 'Payment: ${order.paymentStatus.label}',
+                  ),
                   selected: order.paymentStatus.name != 'unpaid',
-                  onSelected: _busy ? null : (_) => _cyclePaymentStatus(),
+                  onSelected: _busy ? null : (_) => _openPayments(),
                 ),
                 if (_busy)
                   const SizedBox(

@@ -1,0 +1,12 @@
+{
+  "name": "brightbrush-rules-tests",
+  "private": true,
+  "description": "Security-rules tests for firestore.rules, run against the Firestore emulator.",
+  "scripts": {
+    "test": "firebase emulators:exec --only firestore --project demo-brightbrush \"node --test firestore.rules.test.mjs\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
+    "firebase": "^12.19.0"
+  }
+}

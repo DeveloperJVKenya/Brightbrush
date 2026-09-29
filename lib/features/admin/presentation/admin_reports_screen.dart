@@ -62,8 +62,8 @@ class AdminReportsScreen extends ConsumerWidget {
             .toList();
         final totalValue = live.fold<num>(0, (s, o) => s + o.total);
         final collected = live
-            .where((o) => o.paymentStatus.name == 'paid')
-            .fold<num>(0, (s, o) => s + o.total);
+            // Deposits and part-payments count as collected money.
+            .fold<num>(0, (s, o) => s + o.collectedAmount);
         final outstanding = totalValue - collected;
 
         final statusCounts = <OrderStatus, int>{

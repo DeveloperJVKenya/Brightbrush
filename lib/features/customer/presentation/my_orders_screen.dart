@@ -28,11 +28,22 @@ class MyOrdersScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'My orders',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'My orders',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () => context.push('/customer/quotes'),
+                  icon: const Icon(Icons.request_quote_outlined),
+                  label: const Text('My quotes'),
+                ),
+              ],
             ),
             const SizedBox(height: 4),
             Text(

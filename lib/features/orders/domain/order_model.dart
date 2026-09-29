@@ -2,8 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'order_status.dart';
 
+/// What an order line refers to: a catalog item, a seasonal package, or a
+/// staff-priced quote (see functions/src/orders/order_writer.ts).
+enum OrderLineKind { item, package, quote }
+
 class OrderLineItem {
   const OrderLineItem({
+    this.kind = OrderLineKind.item,
     required this.itemId,
     required this.name,
     required this.category,
@@ -11,6 +16,7 @@ class OrderLineItem {
     required this.quantity,
   });
 
+  final OrderLineKind kind;
   final String itemId;
   final String name;
   final String category;
@@ -21,6 +27,10 @@ class OrderLineItem {
 
   factory OrderLineItem.fromMap(Map<String, dynamic> map) {
     return OrderLineItem(
+      kind: OrderLineKind.values.firstWhere(
+        (k) => k.name == map['kind'],
+        orElse: () => OrderLineKind.item,
+      ),
       itemId: map['itemId'] as String? ?? '',
       name: map['name'] as String? ?? '',
       category: map['category'] as String? ?? '',
@@ -31,6 +41,7 @@ class OrderLineItem {
 
   Map<String, dynamic> toMap() {
     return {
+      'kind': kind.name,
       'itemId': itemId,
       'name': name,
       'category': category,
@@ -58,7 +69,14 @@ class OrderModel {
     required this.deliveryLng,
     required this.createdAt,
     required this.updatedAt,
-  });
+    this.orderNumber = '',
+    this.deliveryFee = 0,
+    this.taxRate = 0,
+    this.taxAmount = 0,
+    this.paymentPlan = 'full',
+    num? depositAmount,
+    this.amountPaid = 0,
+  }) : depositAmount = depositAmount ?? total;
 
   final String id;
   final String customerId;
@@ -77,12 +95,50 @@ class OrderModel {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  /// Human-friendly number (BB-000123) assigned by placeOrder/acceptQuote.
+  /// Empty on orders created before server-side ordering existed.
+  final String orderNumber;
+  final num deliveryFee;
+  final num taxRate;
+  final num taxAmount;
+
+  /// 'full' or 'deposit' — see [depositAmount].
+  final String paymentPlan;
+
+  /// What must be paid before production starts (equals [total] on a
+  /// 'full' plan).
+  final num depositAmount;
+
+  /// Running total of successful payments, maintained only by the
+  /// server-side payment ledger.
+  final num amountPaid;
+
+  /// Reference shown to customers and staff — the order number when there
+  /// is one, else a short form of the document id.
+  String get displayNumber => orderNumber.isNotEmpty
+      ? orderNumber
+      : '#${id.length > 6 ? id.substring(0, 6).toUpperCase() : id}';
+
+  num get balanceDue => (total - amountPaid) < 0 ? 0 : total - amountPaid;
+
+  bool get isDepositPlan => paymentPlan == 'deposit' && depositAmount < total;
+
+  bool get depositCovered => amountPaid >= depositAmount;
+
+  /// Money actually received on this order. Orders from before the payment
+  /// ledger only carry a manual 'paid' flag, so those count in full.
+  num get collectedAmount {
+    if (amountPaid > 0) return amountPaid;
+    return paymentStatus == PaymentStatus.paid ? total : 0;
+  }
+
   bool get hasDeliveryCoordinates => deliveryLat != null && deliveryLng != null;
 
   int get itemCount =>
       items.fold(0, (runningTotal, item) => runningTotal + item.quantity);
 
   List<String> get searchFields => [
+    orderNumber,
     contactName,
     contactPhone,
     id,
@@ -118,28 +174,13 @@ class OrderModel {
       updatedAt:
           (d['updatedAt'] as Timestamp?)?.toDate() ??
           DateTime.fromMillisecondsSinceEpoch(0),
+      orderNumber: d['orderNumber'] as String? ?? '',
+      deliveryFee: d['deliveryFee'] as num? ?? 0,
+      taxRate: d['taxRate'] as num? ?? 0,
+      taxAmount: d['taxAmount'] as num? ?? 0,
+      paymentPlan: d['paymentPlan'] as String? ?? 'full',
+      depositAmount: d['depositAmount'] as num?,
+      amountPaid: d['amountPaid'] as num? ?? 0,
     );
-  }
-
-  Map<String, dynamic> toFirestoreCreate() {
-    return {
-      'customerId': customerId,
-      'contactName': contactName,
-      'contactPhone': contactPhone,
-      'deliveryAddress': deliveryAddress,
-      if (notes.isNotEmpty) 'notes': notes,
-      'items': items.map((i) => i.toMap()).toList(),
-      'subtotal': subtotal,
-      'total': total,
-      'status': OrderStatus.pendingReview.name,
-      'paymentStatus': PaymentStatus.unpaid.name,
-      // Explicit null (not omitted): firestore.rules compares
-      // resource.data.assignedStaffId directly when validating a delivery
-      // staff claim, and accessing a genuinely absent map key throws in
-      // rules rather than returning null.
-      'assignedStaffId': null,
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    };
   }
 }

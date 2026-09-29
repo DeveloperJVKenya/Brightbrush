@@ -12,6 +12,7 @@ import '../../core/firebase/firebase_providers.dart';
 import '../../core/formatting/currency.dart';
 import '../../core/errors/user_facing_error.dart';
 import '../../core/logging/app_logger.dart';
+import '../../features/auth/presentation/widgets/account_safety_section.dart';
 import '../../features/catalog/application/catalog_providers.dart';
 import 'empty_state.dart';
 
@@ -429,6 +430,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       onTap: _changePassword,
                     ),
                   ),
+                  AccountSafetySection(role: role),
                   const SizedBox(height: 20),
                   SizedBox(
                     width: double.infinity,

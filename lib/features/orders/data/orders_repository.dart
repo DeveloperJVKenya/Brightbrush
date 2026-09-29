@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 import '../../../core/logging/app_logger.dart';
 import '../../../core/logging/stream_error_logger.dart';
@@ -6,9 +7,10 @@ import '../domain/order_model.dart';
 import '../domain/order_status.dart';
 
 class OrdersRepository {
-  OrdersRepository(this._db);
+  OrdersRepository(this._db, this._functions);
 
   final FirebaseFirestore _db;
+  final FirebaseFunctions _functions;
 
   CollectionReference<Map<String, dynamic>> get _orders =>
       _db.collection('Orders');
@@ -44,20 +46,33 @@ class OrdersRepository {
         );
   }
 
-  Future<String> create(OrderModel order) async {
-    appLogger.i(
-      '[orders] create() customerId=${order.customerId} total=${order.total}',
-    );
+  /// Places an order from the signed-in customer's saved cart. Pricing,
+  /// MOQ checks, VAT, delivery and the deposit are all computed by the
+  /// placeOrder Cloud Function — the client only supplies contact details
+  /// and the payment plan. Returns the new order's id.
+  Future<String> placeFromCart({
+    required String contactName,
+    required String contactPhone,
+    required String deliveryAddress,
+    required String notes,
+    required String paymentPlan,
+  }) async {
+    appLogger.i('[orders] placeFromCart(plan=$paymentPlan)');
     try {
-      final doc = await _orders.add(order.toFirestoreCreate());
-      appLogger.i('[orders] created ${doc.id}');
-      return doc.id;
-    } catch (error, stack) {
-      appLogger.e(
-        '[orders] create() failed for customerId=${order.customerId}',
-        error: error,
-        stackTrace: stack,
+      final result = await _functions.httpsCallable('placeOrder').call({
+        'contactName': contactName,
+        'contactPhone': contactPhone,
+        'deliveryAddress': deliveryAddress,
+        'notes': notes,
+        'paymentPlan': paymentPlan,
+      });
+      final data = Map<String, dynamic>.from(result.data as Map);
+      appLogger.i(
+        '[orders] placed ${data['orderId']} (${data['orderNumber']}) total=${data['total']}',
       );
+      return data['orderId'] as String;
+    } catch (error, stack) {
+      appLogger.e('[orders] placeFromCart failed', error: error, stackTrace: stack);
       rethrow;
     }
   }

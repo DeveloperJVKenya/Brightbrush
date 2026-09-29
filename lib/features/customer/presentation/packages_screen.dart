@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/errors/user_facing_error.dart';
+import '../../../core/firebase/firebase_providers.dart';
+import '../../../core/formatting/currency.dart';
 import '../../../core/logging/app_logger.dart';
+import '../../../shared/widgets/auth_required_sheet.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/live_search_field.dart';
 import '../../../shared/widgets/staggered_entrance.dart';
 import '../../catalog/application/catalog_providers.dart';
 import '../../catalog/domain/package_model.dart';
+import '../../quotes/presentation/request_quote_sheet.dart';
+import '../application/cart_providers.dart';
 import 'widgets/package_card.dart';
 
 void _showPackageSheet(BuildContext context, PackageModel package) {
@@ -17,7 +22,7 @@ void _showPackageSheet(BuildContext context, PackageModel package) {
     showDragHandle: true,
     isScrollControlled: true,
     constraints: const BoxConstraints(maxWidth: 560),
-    builder: (context) {
+    builder: (sheetContext) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
         child: Column(
@@ -52,20 +57,69 @@ void _showPackageSheet(BuildContext context, PackageModel package) {
               ),
             ),
             const SizedBox(height: 20),
+            Text(
+              currencyFormat.format(package.price),
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton.icon(
+              child: Consumer(
+                builder: (_, ref, _) => FilledButton.icon(
+                  onPressed: () async {
+                    // The sheet is popped before the snackbar shows, so the
+                    // follow-ups use the screen's context, not the sheet's.
+                    final messenger = ScaffoldMessenger.of(context);
+                    final navigator = Navigator.of(sheetContext);
+                    if (ref.read(currentUidProvider) == null) {
+                      navigator.pop();
+                      showAuthRequiredSheet(
+                        context,
+                        message:
+                            'Sign in or create an account to order "${package.name}".',
+                      );
+                      return;
+                    }
+                    try {
+                      await ref.read(cartActionsProvider).addPackage(package);
+                      navigator.pop();
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text('"${package.name}" added to cart'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    } catch (error) {
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text(friendlyError(error)),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.add_shopping_cart_rounded),
+                  label: const Text('Add to cart'),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
                 onPressed: () {
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Quote request sent for "${package.name}"'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
+                  Navigator.of(sheetContext).pop();
+                  showRequestQuoteSheet(
+                    context,
+                    title: package.name,
+                    packageId: package.id,
                   );
                 },
-                icon: const Icon(Icons.send_rounded),
-                label: const Text('Request a quote'),
+                icon: const Icon(Icons.request_quote_outlined),
+                label: const Text('Customise it — request a quote'),
               ),
             ),
           ],

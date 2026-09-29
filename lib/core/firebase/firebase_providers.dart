@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -24,6 +25,14 @@ final firestoreProvider = Provider<FirebaseFirestore>((ref) {
 
 final firebaseStorageProvider = Provider<FirebaseStorage>(
   (ref) => FirebaseStorage.instance,
+);
+
+/// Region every Cloud Function is deployed to — must match `REGION` in
+/// functions/src/core/app.ts.
+const String functionsRegion = 'europe-west1';
+
+final firebaseFunctionsProvider = Provider<FirebaseFunctions>(
+  (ref) => FirebaseFunctions.instanceFor(region: functionsRegion),
 );
 
 /// Live auth state — every real sign-in/sign-out event, logged so a

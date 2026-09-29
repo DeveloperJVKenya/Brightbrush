@@ -79,8 +79,8 @@ class AdminExecutiveDashboardScreen extends ConsumerWidget {
         .toList();
     final totalValue = live.fold<num>(0, (s, o) => s + o.total);
     final collected = live
-        .where((o) => o.paymentStatus.name == 'paid')
-        .fold<num>(0, (s, o) => s + o.total);
+        // Deposits and part-payments count as collected money.
+        .fold<num>(0, (s, o) => s + o.collectedAmount);
     final outstanding = totalValue - collected;
     final totalExpenses = expenses.fold<num>(0, (s, e) => s + e.amount);
     final net = collected - totalExpenses;

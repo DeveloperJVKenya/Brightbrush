@@ -11,6 +11,7 @@ import '../../../shared/widgets/catalog_image.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../catalog/application/catalog_providers.dart';
 import '../../catalog/domain/catalog_item.dart';
+import '../../quotes/presentation/request_quote_sheet.dart';
 import '../application/cart_providers.dart';
 
 class CatalogItemDetailScreen extends ConsumerWidget {
@@ -164,11 +165,17 @@ class _DetailBody extends ConsumerWidget {
                   return;
                 }
                 try {
-                  await ref.read(cartActionsProvider).add(item.id);
+                  final qty = await ref
+                      .read(cartActionsProvider)
+                      .addCatalogItem(item);
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('${item.name} added to cart'),
+                        content: Text(
+                          qty == item.moq && item.moq > 1
+                              ? '${item.name} added (minimum order ${item.moq})'
+                              : '${item.name} added to cart ($qty)',
+                        ),
                         behavior: SnackBarBehavior.floating,
                       ),
                     );
@@ -193,6 +200,20 @@ class _DetailBody extends ConsumerWidget {
               },
               icon: const Icon(Icons.add_shopping_cart_rounded),
               label: const Text('Add to cart'),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => showRequestQuoteSheet(
+                context,
+                title: item.name,
+                itemId: item.id,
+                initialQuantity: item.moq < 1 ? 1 : item.moq,
+              ),
+              icon: const Icon(Icons.request_quote_outlined),
+              label: const Text('Custom job or bulk price? Request a quote'),
             ),
           ),
         ],

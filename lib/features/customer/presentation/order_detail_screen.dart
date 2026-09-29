@@ -10,11 +10,20 @@ import '../../../shared/widgets/order_status_timeline.dart';
 import '../../orders/application/orders_providers.dart';
 import '../../orders/domain/order_model.dart';
 import '../../orders/domain/order_status.dart';
+import '../../payments/presentation/widgets/order_payment_panel.dart';
 
 class OrderDetailScreen extends ConsumerWidget {
-  const OrderDetailScreen({super.key, required this.orderId});
+  const OrderDetailScreen({
+    super.key,
+    required this.orderId,
+    this.paymentOutcome,
+  });
 
   final String orderId;
+
+  /// 'success' / 'cancelled' / 'failed' when the customer lands here
+  /// from a hosted checkout (Stripe, PayPal, Flutterwave) redirect.
+  final String? paymentOutcome;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -60,7 +69,10 @@ class OrderDetailScreen extends ConsumerWidget {
               message: 'It may have been removed.',
             );
           }
-          return _OrderDetailBody(order: order);
+          return _OrderDetailBody(
+            order: order,
+            paymentOutcome: paymentOutcome,
+          );
         },
       ),
     );
@@ -68,9 +80,10 @@ class OrderDetailScreen extends ConsumerWidget {
 }
 
 class _OrderDetailBody extends ConsumerWidget {
-  const _OrderDetailBody({required this.order});
+  const _OrderDetailBody({required this.order, this.paymentOutcome});
 
   final OrderModel order;
+  final String? paymentOutcome;
 
   static const _wideBreakpoint = 900.0;
 
@@ -83,7 +96,10 @@ class _OrderDetailBody extends ConsumerWidget {
           return ListView(
             padding: const EdgeInsets.all(20),
             children: [
+              ?_outcomeBanner(context),
               _StatusCard(order: order),
+              const SizedBox(height: 16),
+              OrderPaymentPanel(order: order),
               const SizedBox(height: 16),
               _ItemsSection(order: order),
               const SizedBox(height: 16),
@@ -97,6 +113,7 @@ class _OrderDetailBody extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
+                ?_outcomeBanner(context),
                 _StatusCard(order: order),
                 const SizedBox(height: 16),
                 Row(
@@ -104,7 +121,16 @@ class _OrderDetailBody extends ConsumerWidget {
                   children: [
                     Expanded(flex: 3, child: _ItemsSection(order: order)),
                     const SizedBox(width: 20),
-                    Expanded(flex: 2, child: _DeliverySection(order: order)),
+                    Expanded(
+                      flex: 2,
+                      child: Column(
+                        children: [
+                          OrderPaymentPanel(order: order),
+                          const SizedBox(height: 16),
+                          _DeliverySection(order: order),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -112,6 +138,49 @@ class _OrderDetailBody extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+}
+
+extension on _OrderDetailBody {
+  /// Result of a hosted-checkout redirect. The ledger is the source of
+  /// truth (webhooks can land a few seconds after the redirect), so
+  /// "success" is phrased as "confirming" until the order reflects it.
+  Widget? _outcomeBanner(BuildContext context) {
+    final outcome = paymentOutcome;
+    if (outcome == null) return null;
+    final scheme = Theme.of(context).colorScheme;
+    final (icon, color, text) = switch (outcome) {
+      'success' when order.amountPaid > 0 => (
+        Icons.check_circle_rounded,
+        Colors.green,
+        'Payment received — thank you!',
+      ),
+      'success' => (
+        Icons.hourglass_top_rounded,
+        scheme.primary,
+        'Confirming your payment with the provider… this page updates automatically.',
+      ),
+      'cancelled' => (
+        Icons.info_outline_rounded,
+        scheme.onSurfaceVariant,
+        'Payment cancelled. You can try again below.',
+      ),
+      _ => (
+        Icons.error_outline_rounded,
+        scheme.error,
+        'The payment didn\x27t go through. You can try again below.',
+      ),
+    };
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: ListTile(
+          leading: Icon(icon, color: color),
+          title: Text(text),
+        ),
+      ),
     );
   }
 }
@@ -168,21 +237,6 @@ class _ItemsSection extends StatelessWidget {
                 ),
                 if (item != order.items.last) const Divider(height: 1),
               ],
-              const Divider(height: 1),
-              ListTile(
-                title: const Text(
-                  'Total',
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
-                trailing: Text(
-                  currencyFormat.format(order.total),
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: theme.colorScheme.primary,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
             ],
           ),
         ),
@@ -274,15 +328,12 @@ class _DeliverySectionState extends ConsumerState<_DeliverySection> {
                 ),
                 if (order.notes.isNotEmpty)
                   _InfoRow(icon: Icons.notes_rounded, label: order.notes),
-                _InfoRow(
-                  icon: Icons.payments_outlined,
-                  label: 'Payment: ${order.paymentStatus.label}',
-                ),
               ],
             ),
           ),
         ),
-        if (order.status == OrderStatus.pendingReview) ...[
+        if (order.status == OrderStatus.pendingReview &&
+            order.amountPaid == 0) ...[
           const SizedBox(height: 20),
           OutlinedButton.icon(
             onPressed: _cancelling ? null : _cancel,

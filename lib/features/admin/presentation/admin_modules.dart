@@ -5,6 +5,7 @@ import '../../assets/presentation/admin_assets_screen.dart';
 import '../../financials/presentation/admin_financials_screen.dart';
 import '../../inventory/presentation/inventory_screen.dart';
 import '../../marketing/presentation/admin_marketing_screen.dart';
+import '../../payments/presentation/admin_payments_screen.dart';
 import 'admin_deliveries_screen.dart';
 import 'admin_employees_screen.dart';
 import 'admin_executive_dashboard_screen.dart';
@@ -35,6 +36,15 @@ final List<ModuleSpec> adminModules = [
     description:
         'Revenue collected against logged expenses — materials, utilities, wages, delivery and misc.',
     screenBuilder: (context, state) => const AdminFinancialsScreen(),
+  ),
+  ModuleSpec(
+    path: '/admin/payments',
+    label: 'Payments & Settings',
+    icon: Icons.point_of_sale_outlined,
+    selectedIcon: Icons.point_of_sale,
+    description:
+        'M-Pesa, card, PayPal and Flutterwave credentials, plus VAT, delivery fee and deposit rules.',
+    screenBuilder: (context, state) => const AdminPaymentsScreen(),
   ),
   ModuleSpec(
     path: '/admin/orders',

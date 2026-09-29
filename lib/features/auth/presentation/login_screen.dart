@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/errors/user_facing_error.dart';
@@ -107,7 +108,9 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
   final _displayName = TextEditingController();
   bool _isSignUp = false;
   bool _loading = false;
+  bool _acceptedTerms = false;
   String? _error;
+  String? _info;
 
   @override
   void dispose() {
@@ -146,8 +149,34 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
     }
   }
 
+  /// Password recovery — without this a customer who forgets their password
+  /// is locked out for good.
+  Future<void> _forgotPassword() async {
+    final email = _email.text.trim();
+    if (!email.contains('@')) {
+      setState(() {
+        _error = 'Enter your email above first, then tap "Forgot password?".';
+        _info = null;
+      });
+      return;
+    }
+    await _run(() async {
+      await ref.read(firebaseAuthProvider).sendPasswordResetEmail(email: email);
+      appLogger.i('[auth] Password reset email requested for $email');
+      setState(
+        () => _info =
+            'If an account exists for $email, a reset link is on its way. Check your inbox and spam folder.',
+      );
+    });
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_isSignUp && !_acceptedTerms) {
+      setState(() => _error = 'Please accept the Terms and Privacy Policy to continue.');
+      return;
+    }
+    setState(() => _info = null);
     final auth = ref.read(firebaseAuthProvider);
     final email = _email.text.trim();
     final password = _password.text;
@@ -161,6 +190,11 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
         appLogger.i(
           '[auth] Account created uid=${credential.user!.uid}; writing user profile',
         );
+        // Best effort: a failed send must not block sign-up; the Profile
+        // screen offers a resend.
+        credential.user!.sendEmailVerification().catchError((Object e) {
+          appLogger.w('[auth] Verification email failed to send', error: e);
+        });
         await ref
             .read(userProfileRepositoryProvider)
             .ensureUserProfile(
@@ -237,7 +271,49 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
             validator: (v) =>
                 (v == null || v.length < 6) ? 'At least 6 characters' : null,
           ),
-          const SizedBox(height: 16),
+          if (!_isSignUp)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: _loading ? null : _forgotPassword,
+                child: const Text('Forgot password?'),
+              ),
+            )
+          else
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              value: _acceptedTerms,
+              onChanged: (v) => setState(() => _acceptedTerms = v ?? false),
+              title: Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  const Text('I agree to the '),
+                  InkWell(
+                    onTap: () => context.push('/legal/terms'),
+                    child: Text(
+                      'Terms',
+                      style: TextStyle(
+                        color: theme.colorScheme.primary,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                  const Text(' and '),
+                  InkWell(
+                    onTap: () => context.push('/legal/privacy'),
+                    child: Text(
+                      'Privacy Policy',
+                      style: TextStyle(
+                        color: theme.colorScheme.primary,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: 8),
           FilledButton(
             onPressed: _loading ? null : _submit,
             child: _loading
@@ -262,6 +338,14 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
                   : "Don't have an account? Sign up",
             ),
           ),
+          if (_info != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              _info!,
+              style: TextStyle(color: theme.colorScheme.primary, fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+          ],
           if (_error != null) ...[
             const SizedBox(height: 4),
             Text(

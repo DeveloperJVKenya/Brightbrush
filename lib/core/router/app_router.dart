@@ -8,6 +8,7 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/splash_screen.dart';
 import '../../features/developer/presentation/developer_home_screen.dart';
 import '../../features/guide/presentation/guide_screen.dart';
+import '../../features/legal/presentation/legal_screen.dart';
 import '../../features/manager/presentation/manager_modules.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/staff/presentation/staff_modules.dart';
@@ -45,7 +46,8 @@ AppRole? _roleFor(String path) {
 }
 
 /// Reachable with no account at all: browsing (Home/catalog, item detail,
-/// Packages) plus the two neutral top-level utility routes. Everything else
+/// Packages) plus the neutral top-level utility routes and the legal pages
+/// (app stores require the privacy policy to be readable without signing in). Everything else
 /// under `/customer` (cart, orders, tracking, notifications, support,
 /// profile) — and every staff/manager/admin/developer shell — requires
 /// signing in, which is the "only act, not browse, requires an account"
@@ -55,6 +57,7 @@ bool _isGuestAccessible(String path) {
       path == '/customer/packages' ||
       path.startsWith('/customer/catalog/') ||
       path == '/settings' ||
+      path.startsWith('/legal/') ||
       path == '/help';
 }
 
@@ -89,6 +92,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (path == '/login') return role.homePath;
+      if (path.startsWith('/legal/')) return null;
 
       // Developer can freely browse every role's shell — their Firestore
       // permissions already grant it (see hasStaffRole's developer bypass),
@@ -115,6 +119,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SettingsScreen(),
       ),
       GoRoute(path: '/help', builder: (context, state) => const GuideScreen()),
+      GoRoute(
+        path: '/legal/privacy',
+        builder: (context, state) =>
+            const LegalScreen(document: LegalDocument.privacy),
+      ),
+      GoRoute(
+        path: '/legal/terms',
+        builder: (context, state) =>
+            const LegalScreen(document: LegalDocument.terms),
+      ),
       GoRoute(
         path: '/developer',
         builder: (context, state) => const DeveloperHomeScreen(),

@@ -1,3 +1,5 @@
+import 'package:cloud_functions/cloud_functions.dart';
+
 /// Turns a raw exception (Firestore, Storage, network, Firebase AI/Gemini,
 /// etc.) into a short, plain-language message safe to show to end users.
 ///
@@ -6,6 +8,14 @@
 /// `error`/`stackTrace`); this is the only thing that should ever reach a
 /// [SnackBar] or [EmptyState] message.
 String friendlyError(Object error) {
+  // Our Cloud Functions write these messages for end users (e.g. "Caps has
+  // a minimum order of 50"), so they're shown as-is rather than being
+  // collapsed into a generic sentence.
+  if (error is FirebaseFunctionsException &&
+      _userFacingFunctionCodes.contains(error.code) &&
+      (error.message ?? '').isNotEmpty) {
+    return error.message!;
+  }
   final raw = error.toString().toLowerCase();
   bool has(String needle) => raw.contains(needle);
 
@@ -40,3 +50,13 @@ String friendlyError(Object error) {
   }
   return 'Something went wrong. Please try again.';
 }
+
+const _userFacingFunctionCodes = {
+  'invalid-argument',
+  'failed-precondition',
+  'resource-exhausted',
+  'not-found',
+  'permission-denied',
+  'unauthenticated',
+  'unavailable',
+};

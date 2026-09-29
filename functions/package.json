@@ -1,0 +1,25 @@
+{
+  "name": "brightbrush-functions",
+  "private": true,
+  "description": "BrightBrush Creations backend: server-side order pricing, quotes, payment gateways (M-Pesa, Stripe, PayPal, Flutterwave) and account deletion.",
+  "main": "lib/index.js",
+  "engines": {
+    "node": "22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "test": "npm run build && node --test \"lib/**/*.test.js\"",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "dependencies": {
+    "firebase-admin": "^14.5.0",
+    "firebase-functions": "^7.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.4",
+    "typescript": "^7.0.2"
+  }
+}

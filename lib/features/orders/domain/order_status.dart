@@ -63,6 +63,7 @@ enum OrderLifecycleBucket { upcoming, running, completed, cancelled }
 enum PaymentStatus {
   unpaid(label: 'Unpaid'),
   invoiced(label: 'Invoiced'),
+  partiallyPaid(label: 'Partially paid'),
   paid(label: 'Paid');
 
   const PaymentStatus({required this.label});

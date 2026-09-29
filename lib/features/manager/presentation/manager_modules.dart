@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../shared/widgets/module_spec.dart';
 import '../../../shared/widgets/profile_screen.dart';
 import '../../inventory/presentation/inventory_screen.dart';
+import '../../quotes/presentation/manager_quotes_screen.dart';
 import 'manager_catalog_screen.dart';
 import 'manager_dashboard_screen.dart';
 import 'manager_history_screen.dart';
@@ -52,6 +53,15 @@ final List<ModuleSpec> managerModules = [
     description:
         'Incoming, in-production and completed orders across all clients.',
     screenBuilder: (context, state) => const ManagerOrdersScreen(),
+  ),
+  ModuleSpec(
+    path: '/manager/quotes',
+    label: 'Quotes',
+    icon: Icons.request_quote_outlined,
+    selectedIcon: Icons.request_quote,
+    description:
+        'Price custom jobs and package requests; accepted quotes become orders.',
+    screenBuilder: (context, state) => const ManagerQuotesScreen(),
   ),
   ModuleSpec(
     path: '/manager/history',
