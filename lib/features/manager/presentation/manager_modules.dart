@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../shared/widgets/module_spec.dart';
 import '../../../shared/widgets/profile_screen.dart';
 import '../../inventory/presentation/inventory_screen.dart';
+import '../../customization/presentation/manager_artwork_screen.dart';
 import '../../quotes/presentation/manager_quotes_screen.dart';
 import 'manager_catalog_screen.dart';
 import 'manager_dashboard_screen.dart';
@@ -62,6 +63,15 @@ final List<ModuleSpec> managerModules = [
     description:
         'Price custom jobs and package requests; accepted quotes become orders.',
     screenBuilder: (context, state) => const ManagerQuotesScreen(),
+  ),
+  ModuleSpec(
+    path: '/manager/artwork',
+    label: 'Artwork',
+    icon: Icons.palette_outlined,
+    selectedIcon: Icons.palette,
+    description:
+        'Customer logos and the digitizing queue — attach DST/EMB/PES files and stitch counts.',
+    screenBuilder: (context, state) => const ManagerArtworkScreen(),
   ),
   ModuleSpec(
     path: '/manager/history',

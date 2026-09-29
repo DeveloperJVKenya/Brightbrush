@@ -10,7 +10,10 @@ import '../../../shared/widgets/order_status_timeline.dart';
 import '../../orders/application/orders_providers.dart';
 import '../../orders/domain/order_model.dart';
 import '../../orders/domain/order_status.dart';
+import '../../customization/presentation/widgets/customization_summary.dart';
 import '../../payments/presentation/widgets/order_payment_panel.dart';
+import '../../proofs/presentation/proof_widgets.dart';
+import '../application/cart_providers.dart';
 
 class OrderDetailScreen extends ConsumerWidget {
   const OrderDetailScreen({
@@ -69,10 +72,7 @@ class OrderDetailScreen extends ConsumerWidget {
               message: 'It may have been removed.',
             );
           }
-          return _OrderDetailBody(
-            order: order,
-            paymentOutcome: paymentOutcome,
-          );
+          return _OrderDetailBody(order: order, paymentOutcome: paymentOutcome);
         },
       ),
     );
@@ -99,6 +99,8 @@ class _OrderDetailBody extends ConsumerWidget {
               ?_outcomeBanner(context),
               _StatusCard(order: order),
               const SizedBox(height: 16),
+              CustomerProofPanel(order: order),
+              const SizedBox(height: 16),
               OrderPaymentPanel(order: order),
               const SizedBox(height: 16),
               _ItemsSection(order: order),
@@ -119,7 +121,16 @@ class _OrderDetailBody extends ConsumerWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(flex: 3, child: _ItemsSection(order: order)),
+                    Expanded(
+                      flex: 3,
+                      child: Column(
+                        children: [
+                          CustomerProofPanel(order: order),
+                          const SizedBox(height: 16),
+                          _ItemsSection(order: order),
+                        ],
+                      ),
+                    ),
                     const SizedBox(width: 20),
                     Expanded(
                       flex: 2,
@@ -169,7 +180,7 @@ extension on _OrderDetailBody {
       _ => (
         Icons.error_outline_rounded,
         scheme.error,
-        'The payment didn\x27t go through. You can try again below.',
+        'The payment didn\'t go through. You can try again below.',
       ),
     };
     return Padding(
@@ -196,28 +207,71 @@ class _StatusCard extends StatelessWidget {
       margin: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: OrderStatusTimeline(status: order.status),
+        child: OrderStatusTimeline(
+          status: order.status,
+          includeProofStep: order.requiresProof || order.proofVersion > 0,
+        ),
       ),
     );
   }
 }
 
-class _ItemsSection extends StatelessWidget {
+class _ItemsSection extends ConsumerWidget {
   const _ItemsSection({required this.order});
 
   final OrderModel order;
 
+  /// "Order again": same items, artwork, placements and sizes back in the
+  /// cart; prices are recalculated at checkout.
+  Future<void> _reorder(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final router = GoRouter.of(context);
+    try {
+      final added = await ref.read(cartActionsProvider).reorder(order);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            added == 0
+                ? 'Nothing to reorder — quoted items need a new quote.'
+                : 'Added $added item(s) to your cart. Prices are updated at checkout.',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      if (added > 0) router.go('/customer/cart');
+    } catch (error) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(friendlyError(error)),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Items',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Items',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            if (order.items.any((i) => i.kind != OrderLineKind.quote))
+              TextButton.icon(
+                onPressed: () => _reorder(context, ref),
+                icon: const Icon(Icons.replay_rounded),
+                label: const Text('Order again'),
+              ),
+          ],
         ),
         const SizedBox(height: 8),
         Card(
@@ -227,9 +281,20 @@ class _ItemsSection extends StatelessWidget {
               for (final item in order.items) ...[
                 ListTile(
                   title: Text(item.name),
-                  subtitle: Text(
-                    '${item.quantity} × ${currencyFormat.format(item.unitPrice)}',
-                  ),
+                  subtitle: item.customization == null
+                      ? Text(
+                          '${item.quantity} × ${currencyFormat.format(item.unitPrice)}',
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${item.quantity} pcs'
+                              '${(item.pricing['setupFees'] ?? 0) > 0 ? ' · incl. ${currencyFormat.format(item.pricing['setupFees'])} setup' : ''}',
+                            ),
+                            CustomizationSummary(config: item.customization!),
+                          ],
+                        ),
                   trailing: Text(
                     currencyFormat.format(item.lineTotal),
                     style: const TextStyle(fontWeight: FontWeight.w700),

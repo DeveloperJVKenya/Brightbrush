@@ -134,22 +134,9 @@ class _ManagerCatalogRowState extends ConsumerState<_ManagerCatalogRow> {
       await ref
           .read(catalogRepositoryProvider)
           .update(
-            CatalogItem(
-              id: item.id,
-              name: item.name,
-              category: item.category,
-              description: item.description,
-              basePrice: item.basePrice,
-              moq: item.moq,
-              leadTimeDays: item.leadTimeDays,
-              imageUrls: item.imageUrls,
-              tags: item.tags,
-              isActive: value,
-              isFeatured: item.isFeatured,
-              createdBy: item.createdBy,
-              createdAt: item.createdAt,
-              updatedAt: DateTime.now(),
-            ),
+            // copyWith keeps every other field (incl. customisation
+            // options) exactly as stored.
+            item.copyWith(isActive: value, updatedAt: DateTime.now()),
           );
     } catch (error, stack) {
       appLogger.e(

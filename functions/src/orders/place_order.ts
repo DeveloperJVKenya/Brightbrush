@@ -11,8 +11,14 @@ import {
 } from '../core/validate';
 import { loadBusinessSettings } from '../settings/business_settings';
 import {
+  loadDecorationPricing,
+  parseCartLines,
+  priceCartLines,
+} from '../customization/cart_lines';
+import {
   OrderContact,
   PricedLine,
+  lineTotalOf,
   nextOrderNumber,
   writeOrder,
 } from './order_writer';
@@ -48,7 +54,10 @@ export const placeOrder = onCall(async (request) => {
   const data = asObject(request.data);
   const contact = readContact(data);
   const paymentPlan = requireEnum(data, 'paymentPlan', ['full', 'deposit'], 'full');
-  const settings = await loadBusinessSettings();
+  const [settings, decorationPricing] = await Promise.all([
+    loadBusinessSettings(),
+    loadDecorationPricing(),
+  ]);
 
   const cartRef = db.collection('Carts').doc(caller.uid);
   const orderRef = db.collection('Orders').doc();
@@ -59,10 +68,11 @@ export const placeOrder = onCall(async (request) => {
     const entries = Object.entries(rawItems).filter(
       ([, qty]) => typeof qty === 'number' && qty > 0,
     );
-    if (entries.length === 0) {
+    const customLines = parseCartLines(cartSnap.data()?.lines);
+    if (entries.length === 0 && customLines.length === 0) {
       throw new HttpsError('failed-precondition', 'Your cart is empty.');
     }
-    if (entries.length > MAX_LINES) {
+    if (entries.length + customLines.length > MAX_LINES) {
       throw new HttpsError(
         'failed-precondition',
         `An order can hold at most ${MAX_LINES} different items.`,
@@ -74,7 +84,13 @@ export const placeOrder = onCall(async (request) => {
         ? db.collection('Packages').doc(key.substring(PACKAGE_PREFIX.length))
         : db.collection('CatalogItems').doc(key),
     );
-    const snaps = await tx.getAll(...refs);
+    const snaps = refs.length ? await tx.getAll(...refs) : [];
+    const pricedCustom = await priceCartLines(
+      tx,
+      customLines,
+      caller.uid,
+      decorationPricing,
+    );
     const now = Date.now();
 
     const lines: PricedLine[] = entries.map(([key, rawQty], index) => {
@@ -129,7 +145,8 @@ export const placeOrder = onCall(async (request) => {
       };
     });
 
-    const subtotal = lines.reduce((s, l) => s + l.unitPrice * l.quantity, 0);
+    lines.push(...pricedCustom);
+    const subtotal = lines.reduce((s, l) => s + lineTotalOf(l), 0);
     const totals = computeTotals(subtotal, settings, {
       paymentPlan,
       includeDelivery: true,
@@ -145,8 +162,11 @@ export const placeOrder = onCall(async (request) => {
       lines,
       totals,
       source: 'cart',
+      requiresProof: pricedCustom.some(
+        (l) => ((l.customization?.decorations as unknown[]) ?? []).length > 0,
+      ),
     });
-    tx.set(cartRef, { items: {}, updatedAt: new Date() });
+    tx.set(cartRef, { items: {}, lines: {}, updatedAt: new Date() });
     return { orderNumber, totals };
   });
 

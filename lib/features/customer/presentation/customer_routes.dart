@@ -1,6 +1,8 @@
 import 'package:go_router/go_router.dart';
 
 import '../../quotes/presentation/my_quotes_screen.dart';
+import '../../customization/presentation/item_configurator_screen.dart';
+import '../../customization/presentation/my_artwork_screen.dart';
 import 'catalog_item_detail_screen.dart';
 import 'order_detail_screen.dart';
 
@@ -8,6 +10,17 @@ import 'order_detail_screen.dart';
 /// itself (e.g. tapping a catalog card), so they stay inside the same
 /// shell/chrome as the Home module.
 final List<RouteBase> customerExtraRoutes = [
+  GoRoute(
+    path: '/customer/catalog/:id/customize',
+    builder: (context, state) => ItemConfiguratorScreen(
+      itemId: state.pathParameters['id']!,
+      lineId: state.uri.queryParameters['line'],
+    ),
+  ),
+  GoRoute(
+    path: '/customer/artwork',
+    builder: (context, state) => const MyArtworkScreen(),
+  ),
   GoRoute(
     path: '/customer/quotes',
     builder: (context, state) => const MyQuotesScreen(),
@@ -19,10 +32,9 @@ final List<RouteBase> customerExtraRoutes = [
   ),
   GoRoute(
     path: '/customer/orders/:id',
-    builder: (context, state) =>
-        OrderDetailScreen(
-          orderId: state.pathParameters['id']!,
-          paymentOutcome: state.uri.queryParameters['payment'],
-        ),
+    builder: (context, state) => OrderDetailScreen(
+      orderId: state.pathParameters['id']!,
+      paymentOutcome: state.uri.queryParameters['payment'],
+    ),
   ),
 ];

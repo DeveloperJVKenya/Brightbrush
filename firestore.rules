@@ -259,6 +259,15 @@ service cloud.firestore {
           prevAssigned == request.auth.uid && newAssigned == prevAssigned);
     }
 
+    // A decorated order can't move into production (or anything after it)
+    // until the customer has approved a proof. The sendProof and
+    // respondToProof functions are the only writers of proofStatus.
+    function isProofGateSatisfied() {
+      return !(request.resource.data.status in ['inProduction', 'readyForDelivery', 'outForDelivery', 'completed']) ||
+        request.resource.data.status == resource.data.status ||
+        resource.data.get('proofStatus', 'notRequired') in ['notRequired', 'approved'];
+    }
+
     // ===============================================================
     // Domain Validators
     // ===============================================================
@@ -274,7 +283,9 @@ service cloud.firestore {
       let d = request.resource.data;
       return hasOnlyAllowedFields([
               'name', 'category', 'description', 'basePrice', 'moq', 'leadTimeDays',
-              'imageUrls', 'tags', 'isActive', 'isFeatured', 'createdBy', 'createdAt', 'updatedAt'
+              'imageUrls', 'tags', 'isActive', 'isFeatured', 'createdBy', 'createdAt', 'updatedAt',
+              // Customisation options — priced server-side in placeOrder.
+              'priceTiers', 'sizes', 'colours', 'decorationMethods', 'placements'
             ]) &&
             hasRequiredFields([
               'name', 'category', 'description', 'basePrice', 'moq', 'leadTimeDays',
@@ -290,7 +301,12 @@ service cloud.firestore {
             d.isFeatured is bool &&
             d.createdBy is string && d.createdAt is timestamp && d.updatedAt is timestamp &&
             (!('imageUrls' in d) || isValidStringList('imageUrls', 8, 600)) &&
-            (!('tags' in d) || isValidStringList('tags', 15, 24));
+            (!('tags' in d) || isValidStringList('tags', 15, 24)) &&
+            (!('priceTiers' in d) || (d.priceTiers is list && d.priceTiers.size() <= 10)) &&
+            (!('sizes' in d) || (d.sizes is list && d.sizes.size() <= 15)) &&
+            (!('colours' in d) || (d.colours is list && d.colours.size() <= 30)) &&
+            (!('decorationMethods' in d) || isValidStringList('decorationMethods', 6, 20)) &&
+            (!('placements' in d) || isValidStringList('placements', 14, 20));
     }
 
     function isValidPackage() {
@@ -317,15 +333,18 @@ service cloud.firestore {
 
     function isValidCart() {
       let d = request.resource.data;
-      return hasOnlyAllowedFields(['items', 'updatedAt']) &&
+      return hasOnlyAllowedFields(['items', 'lines', 'updatedAt']) &&
             hasRequiredFields(['items', 'updatedAt']) &&
             d.items is map &&
+            // Customised lines: lineId -> {itemId, colour, sizeQuantities,
+            // decorations, names}; validated and priced by placeOrder.
+            (!('lines' in d) || (d.lines is map && d.lines.size() <= 50)) &&
             d.updatedAt is timestamp;
     }
 
     function isValidOrderStatus(value) {
       return value in [
-        'pendingReview', 'confirmed', 'inProduction', 'readyForDelivery',
+        'pendingReview', 'confirmed', 'awaitingProof', 'inProduction', 'readyForDelivery',
         'outForDelivery', 'completed', 'cancelled'
       ];
     }
@@ -369,7 +388,7 @@ service cloud.firestore {
               // Server-computed (placeOrder / acceptQuote / payment ledger):
               'orderNumber', 'customerEmail', 'deliveryFee', 'taxRate', 'taxAmount',
               'paymentPlan', 'depositAmount', 'amountPaid', 'source', 'quoteId',
-              'customerDeleted'
+              'customerDeleted', 'requiresProof', 'proofStatus', 'proofVersion'
             ]) &&
             hasRequiredFields([
               'customerId', 'contactName', 'contactPhone', 'deliveryAddress',
@@ -508,6 +527,37 @@ service cloud.firestore {
             d.updatedBy == request.auth.uid;
     }
 
+    // Per-method decoration pricing (setup fee, per-piece by design size,
+    // per 1000 stitches). Map contents are clamped server-side on read.
+    function isValidDecorationSettings() {
+      let d = request.resource.data;
+      return hasOnlyAllowedFields(['methods', 'personalisationFee', 'updatedAt', 'updatedBy']) &&
+        d.methods is map && d.methods.size() <= 6 &&
+        d.personalisationFee is number && d.personalisationFee >= 0 && d.personalisationFee <= 1000000 &&
+        d.updatedBy == request.auth.uid;
+    }
+
+    function isValidArtwork() {
+      let d = request.resource.data;
+      return hasOnlyAllowedFields([
+              'ownerId', 'name', 'fileUrl', 'storagePath', 'contentType', 'sizeBytes',
+              'digitized', 'stitchCount', 'threadCount', 'digitizedFiles', 'staffNotes',
+              'createdAt', 'updatedAt'
+            ]) &&
+            hasRequiredFields(['ownerId', 'name', 'fileUrl', 'storagePath', 'contentType', 'createdAt', 'updatedAt']) &&
+            validStringLength('name', 1, 80) &&
+            isValidUrl(d.fileUrl) &&
+            validStringLength('storagePath', 5, 300) &&
+            validStringLength('contentType', 3, 100) &&
+            (!('sizeBytes' in d) || (d.sizeBytes is int && d.sizeBytes >= 0 && d.sizeBytes <= 30000000)) &&
+            (!('digitized' in d) || d.digitized is bool) &&
+            (!('stitchCount' in d) || (d.stitchCount is int && d.stitchCount >= 0 && d.stitchCount <= 1000000)) &&
+            (!('threadCount' in d) || (d.threadCount is int && d.threadCount >= 0 && d.threadCount <= 50)) &&
+            (!('digitizedFiles' in d) || (d.digitizedFiles is list && d.digitizedFiles.size() <= 10)) &&
+            (!('staffNotes' in d) || validStringLength('staffNotes', 0, 1000)) &&
+            d.createdAt is timestamp && d.updatedAt is timestamp;
+    }
+
     function isValidQuoteStatus(value) {
       return value in ['new', 'quoted', 'accepted', 'declined', 'rejected', 'cancelled'];
     }
@@ -620,7 +670,8 @@ service cloud.firestore {
           'customerId', 'contactName', 'contactPhone', 'deliveryAddress',
           'notes', 'items', 'subtotal', 'total', 'createdAt',
           'orderNumber', 'customerEmail', 'deliveryFee', 'taxRate', 'taxAmount',
-          'paymentPlan', 'depositAmount', 'amountPaid', 'source', 'quoteId'
+          'paymentPlan', 'depositAmount', 'amountPaid', 'source', 'quoteId',
+          'requiresProof', 'proofStatus', 'proofVersion'
         ]) &&
         request.resource.data.updatedAt == request.time &&
         (
@@ -628,6 +679,7 @@ service cloud.firestore {
           // status is ledger-owned; staff may only toggle an order with
           // nothing paid yet between 'unpaid' and 'invoiced'.
           (isManagerOrAdmin() &&
+            isProofGateSatisfied() &&
             (request.resource.data.paymentStatus == resource.data.paymentStatus ||
               (request.resource.data.paymentStatus in ['unpaid', 'invoiced'] &&
                 resource.data.get('amountPaid', 0) == 0 &&
@@ -831,9 +883,9 @@ service cloud.firestore {
       // edits them, and only the one known document.
       allow read: if true;
       allow create, update: if isAdminOrDeveloper() &&
-        docId == 'business' &&
-        isValidBusinessSettings() &&
-        request.resource.data.updatedAt == request.time;
+        request.resource.data.updatedAt == request.time &&
+        ((docId == 'business' && isValidBusinessSettings()) ||
+          (docId == 'decoration' && isValidDecorationSettings()));
       allow delete: if false;
     }
 
@@ -872,6 +924,44 @@ service cloud.firestore {
         );
 
       allow delete: if false;
+    }
+
+    match /Artworks/{artworkId} {
+      // A customer's logo library. Staff (manager/admin) read everything to
+      // produce orders, and attach digitized embroidery files and stitch
+      // counts. Customers can't set those themselves: they change pricing
+      // (digitizing fee waived, stitch-based per-piece price).
+      allow read: if isOwner(resource.data.ownerId) || isManagerOrAdmin();
+
+      allow create: if isAuthenticated() &&
+        request.resource.data.ownerId == request.auth.uid &&
+        isValidArtwork() &&
+        !request.resource.data.keys().hasAny(['digitized', 'stitchCount', 'threadCount', 'digitizedFiles', 'staffNotes']) &&
+        request.resource.data.storagePath.matches('^artwork/' + request.auth.uid + '/.*') &&
+        request.resource.data.createdAt == request.time;
+
+      allow update: if isValidArtwork() &&
+        request.resource.data.updatedAt == request.time &&
+        areImmutableFieldsUnchanged(['ownerId', 'fileUrl', 'storagePath', 'contentType', 'sizeBytes', 'createdAt']) &&
+        (
+          (isOwner(resource.data.ownerId) &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'updatedAt'])) ||
+          (isManagerOrAdmin() &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'digitized', 'stitchCount', 'threadCount', 'digitizedFiles', 'staffNotes', 'updatedAt'
+            ]))
+        );
+
+      // Past orders keep their own copy of the artwork name and URL.
+      allow delete: if isOwner(resource.data.ownerId);
+    }
+
+    match /Orders/{orderId}/Proofs/{proofId} {
+      // Written only by the sendProof and respondToProof functions.
+      allow read: if isManagerOrAdmin() ||
+        (isAuthenticated() &&
+          get(/databases/$(database)/documents/Orders/$(orderId)).data.customerId == request.auth.uid);
+      allow write: if false;
     }
 
     match /PaymentGateways/{gatewayId} {

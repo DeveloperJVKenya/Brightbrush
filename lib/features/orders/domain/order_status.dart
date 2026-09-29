@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 enum OrderStatus {
   pendingReview(label: 'Pending Review', icon: Icons.hourglass_top_rounded),
   confirmed(label: 'Confirmed', icon: Icons.fact_check_outlined),
+  awaitingProof(label: 'Proof for approval', icon: Icons.rate_review_outlined),
   inProduction(
     label: 'In Production',
     icon: Icons.precision_manufacturing_outlined,
@@ -38,6 +39,7 @@ enum OrderStatus {
   static const List<OrderStatus> pipeline = [
     OrderStatus.pendingReview,
     OrderStatus.confirmed,
+    OrderStatus.awaitingProof,
     OrderStatus.inProduction,
     OrderStatus.readyForDelivery,
     OrderStatus.outForDelivery,
@@ -76,4 +78,23 @@ enum PaymentStatus {
       orElse: () => PaymentStatus.unpaid,
     );
   }
+}
+
+/// Digital proof state of a decorated order. Written only by the sendProof
+/// and respondToProof Cloud Functions.
+enum ProofStatus {
+  notRequired(label: 'No proof needed'),
+  required(label: 'Proof to be sent'),
+  pending(label: 'Awaiting your approval'),
+  approved(label: 'Proof approved'),
+  changesRequested(label: 'Changes requested');
+
+  const ProofStatus({required this.label});
+
+  final String label;
+
+  static ProofStatus fromName(String? name) => ProofStatus.values.firstWhere(
+    (s) => s.name == name,
+    orElse: () => ProofStatus.notRequired,
+  );
 }

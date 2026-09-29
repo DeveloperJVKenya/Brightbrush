@@ -18,9 +18,7 @@ final businessSettingsProvider = StreamProvider<BusinessSettings>((ref) {
   return ref.watch(paymentsRepositoryProvider).streamBusinessSettings();
 });
 
-final paymentGatewaysProvider = StreamProvider<List<PaymentGatewayInfo>>((
-  ref,
-) {
+final paymentGatewaysProvider = StreamProvider<List<PaymentGatewayInfo>>((ref) {
   return ref.watch(paymentsRepositoryProvider).streamGateways();
 });
 
@@ -33,16 +31,10 @@ final availableGatewaysProvider = Provider<List<PaymentGatewayInfo>>((ref) {
 /// Payment attempts on one order. Customers are scoped to their own uid (a
 /// rules requirement); staff see every attempt.
 final orderPaymentsProvider = StreamProvider.autoDispose
-    .family<List<PaymentRecord>, ({String orderId, bool asStaff})>((
-      ref,
-      args,
-    ) {
+    .family<List<PaymentRecord>, ({String orderId, bool asStaff})>((ref, args) {
       final uid = ref.watch(currentUidProvider);
       if (uid == null) return Stream.value(const []);
       return ref
           .watch(paymentsRepositoryProvider)
-          .streamForOrder(
-            args.orderId,
-            customerId: args.asStaff ? null : uid,
-          );
+          .streamForOrder(args.orderId, customerId: args.asStaff ? null : uid);
     });

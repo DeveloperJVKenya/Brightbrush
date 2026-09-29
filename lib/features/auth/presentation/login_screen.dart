@@ -173,7 +173,10 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_isSignUp && !_acceptedTerms) {
-      setState(() => _error = 'Please accept the Terms and Privacy Policy to continue.');
+      setState(
+        () =>
+            _error = 'Please accept the Terms and Privacy Policy to continue.',
+      );
       return;
     }
     setState(() => _info = null);

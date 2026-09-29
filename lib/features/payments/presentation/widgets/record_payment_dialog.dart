@@ -122,7 +122,10 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
                         decoration: const InputDecoration(labelText: 'Method'),
                         items: [
                           for (final e in _methods.entries)
-                            DropdownMenuItem(value: e.key, child: Text(e.value)),
+                            DropdownMenuItem(
+                              value: e.key,
+                              child: Text(e.value),
+                            ),
                         ],
                         onChanged: (v) => setState(() => _method = v!),
                       ),

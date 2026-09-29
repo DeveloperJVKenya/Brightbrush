@@ -281,3 +281,92 @@ describe('Existing protections still hold', () => {
     );
   });
 });
+
+describe('Phase 2: artwork, proofs, customised carts', () => {
+  const artwork = (owner) => ({
+    ownerId: owner,
+    name: 'Logo',
+    fileUrl: 'https://firebasestorage.googleapis.com/v0/b/x/o/logo.png',
+    storagePath: `artwork/${owner}/a1/logo.png`,
+    contentType: 'image/png',
+    sizeBytes: 1000,
+  });
+
+  beforeEach(async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, 'Artworks/a1'), { ...artwork('alice'), createdAt: now, updatedAt: now });
+      await setDoc(doc(db, 'Orders/decorated'), { ...baseOrder, requiresProof: true, proofStatus: 'required', status: 'confirmed' });
+      await setDoc(doc(db, 'Orders/decorated/Proofs/p1'), { version: 1, status: 'pending', imageUrls: [] });
+    });
+  });
+
+  it('customer uploads artwork to their own path but cannot mark it digitized', async () => {
+    await assertSucceeds(
+      setDoc(doc(as('alice'), 'Artworks/a2'), { ...artwork('alice'), storagePath: 'artwork/alice/a2/l.png', createdAt: serverTimestamp(), updatedAt: serverTimestamp() }),
+    );
+    await assertFails(
+      setDoc(doc(as('alice'), 'Artworks/a3'), { ...artwork('alice'), digitized: true, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }),
+    );
+    await assertFails(
+      setDoc(doc(as('alice'), 'Artworks/a4'), { ...artwork('alice'), storagePath: 'artwork/bob/a4/l.png', createdAt: serverTimestamp(), updatedAt: serverTimestamp() }),
+    );
+    await assertFails(
+      updateDoc(doc(as('alice'), 'Artworks/a1'), { digitized: true, stitchCount: 1, updatedAt: serverTimestamp() }),
+    );
+    await assertSucceeds(updateDoc(doc(as('alice'), 'Artworks/a1'), { name: 'New name', updatedAt: serverTimestamp() }));
+  });
+
+  it('other customers cannot see artwork; staff can digitize it', async () => {
+    await assertFails(getDoc(doc(as('bob'), 'Artworks/a1')));
+    await assertSucceeds(
+      updateDoc(doc(as('manager'), 'Artworks/a1'), { digitized: true, stitchCount: 8200, updatedAt: serverTimestamp() }),
+    );
+    await assertFails(updateDoc(doc(as('manager'), 'Artworks/a1'), { name: 'x', updatedAt: serverTimestamp() }));
+  });
+
+  it('proofs are readable by the order owner and staff, writable by nobody', async () => {
+    await assertSucceeds(getDoc(doc(as('alice'), 'Orders/decorated/Proofs/p1')));
+    await assertSucceeds(getDoc(doc(as('manager'), 'Orders/decorated/Proofs/p1')));
+    await assertFails(getDoc(doc(as('bob'), 'Orders/decorated/Proofs/p1')));
+    await assertFails(updateDoc(doc(as('alice'), 'Orders/decorated/Proofs/p1'), { status: 'approved' }));
+  });
+
+  it('production is blocked until the proof is approved, and clients cannot fake approval', async () => {
+    await assertFails(
+      updateDoc(doc(as('manager'), 'Orders/decorated'), { status: 'inProduction', updatedAt: serverTimestamp() }),
+    );
+    await assertFails(
+      updateDoc(doc(as('manager'), 'Orders/decorated'), { proofStatus: 'approved', updatedAt: serverTimestamp() }),
+    );
+    await assertFails(
+      updateDoc(doc(as('alice'), 'Orders/decorated'), { proofStatus: 'approved', updatedAt: serverTimestamp() }),
+    );
+    await env.withSecurityRulesDisabled((ctx) =>
+      updateDoc(doc(ctx.firestore(), 'Orders/decorated'), { proofStatus: 'approved' }),
+    );
+    await assertSucceeds(
+      updateDoc(doc(as('manager'), 'Orders/decorated'), { status: 'inProduction', updatedAt: serverTimestamp() }),
+    );
+  });
+
+  it('carts accept customised lines', async () => {
+    await assertSucceeds(
+      setDoc(doc(as('alice'), 'Carts/alice'), {
+        items: {},
+        lines: { l1: { itemId: 'polo', sizeQuantities: { M: 10 }, decorations: [], names: [] } },
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it('only admins save decoration rates', async () => {
+    const rates = { methods: { embroidery: { setupFee: 1500 } }, personalisationFee: 200 };
+    await assertSucceeds(
+      setDoc(doc(as('admin'), 'Settings/decoration'), { ...rates, updatedBy: 'admin', updatedAt: serverTimestamp() }),
+    );
+    await assertFails(
+      setDoc(doc(as('manager'), 'Settings/decoration'), { ...rates, updatedBy: 'manager', updatedAt: serverTimestamp() }),
+    );
+  });
+});

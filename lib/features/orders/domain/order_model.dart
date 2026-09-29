@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../customization/domain/customization_pricing.dart';
 import 'order_status.dart';
 
-/// What an order line refers to: a catalog item, a seasonal package, or a
-/// staff-priced quote (see functions/src/orders/order_writer.ts).
-enum OrderLineKind { item, package, quote }
+/// What an order line refers to: a catalog item, a seasonal package, a
+/// staff-priced quote, or a customised (decorated) catalog item — see
+/// functions/src/orders/order_writer.ts.
+enum OrderLineKind { item, package, quote, custom }
 
 class OrderLineItem {
   const OrderLineItem({
@@ -14,6 +16,9 @@ class OrderLineItem {
     required this.category,
     required this.unitPrice,
     required this.quantity,
+    this.storedLineTotal,
+    this.customization,
+    this.pricing = const {},
   });
 
   final OrderLineKind kind;
@@ -23,7 +28,17 @@ class OrderLineItem {
   final num unitPrice;
   final int quantity;
 
-  num get lineTotal => unitPrice * quantity;
+  /// Server-computed total for customised lines (setup fees and size
+  /// surcharges mean it isn't unitPrice × quantity).
+  final num? storedLineTotal;
+
+  /// Colour, sizes, decorations and names for customised lines.
+  final CustomLineConfig? customization;
+
+  /// Server price breakdown (blankTotal, decorationTotal, setupFees...).
+  final Map<String, num> pricing;
+
+  num get lineTotal => storedLineTotal ?? unitPrice * quantity;
 
   factory OrderLineItem.fromMap(Map<String, dynamic> map) {
     return OrderLineItem(
@@ -36,6 +51,19 @@ class OrderLineItem {
       category: map['category'] as String? ?? '',
       unitPrice: map['unitPrice'] as num? ?? 0,
       quantity: (map['quantity'] as num?)?.toInt() ?? 1,
+      storedLineTotal: map['lineTotal'] as num?,
+      customization: map['customization'] is Map
+          ? CustomLineConfig.fromMap({
+              ...Map<String, dynamic>.from(map['customization'] as Map),
+              'itemId': map['itemId'],
+            })
+          : null,
+      pricing: {
+        for (final e in Map<String, dynamic>.from(
+          (map['pricing'] as Map?) ?? const {},
+        ).entries)
+          if (e.value is num) e.key: e.value as num,
+      },
     );
   }
 
@@ -76,6 +104,9 @@ class OrderModel {
     this.paymentPlan = 'full',
     num? depositAmount,
     this.amountPaid = 0,
+    this.requiresProof = false,
+    this.proofStatus = ProofStatus.notRequired,
+    this.proofVersion = 0,
   }) : depositAmount = depositAmount ?? total;
 
   final String id;
@@ -112,6 +143,16 @@ class OrderModel {
   /// Running total of successful payments, maintained only by the
   /// server-side payment ledger.
   final num amountPaid;
+
+  /// Decorated orders need a customer-approved proof before production
+  /// (enforced in firestore.rules; set by the proof functions).
+  final bool requiresProof;
+  final ProofStatus proofStatus;
+  final int proofVersion;
+
+  bool get proofBlocksProduction =>
+      proofStatus != ProofStatus.notRequired &&
+      proofStatus != ProofStatus.approved;
 
   /// Reference shown to customers and staff — the order number when there
   /// is one, else a short form of the document id.
@@ -181,6 +222,9 @@ class OrderModel {
       paymentPlan: d['paymentPlan'] as String? ?? 'full',
       depositAmount: d['depositAmount'] as num?,
       amountPaid: d['amountPaid'] as num? ?? 0,
+      requiresProof: d['requiresProof'] as bool? ?? false,
+      proofStatus: ProofStatus.fromName(d['proofStatus'] as String?),
+      proofVersion: (d['proofVersion'] as num?)?.toInt() ?? 0,
     );
   }
 }

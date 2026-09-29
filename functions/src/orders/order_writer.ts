@@ -8,12 +8,21 @@ import { db } from '../core/app';
 import { OrderTotals } from './pricing';
 
 export interface PricedLine {
-  kind: 'item' | 'package' | 'quote';
+  kind: 'item' | 'package' | 'quote' | 'custom';
   itemId: string;
   name: string;
   category: string;
   unitPrice: number;
   quantity: number;
+  /// Set for customised lines, whose total isn't unitPrice × quantity
+  /// (one-off setup fees, size surcharges, personalisation).
+  lineTotal?: number;
+  customization?: Record<string, unknown>;
+  pricing?: Record<string, number>;
+}
+
+export function lineTotalOf(line: PricedLine): number {
+  return line.lineTotal ?? line.unitPrice * line.quantity;
 }
 
 export interface OrderContact {
@@ -50,6 +59,9 @@ export function writeOrder(
     totals: OrderTotals;
     source: 'cart' | 'quote';
     quoteId?: string;
+    /// Decorated orders need a customer-approved proof before production
+    /// (enforced in firestore.rules).
+    requiresProof?: boolean;
   },
 ): void {
   const { totals } = params;
@@ -68,7 +80,12 @@ export function writeOrder(
       category: l.category,
       unitPrice: l.unitPrice,
       quantity: l.quantity,
+      ...(l.lineTotal !== undefined ? { lineTotal: l.lineTotal } : {}),
+      ...(l.customization ? { customization: l.customization } : {}),
+      ...(l.pricing ? { pricing: l.pricing } : {}),
     })),
+    requiresProof: params.requiresProof === true,
+    proofStatus: params.requiresProof === true ? 'required' : 'notRequired',
     subtotal: totals.subtotal,
     deliveryFee: totals.deliveryFee,
     taxRate: totals.taxRate,

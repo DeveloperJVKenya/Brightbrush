@@ -89,7 +89,9 @@ class _QuoteCard extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(priced ? 'Turn down this price?' : 'Withdraw this request?'),
+        title: Text(
+          priced ? 'Turn down this price?' : 'Withdraw this request?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -335,8 +337,9 @@ class _AcceptQuoteDialogState extends ConsumerState<_AcceptQuoteDialog> {
                   controller: _phone,
                   keyboardType: TextInputType.phone,
                   decoration: const InputDecoration(labelText: 'Contact phone'),
-                  validator: (v) =>
-                      (v ?? '').trim().length < 9 ? 'Enter a phone number' : null,
+                  validator: (v) => (v ?? '').trim().length < 9
+                      ? 'Enter a phone number'
+                      : null,
                 ),
                 const SizedBox(height: 8),
                 TextFormField(

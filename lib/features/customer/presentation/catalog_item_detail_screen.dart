@@ -115,7 +115,9 @@ class _DetailBody extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            currencyFormat.format(item.basePrice),
+            item.fromPrice < item.basePrice
+                ? 'From ${currencyFormat.format(item.fromPrice)}'
+                : currencyFormat.format(item.basePrice),
             style: theme.textTheme.titleLarge?.copyWith(
               color: theme.colorScheme.primary,
               fontWeight: FontWeight.w700,
@@ -151,57 +153,90 @@ class _DetailBody extends ConsumerWidget {
               ],
             ),
           ],
-          const SizedBox(height: 28),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () async {
-                if (ref.read(currentUidProvider) == null) {
-                  showAuthRequiredSheet(
-                    context,
-                    message:
-                        'Sign in or create an account to add "${item.name}" to your cart.',
-                  );
-                  return;
-                }
-                try {
-                  final qty = await ref
-                      .read(cartActionsProvider)
-                      .addCatalogItem(item);
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          qty == item.moq && item.moq > 1
-                              ? '${item.name} added (minimum order ${item.moq})'
-                              : '${item.name} added to cart ($qty)',
-                        ),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  }
-                } catch (error, stack) {
-                  appLogger.e(
-                    '[catalog] Failed to add ${item.id} to cart',
-                    error: error,
-                    stackTrace: stack,
-                  );
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Couldn\'t add to cart: ${friendlyError(error)}',
-                        ),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  }
-                }
-              },
-              icon: const Icon(Icons.add_shopping_cart_rounded),
-              label: const Text('Add to cart'),
+          if (item.priceTiers.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Volume pricing: ${item.priceTiers.map((t) => '${t.minQty}+ pcs ${currencyFormat.format(t.unitPrice)}').join(' · ')}',
+              style: theme.textTheme.bodySmall,
             ),
-          ),
+          ],
+          if (item.isCustomizable) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final m in item.decorationMethods)
+                  Chip(
+                    avatar: Icon(m.icon, size: 16),
+                    label: Text(m.label),
+                    visualDensity: VisualDensity.compact,
+                  ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 28),
+          if (item.isCustomizable)
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () =>
+                    context.push('/customer/catalog/${item.id}/customize'),
+                icon: const Icon(Icons.design_services_rounded),
+                label: const Text('Customise & order'),
+              ),
+            )
+          else
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  if (ref.read(currentUidProvider) == null) {
+                    showAuthRequiredSheet(
+                      context,
+                      message:
+                          'Sign in or create an account to add "${item.name}" to your cart.',
+                    );
+                    return;
+                  }
+                  try {
+                    final qty = await ref
+                        .read(cartActionsProvider)
+                        .addCatalogItem(item);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            qty == item.moq && item.moq > 1
+                                ? '${item.name} added (minimum order ${item.moq})'
+                                : '${item.name} added to cart ($qty)',
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  } catch (error, stack) {
+                    appLogger.e(
+                      '[catalog] Failed to add ${item.id} to cart',
+                      error: error,
+                      stackTrace: stack,
+                    );
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Couldn\'t add to cart: ${friendlyError(error)}',
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  }
+                },
+                icon: const Icon(Icons.add_shopping_cart_rounded),
+                label: const Text('Add to cart'),
+              ),
+            ),
           const SizedBox(height: 8),
           SizedBox(
             width: double.infinity,

@@ -9,6 +9,9 @@ import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/catalog_image.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../catalog/application/catalog_providers.dart';
+import '../../customization/application/customization_providers.dart';
+import '../../customization/domain/customization_pricing.dart';
+import '../../customization/presentation/widgets/customization_summary.dart';
 import '../../orders/application/orders_providers.dart';
 import '../../payments/application/payments_providers.dart';
 import '../../payments/domain/business_settings.dart';
@@ -29,6 +32,10 @@ class _CartLine {
     required this.icon,
     required this.isPackage,
     required this.available,
+    this.custom,
+    this.itemId,
+    this.customTotal = 0,
+    this.problem,
   });
 
   final String key;
@@ -41,8 +48,17 @@ class _CartLine {
   final bool isPackage;
   final bool available;
 
-  num get lineTotal => unitPrice * quantity;
-  bool get belowMinimum => quantity < minQuantity;
+  /// Set for customised lines ([key] is then the cart line id).
+  final CustomLineConfig? custom;
+  final String? itemId;
+  final num customTotal;
+
+  /// Why a customised line can't be ordered as configured.
+  final String? problem;
+
+  bool get isCustom => custom != null;
+  num get lineTotal => isCustom ? customTotal : unitPrice * quantity;
+  bool get belowMinimum => !isCustom && quantity < minQuantity;
 }
 
 class CartCheckoutScreen extends ConsumerWidget {
@@ -51,6 +67,15 @@ class CartCheckoutScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cartAsync = ref.watch(cartProvider);
+    final customLines =
+        ref.watch(cartStateProvider).valueOrNull?.lines ?? const {};
+    final decorationPricing =
+        ref.watch(decorationPricingProvider).valueOrNull ??
+        DecorationPricing.defaults;
+    final library = {
+      for (final a in ref.watch(myArtworksProvider).valueOrNull ?? const [])
+        a.id: a,
+    };
     final catalogAsync = ref.watch(activeCatalogItemsProvider);
     final packagesAsync = ref.watch(activePackagesProvider);
 
@@ -81,7 +106,7 @@ class CartCheckoutScreen extends ConsumerWidget {
     }
 
     final cart = cartAsync.value!;
-    if (cart.isEmpty) {
+    if (cart.isEmpty && customLines.isEmpty) {
       return const EmptyState(
         icon: Icons.shopping_cart_outlined,
         title: 'Your cart is empty',
@@ -125,6 +150,44 @@ class CartCheckoutScreen extends ConsumerWidget {
           ),
         );
       }
+    }
+    for (final entry in customLines.entries) {
+      final item = items[entry.value.itemId];
+      // Mirror the server: digitized/stitch facts come from the library.
+      final config = entry.value.copyWith(
+        decorations: [
+          for (final d in entry.value.decorations)
+            if (d.artworkId != null && library[d.artworkId] != null)
+              d.copyWith(
+                stitchCount: library[d.artworkId]!.stitchCount,
+                digitized: library[d.artworkId]!.digitized,
+              )
+            else
+              d,
+        ],
+      );
+      final price = item == null
+          ? null
+          : CustomizationPricing.price(item, config, decorationPricing);
+      lines.add(
+        _CartLine(
+          key: entry.key,
+          itemId: entry.value.itemId,
+          name: item?.name ?? 'Item no longer available',
+          unitPrice: price?.unitPrice ?? 0,
+          quantity: config.quantity,
+          minQuantity: 1,
+          imageUrls: item?.imageUrls ?? const [],
+          icon: item?.category.icon ?? Icons.inventory_2_outlined,
+          isPackage: false,
+          available: item != null && item.isCustomizable,
+          custom: config,
+          customTotal: price?.lineTotal ?? 0,
+          problem: item == null
+              ? null
+              : CustomizationPricing.validate(item, config, decorationPricing),
+        ),
+      );
     }
     return _CheckoutBody(lines: lines);
   }
@@ -172,6 +235,10 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
   String? get _blockingProblem {
     if (widget.lines.any((l) => !l.available)) {
       return 'Remove the items that are no longer available to continue.';
+    }
+    final invalid = widget.lines.where((l) => l.problem != null).firstOrNull;
+    if (invalid != null) {
+      return '"${invalid.name}": ${invalid.problem} Tap edit to fix it.';
     }
     final below = widget.lines.where((l) => l.belowMinimum).firstOrNull;
     if (below != null) {
@@ -265,25 +332,47 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      Text(
-                        line.available
-                            ? [
-                                if (line.isPackage) 'Package',
-                                currencyFormat.format(line.unitPrice),
-                                if (line.minQuantity > 1)
-                                  'min ${line.minQuantity}',
-                              ].join(' · ')
-                            : 'Remove this to continue',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: line.available && !line.belowMinimum
-                              ? theme.colorScheme.onSurfaceVariant
-                              : theme.colorScheme.error,
+                      if (line.isCustom && line.available) ...[
+                        Text(
+                          '${line.quantity} pcs · ${currencyFormat.format(line.lineTotal)}',
+                          style: theme.textTheme.bodySmall,
                         ),
-                      ),
+                        CustomizationSummary(config: line.custom!),
+                        if (line.problem != null)
+                          Text(
+                            line.problem!,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.error,
+                            ),
+                          ),
+                      ] else
+                        Text(
+                          line.available
+                              ? [
+                                  if (line.isPackage) 'Package',
+                                  currencyFormat.format(line.unitPrice),
+                                  if (line.minQuantity > 1)
+                                    'min ${line.minQuantity}',
+                                ].join(' · ')
+                              : 'Remove this to continue',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: line.available && !line.belowMinimum
+                                ? theme.colorScheme.onSurfaceVariant
+                                : theme.colorScheme.error,
+                          ),
+                        ),
                     ],
                   ),
                 ),
-                if (line.available)
+                if (line.isCustom && line.available)
+                  IconButton(
+                    tooltip: 'Edit',
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: () => context.push(
+                      '/customer/catalog/${line.itemId}/customize?line=${line.key}',
+                    ),
+                  )
+                else if (line.available)
                   _QuantityStepper(
                     quantity: line.quantity,
                     minQuantity: line.minQuantity,
@@ -294,8 +383,9 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
                 IconButton(
                   tooltip: 'Remove',
                   icon: const Icon(Icons.delete_outline_rounded),
-                  onPressed: () =>
-                      ref.read(cartActionsProvider).remove(line.key),
+                  onPressed: () => line.isCustom
+                      ? ref.read(cartActionsProvider).removeCustomLine(line.key)
+                      : ref.read(cartActionsProvider).remove(line.key),
                 ),
               ],
             ),
@@ -387,11 +477,17 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
             moneyRow('Total', pricing.total, bold: true),
             if (settings.depositsAvailable) ...[
               const SizedBox(height: 12),
-              Text('How would you like to pay?', style: theme.textTheme.labelLarge),
+              Text(
+                'How would you like to pay?',
+                style: theme.textTheme.labelLarge,
+              ),
               const SizedBox(height: 6),
               SegmentedButton<String>(
                 segments: [
-                  const ButtonSegment(value: 'full', label: Text('Pay in full')),
+                  const ButtonSegment(
+                    value: 'full',
+                    label: Text('Pay in full'),
+                  ),
                   ButtonSegment(
                     value: 'deposit',
                     label: Text('${settings.depositPercent}% deposit'),
@@ -499,7 +595,9 @@ class _QuantityStepper extends StatelessWidget {
         InkWell(
           onTap: () async {
             final next = await _askQuantity(context);
-            if (next != null) onChanged(next < minQuantity ? minQuantity : next);
+            if (next != null) {
+              onChanged(next < minQuantity ? minQuantity : next);
+            }
           },
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),

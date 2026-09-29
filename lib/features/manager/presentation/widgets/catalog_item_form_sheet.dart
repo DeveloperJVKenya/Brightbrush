@@ -10,6 +10,7 @@ import '../../../catalog/domain/catalog_item.dart';
 import '../../../../core/firebase/firebase_providers.dart';
 import '../../../../core/errors/user_facing_error.dart';
 import '../../../../core/logging/app_logger.dart';
+import 'customization_options_editor.dart';
 
 /// Create/edit form for a catalog item. Image upload degrades gracefully:
 /// if Storage isn't activated on the project yet, the item still saves —
@@ -60,6 +61,13 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
       widget.existing?.category ?? CatalogCategory.tshirts;
   late bool _isActive = widget.existing?.isActive ?? true;
   late bool _isFeatured = widget.existing?.isFeatured ?? false;
+  late CustomizationOptionsValue _options = CustomizationOptionsValue(
+    priceTiers: widget.existing?.priceTiers ?? const [],
+    sizes: widget.existing?.sizes ?? const [],
+    colours: widget.existing?.colours ?? const [],
+    decorationMethods: widget.existing?.decorationMethods ?? const [],
+    placements: widget.existing?.placements ?? const [],
+  );
 
   Uint8List? _pickedImageBytes;
   bool _saving = false;
@@ -121,6 +129,11 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
         createdBy: widget.existing?.createdBy ?? uid ?? '',
         createdAt: widget.existing?.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
+        priceTiers: _options.priceTiers,
+        sizes: _options.sizes,
+        colours: _options.colours,
+        decorationMethods: _options.decorationMethods,
+        placements: _options.placements,
       );
 
       String itemId;
@@ -142,20 +155,9 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
             contentType: 'image/jpeg',
           );
           await repo.update(
-            CatalogItem(
+            base.copyWith(
               id: itemId,
-              name: base.name,
-              category: base.category,
-              description: base.description,
-              basePrice: base.basePrice,
-              moq: base.moq,
-              leadTimeDays: base.leadTimeDays,
               imageUrls: [...imageUrls, url],
-              tags: base.tags,
-              isActive: base.isActive,
-              isFeatured: base.isFeatured,
-              createdBy: base.createdBy,
-              createdAt: base.createdAt,
               updatedAt: DateTime.now(),
             ),
           );
@@ -346,6 +348,11 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
                 decoration: const InputDecoration(
                   labelText: 'Tags (comma separated)',
                 ),
+              ),
+              CustomizationOptionsEditor(
+                value: _options,
+                category: _category,
+                onChanged: (v) => setState(() => _options = v),
               ),
               const SizedBox(height: 8),
               SwitchListTile(

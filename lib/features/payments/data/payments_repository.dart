@@ -50,8 +50,7 @@ class PaymentsRepository {
         .snapshots()
         .map(
           (snap) => [
-            for (final doc in snap.docs)
-              ?PaymentGatewayInfo.fromFirestore(doc),
+            for (final doc in snap.docs) ?PaymentGatewayInfo.fromFirestore(doc),
           ]..sort((a, b) => a.id.index.compareTo(b.id.index)),
         )
         .transform(logStreamErrors('[payments] streamGateways failed'));

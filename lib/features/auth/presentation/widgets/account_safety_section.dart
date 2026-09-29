@@ -193,18 +193,26 @@ class _DeleteAccountDialogState extends ConsumerState<_DeleteAccountDialog> {
           password: _password.text,
         ),
       );
-      await ref.read(firebaseFunctionsProvider).httpsCallable('deleteMyAccount').call();
+      await ref
+          .read(firebaseFunctionsProvider)
+          .httpsCallable('deleteMyAccount')
+          .call();
       appLogger.i('[auth] Account ${user.uid} deleted; signing out');
       await auth.signOut();
       if (mounted) Navigator.of(context).pop();
     } on FirebaseAuthException catch (e) {
       setState(
-        () => _error = e.code == 'wrong-password' || e.code == 'invalid-credential'
+        () => _error =
+            e.code == 'wrong-password' || e.code == 'invalid-credential'
             ? 'That password is incorrect.'
             : (e.message ?? 'Couldn\'t confirm your identity.'),
       );
     } catch (error, stack) {
-      appLogger.e('[auth] deleteMyAccount failed', error: error, stackTrace: stack);
+      appLogger.e(
+        '[auth] deleteMyAccount failed',
+        error: error,
+        stackTrace: stack,
+      );
       setState(() => _error = friendlyError(error));
     } finally {
       if (mounted) setState(() => _deleting = false);

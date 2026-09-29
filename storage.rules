@@ -73,6 +73,45 @@ service firebase.storage {
       allow delete: if isOwner(uid);
     }
 
+    function isOrderStaff() {
+      return hasStaffRole(['systemManager', 'admin']);
+    }
+
+    // Customer logos: raster images for mockups, plus vector/print files
+    // (SVG, PDF, AI/EPS) that production needs. Up to 25 MB.
+    function isValidArtworkUpload() {
+      return request.resource.size < 25 * 1024 * 1024 &&
+        (request.resource.contentType.matches('image/.*') ||
+          request.resource.contentType in [
+            'application/pdf', 'application/postscript', 'application/illustrator',
+            'application/octet-stream'
+          ]);
+    }
+
+    // artwork/{uid}/{artworkId}/{fileName} -- the customer's own upload,
+    // referenced from Artworks/{artworkId}.fileUrl.
+    match /artwork/{uid}/{artworkId}/{fileName} {
+      allow read: if isOwner(uid) || isOrderStaff();
+      allow create: if isOwner(uid) && isValidArtworkUpload();
+      allow delete: if isOwner(uid);
+    }
+
+    // Digitized embroidery files (DST/EMB/PES...) attached by staff.
+    match /artwork/{uid}/{artworkId}/digitized/{fileName} {
+      allow read: if isOwner(uid) || isOrderStaff();
+      allow write: if isOrderStaff() && request.resource.size < 25 * 1024 * 1024;
+      allow delete: if isOrderStaff();
+    }
+
+    // Proof images staff send for approval; the order's customer can read.
+    match /proofs/{orderId}/{fileName} {
+      allow read: if isOrderStaff() ||
+        (isAuthenticated() &&
+          firestore.get(/databases/brightbrush-main/documents/Orders/$(orderId)).data.customerId == request.auth.uid);
+      allow write: if isOrderStaff() && isValidImageUpload();
+      allow delete: if isOrderStaff();
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

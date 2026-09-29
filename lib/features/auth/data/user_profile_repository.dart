@@ -205,7 +205,10 @@ class UserProfileRepository {
   /// and against the acting admin's own uid, so nobody can disable
   /// themselves; a disabled account loses every staff/manager/admin
   /// permission immediately via hasStaffRole(), not just on next sign-in.
-  Future<void> setDisabled({required String uid, required bool disabled}) async {
+  Future<void> setDisabled({
+    required String uid,
+    required bool disabled,
+  }) async {
     appLogger.i('[users] setDisabled(uid=$uid, disabled=$disabled)');
     try {
       await _doc(uid).update({

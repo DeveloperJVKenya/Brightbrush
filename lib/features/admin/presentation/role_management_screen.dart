@@ -439,60 +439,59 @@ class _AccountRow extends ConsumerWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                    Text(
-                      'Set role for ${profile.displayName.isEmpty ? profile.email : profile.displayName}',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
+                      Text(
+                        'Set role for ${profile.displayName.isEmpty ? profile.email : profile.displayName}',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    for (final role in AppRole.values)
-                      if (role != AppRole.developer)
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            role == profile.role
-                                ? Icons.radio_button_checked
-                                : Icons.radio_button_unchecked,
-                            color: role == profile.role
-                                ? Theme.of(context).colorScheme.primary
-                                : null,
-                          ),
-                          title: Text(role.label),
-                          onTap: () async {
-                            Navigator.of(context).pop();
-                            if (role == profile.role) return;
-                            final myUid = ref.read(currentUidProvider);
-                            try {
-                              appLogger.i(
-                                '[role-mgmt] Setting ${profile.uid} -> ${role.name}',
-                              );
-                              await ref
-                                  .read(userProfileRepositoryProvider)
-                                  .updateRole(
-                                    uid: profile.uid,
-                                    role: role,
-                                    changedByUid: myUid ?? 'unknown',
-                                  );
-                            } catch (error, stack) {
-                              appLogger.e(
-                                '[role-mgmt] Failed to set role for ${profile.uid}',
-                                error: error,
-                                stackTrace: stack,
-                              );
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Couldn\'t change role: ${friendlyError(error)}',
-                                    ),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
+                      const SizedBox(height: 8),
+                      for (final role in AppRole.values)
+                        if (role != AppRole.developer)
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(
+                              role == profile.role
+                                  ? Icons.radio_button_checked
+                                  : Icons.radio_button_unchecked,
+                              color: role == profile.role
+                                  ? Theme.of(context).colorScheme.primary
+                                  : null,
+                            ),
+                            title: Text(role.label),
+                            onTap: () async {
+                              Navigator.of(context).pop();
+                              if (role == profile.role) return;
+                              final myUid = ref.read(currentUidProvider);
+                              try {
+                                appLogger.i(
+                                  '[role-mgmt] Setting ${profile.uid} -> ${role.name}',
                                 );
+                                await ref
+                                    .read(userProfileRepositoryProvider)
+                                    .updateRole(
+                                      uid: profile.uid,
+                                      role: role,
+                                      changedByUid: myUid ?? 'unknown',
+                                    );
+                              } catch (error, stack) {
+                                appLogger.e(
+                                  '[role-mgmt] Failed to set role for ${profile.uid}',
+                                  error: error,
+                                  stackTrace: stack,
+                                );
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Couldn\'t change role: ${friendlyError(error)}',
+                                      ),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                }
                               }
-                            }
-                          },
-                        ),
+                            },
+                          ),
                     ],
                   ),
                 ),

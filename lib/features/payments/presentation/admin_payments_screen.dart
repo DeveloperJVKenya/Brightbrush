@@ -7,6 +7,7 @@ import '../../../core/errors/user_facing_error.dart';
 import '../../../core/firebase/firebase_providers.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../customization/presentation/decoration_pricing_card.dart';
 import '../application/payments_providers.dart';
 import '../domain/business_settings.dart';
 import '../domain/payment_models.dart';
@@ -50,6 +51,8 @@ class AdminPaymentsScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 20),
                 const _BusinessSettingsCard(),
+                const SizedBox(height: 16),
+                const DecorationPricingCard(),
                 const SizedBox(height: 28),
                 Text(
                   'Payment gateways',
@@ -222,7 +225,9 @@ class _GatewayCardState extends ConsumerState<_GatewayCard> {
         builder: (context) => AlertDialog(
           icon: Icon(
             result.ok ? Icons.check_circle_rounded : Icons.error_rounded,
-            color: result.ok ? Colors.green : Theme.of(context).colorScheme.error,
+            color: result.ok
+                ? Colors.green
+                : Theme.of(context).colorScheme.error,
             size: 40,
           ),
           title: Text(result.ok ? 'Connection OK' : 'Connection failed'),
@@ -377,7 +382,10 @@ class _GatewayCardState extends ConsumerState<_GatewayCard> {
             const SizedBox(height: 12),
           ],
           if (config.integrationUrls.isNotEmpty) ...[
-            Text('URLs for the provider dashboard', style: theme.textTheme.labelLarge),
+            Text(
+              'URLs for the provider dashboard',
+              style: theme.textTheme.labelLarge,
+            ),
             const SizedBox(height: 4),
             for (final e in config.integrationUrls.entries)
               ListTile(

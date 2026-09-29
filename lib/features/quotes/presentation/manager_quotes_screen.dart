@@ -62,7 +62,11 @@ class _ManagerQuotesScreenState extends ConsumerState<ManagerQuotesScreen> {
             ),
           ],
           error: (error, stack) {
-            appLogger.e('[quotes] inbox failed', error: error, stackTrace: stack);
+            appLogger.e(
+              '[quotes] inbox failed',
+              error: error,
+              stackTrace: stack,
+            );
             return [
               EmptyState(
                 icon: Icons.cloud_off_rounded,
@@ -125,7 +129,9 @@ class _InboxCard extends StatelessWidget {
                 ),
                 Chip(
                   avatar: Icon(quote.status.icon, size: 16),
-                  label: Text(quote.status.label.replaceFirst('You', 'Customer')),
+                  label: Text(
+                    quote.status.label.replaceFirst('You', 'Customer'),
+                  ),
                   visualDensity: VisualDensity.compact,
                 ),
               ],
@@ -162,7 +168,9 @@ class _InboxCard extends StatelessWidget {
                     ),
                     icon: const Icon(Icons.request_quote_rounded),
                     label: Text(
-                      quote.status == QuoteStatus.quoted ? 'Re-price' : 'Send price',
+                      quote.status == QuoteStatus.quoted
+                          ? 'Re-price'
+                          : 'Send price',
                     ),
                   ),
                   TextButton(

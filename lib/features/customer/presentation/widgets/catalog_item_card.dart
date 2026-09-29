@@ -97,7 +97,9 @@ class _CatalogItemCardState extends State<CatalogItemCard> {
                         children: [
                           Expanded(
                             child: Text(
-                              currencyFormat.format(item.basePrice),
+                              item.fromPrice < item.basePrice
+                                  ? 'From ${currencyFormat.format(item.fromPrice)}'
+                                  : currencyFormat.format(item.basePrice),
                               style: theme.textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.w700,
                                 color: theme.colorScheme.primary,

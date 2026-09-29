@@ -7,9 +7,24 @@ import '../../features/orders/domain/order_status.dart';
 /// completed/current step animates its fill so status changes (arriving
 /// live from Firestore) feel like progress, not a flat state swap.
 class OrderStatusTimeline extends StatelessWidget {
-  const OrderStatusTimeline({super.key, required this.status});
+  const OrderStatusTimeline({
+    super.key,
+    required this.status,
+    this.includeProofStep = false,
+  });
 
   final OrderStatus status;
+
+  /// Show the "Proof for approval" step — only for decorated orders.
+  final bool includeProofStep;
+
+  List<OrderStatus> get _steps => [
+    for (final s in OrderStatus.pipeline)
+      if (s != OrderStatus.awaitingProof ||
+          includeProofStep ||
+          status == OrderStatus.awaitingProof)
+        s,
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -38,24 +53,25 @@ class OrderStatusTimeline extends StatelessWidget {
       );
     }
 
-    final currentIndex = OrderStatus.pipeline.indexOf(status);
+    final steps = _steps;
+    final currentIndex = steps.indexOf(status);
 
     return Semantics(
       label:
-          'Order status: ${OrderStatus.pipeline[currentIndex].label}, '
-          'step ${currentIndex + 1} of ${OrderStatus.pipeline.length}',
+          'Order status: ${steps[currentIndex].label}, '
+          'step ${currentIndex + 1} of ${steps.length}',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ExcludeSemantics(
             child: Row(
               children: [
-                for (var i = 0; i < OrderStatus.pipeline.length; i++) ...[
+                for (var i = 0; i < steps.length; i++) ...[
                   _StepDot(
                     reached: i <= currentIndex,
                     current: i == currentIndex,
                   ),
-                  if (i != OrderStatus.pipeline.length - 1)
+                  if (i != steps.length - 1)
                     Expanded(
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 300),
@@ -72,7 +88,7 @@ class OrderStatusTimeline extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            OrderStatus.pipeline[currentIndex].label,
+            steps[currentIndex].label,
             style: theme.textTheme.labelMedium?.copyWith(
               fontWeight: FontWeight.w700,
               color: theme.colorScheme.primary,

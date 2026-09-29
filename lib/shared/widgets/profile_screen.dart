@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
@@ -430,6 +431,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       onTap: _changePassword,
                     ),
                   ),
+                  if (role == AppRole.user) ...[
+                    const SizedBox(height: 10),
+                    Card(
+                      margin: EdgeInsets.zero,
+                      child: ListTile(
+                        leading: const Icon(Icons.palette_outlined),
+                        title: const Text('My artwork'),
+                        subtitle: const Text(
+                          'Your saved logos for branding orders',
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => context.push('/customer/artwork'),
+                      ),
+                    ),
+                  ],
                   AccountSafetySection(role: role),
                   const SizedBox(height: 20),
                   SizedBox(

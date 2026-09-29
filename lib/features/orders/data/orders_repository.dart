@@ -72,7 +72,11 @@ class OrdersRepository {
       );
       return data['orderId'] as String;
     } catch (error, stack) {
-      appLogger.e('[orders] placeFromCart failed', error: error, stackTrace: stack);
+      appLogger.e(
+        '[orders] placeFromCart failed',
+        error: error,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }

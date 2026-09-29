@@ -60,7 +60,10 @@ void main() {
 
   test('free delivery above the threshold, and never for quotes', () {
     final s = copy(deliveryFlatFee: 400, freeDeliveryThreshold: 20000);
-    expect(OrderPricing.compute(19999, s, paymentPlan: 'full').deliveryFee, 400);
+    expect(
+      OrderPricing.compute(19999, s, paymentPlan: 'full').deliveryFee,
+      400,
+    );
     expect(OrderPricing.compute(20000, s, paymentPlan: 'full').deliveryFee, 0);
     expect(
       OrderPricing.compute(

@@ -88,7 +88,10 @@ class _RequestQuoteFormState extends ConsumerState<_RequestQuoteForm> {
           .create(
             uid: user.uid,
             customerName:
-                profile?.displayName ?? user.displayName ?? user.email ?? 'Customer',
+                profile?.displayName ??
+                user.displayName ??
+                user.email ??
+                'Customer',
             customerEmail: user.email ?? '',
             title: _title.text.trim(),
             quantity: int.parse(_quantity.text.trim()),

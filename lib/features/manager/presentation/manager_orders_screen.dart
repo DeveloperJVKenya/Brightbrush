@@ -12,7 +12,9 @@ import '../../../shared/widgets/order_status_timeline.dart';
 import '../../orders/application/orders_providers.dart';
 import '../../orders/domain/order_model.dart';
 import '../../orders/domain/order_status.dart';
+import '../../customization/presentation/widgets/customization_summary.dart';
 import '../../payments/presentation/widgets/record_payment_dialog.dart';
+import '../../proofs/presentation/proof_widgets.dart';
 import 'widgets/order_status_filter_bar.dart';
 
 final _managerOrdersSearchProvider = StateProvider<String>((ref) => '');
@@ -137,7 +139,52 @@ class _ManagerOrderRowState extends ConsumerState<_ManagerOrderRow> {
 
   OrderModel get order => widget.order;
 
+  static const _productionStages = {
+    OrderStatus.inProduction,
+    OrderStatus.readyForDelivery,
+    OrderStatus.outForDelivery,
+    OrderStatus.completed,
+  };
+
   Future<void> _updateStatus(OrderStatus value) async {
+    // Proof gate: firestore.rules reject this anyway; explain it up front.
+    if (_productionStages.contains(value) &&
+        !_productionStages.contains(order.status) &&
+        order.proofBlocksProduction) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'The customer hasn\'t approved a proof yet (${order.proofStatus.label.toLowerCase()}). Send one with "Proof".',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    // Deposit check: a warning, not a block — some clients are on credit.
+    if (value == OrderStatus.inProduction && !order.depositCovered) {
+      final go = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Deposit not received'),
+          content: Text(
+            'Only ${currencyFormat.format(order.amountPaid)} of the ${currencyFormat.format(order.depositAmount)} deposit has been paid. Start production anyway?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Wait'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Start anyway'),
+            ),
+          ],
+        ),
+      );
+      if (go != true) return;
+    }
+    if (!mounted) return;
     setState(() => _busy = true);
     try {
       await ref.read(ordersRepositoryProvider).updateStatus(order.id, value);
@@ -208,13 +255,24 @@ class _ManagerOrderRowState extends ConsumerState<_ManagerOrderRow> {
             ),
             const SizedBox(height: 6),
             Text(
-              order.items.map((i) => '${i.quantity}× ${i.name}').join(', '),
+              '${order.displayNumber} · ${order.items.map((i) => '${i.quantity}× ${i.name}').join(', ')}',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodySmall,
             ),
+            // Production needs the full brief: colours, sizes, placements,
+            // artwork and threads for every customised line.
+            for (final item in order.items)
+              if (item.customization != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: CustomizationSummary(config: item.customization!),
+                ),
             const SizedBox(height: 12),
-            OrderStatusTimeline(status: order.status),
+            OrderStatusTimeline(
+              status: order.status,
+              includeProofStep: order.requiresProof || order.proofVersion > 0,
+            ),
             const SizedBox(height: 12),
             Wrap(
               spacing: 10,
@@ -247,6 +305,17 @@ class _ManagerOrderRowState extends ConsumerState<_ManagerOrderRow> {
                   selected: order.paymentStatus.name != 'unpaid',
                   onSelected: _busy ? null : (_) => _openPayments(),
                 ),
+                if (order.requiresProof || order.proofVersion > 0)
+                  ActionChip(
+                    avatar: Icon(
+                      order.proofStatus == ProofStatus.approved
+                          ? Icons.verified_rounded
+                          : Icons.rate_review_outlined,
+                      size: 16,
+                    ),
+                    label: Text('Proof: ${order.proofStatus.label}'),
+                    onPressed: () => showSendProofDialog(context, order),
+                  ),
                 if (_busy)
                   const SizedBox(
                     width: 16,

@@ -21,3 +21,4 @@ export {
   stripeWebhook,
 } from './payments/webhooks';
 export { acceptQuote } from './quotes/accept_quote';
+export { respondToProof, sendProof } from './proofs/proofs';

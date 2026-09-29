@@ -54,9 +54,7 @@ class OrderMoneyBreakdown extends StatelessWidget {
         if (order.deliveryFee > 0) row('Delivery', order.deliveryFee),
         if (order.taxAmount > 0)
           row(
-            vatInclusive
-                ? 'Includes VAT ($vatPercent%)'
-                : 'VAT ($vatPercent%)',
+            vatInclusive ? 'Includes VAT ($vatPercent%)' : 'VAT ($vatPercent%)',
             order.taxAmount,
           ),
         const Divider(),
@@ -278,8 +276,7 @@ class _OrderPaymentPanelState extends ConsumerState<OrderPaymentPanel> {
                             avatar: Icon(g.id.icon, size: 18),
                             label: Text(g.displayName),
                             selected: g.id == selected,
-                            onSelected: (_) =>
-                                setState(() => _selected = g.id),
+                            onSelected: (_) => setState(() => _selected = g.id),
                           ),
                       ],
                     ),
@@ -406,7 +403,8 @@ class PaymentHistoryList extends ConsumerWidget {
                 ].join('\n'),
               ),
               isThreeLine: true,
-              trailing: p.status == PaymentState.pending && p.gateway != 'manual'
+              trailing:
+                  p.status == PaymentState.pending && p.gateway != 'manual'
                   ? IconButton(
                       tooltip: 'Check status',
                       icon: const Icon(Icons.refresh_rounded),
@@ -461,7 +459,9 @@ class _MpesaWaitingDialogState extends ConsumerState<_MpesaWaitingDialog> {
   Future<void> _check() async {
     setState(() => _checking = true);
     try {
-      await ref.read(paymentsRepositoryProvider).refreshStatus(widget.paymentId);
+      await ref
+          .read(paymentsRepositoryProvider)
+          .refreshStatus(widget.paymentId);
     } catch (error, stack) {
       appLogger.w(
         '[payments] STK status check failed',

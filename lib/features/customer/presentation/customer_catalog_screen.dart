@@ -161,6 +161,14 @@ class CustomerCatalogScreen extends ConsumerWidget {
                                   '/customer/catalog/${item.id}',
                                 ),
                                 onAddToCart: () async {
+                                  // Branded items need colour, sizes and
+                                  // artwork first.
+                                  if (item.isCustomizable) {
+                                    context.push(
+                                      '/customer/catalog/${item.id}/customize',
+                                    );
+                                    return;
+                                  }
                                   if (ref.read(currentUidProvider) == null) {
                                     showAuthRequiredSheet(
                                       context,
