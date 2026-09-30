@@ -12,25 +12,32 @@ import 'core/monitoring/monitoring.dart';
 import 'core/settings/shared_preferences_provider.dart';
 import 'firebase_options.dart';
 
+const _appCheckDebugToken = String.fromEnvironment('APP_CHECK_DEBUG_TOKEN');
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  // App Check is ENFORCED on firebaseml.googleapis.com for this project, so
-  // every Gemini call (ai_catalog_search_service, guide_assistant_service)
-  // needs a valid token or Firebase rejects it before it reaches the model.
-  // Web is the only platform actually shipped today, so it gets the real
-  // reCAPTCHA Enterprise provider (site key registered against
-  // bright-brush.web.app in Firebase App Check); other platforms fall back
-  // to the debug provider so local builds there aren't blocked.
+  // App Check is enforced on every callable and on Gemini (firebaseml), so
+  // every build needs a valid token. Release builds prove they're the real
+  // app: reCAPTCHA Enterprise on the web (site key registered against
+  // bright-brush.web.app), Play Integrity on Android, App Attest on iOS.
+  // Debug builds use a debug token registered in Firebase → App Check →
+  // Manage debug tokens, passed with
+  //   flutter run --dart-define-from-file=app_check_debug.json
+  // (a git-ignored file). Without it, the SDK prints a fresh token to the
+  // log to register instead.
+  final debugToken = _appCheckDebugToken.isEmpty ? null : _appCheckDebugToken;
   await FirebaseAppCheck.instance.activate(
-    providerWeb: ReCaptchaEnterpriseProvider(
-      '6LeR-7wtAAAAADqJWHzTD9nug4Rz9ZG6V3yCYa5f',
-    ),
+    providerWeb: kDebugMode
+        ? WebDebugProvider(debugToken: debugToken)
+        : ReCaptchaEnterpriseProvider(
+            '6LeR-7wtAAAAADqJWHzTD9nug4Rz9ZG6V3yCYa5f',
+          ),
     providerAndroid: kDebugMode
-        ? const AndroidDebugProvider()
+        ? AndroidDebugProvider(debugToken: debugToken)
         : const AndroidPlayIntegrityProvider(),
     providerApple: kDebugMode
-        ? const AppleDebugProvider()
+        ? AppleDebugProvider(debugToken: debugToken)
         : const AppleAppAttestProvider(),
   );
   // Offline cache (on by default on mobile; web needs it switched on) so

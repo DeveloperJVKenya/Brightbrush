@@ -114,6 +114,16 @@ npx firebase-tools deploy --only firestore         # 3. then lock the rules and 
 
 Mobile builds released before this change still try to write `Orders` directly, and will fail once the rules are deployed. Ship the updated mobile build too.
 
+## Running locally
+
+App Check is enforced, so debug builds need a registered debug token. Put it in a git-ignored `app_check_debug.json`:
+
+```json
+{ "APP_CHECK_DEBUG_TOKEN": "<token from Firebase → App Check → Apps → Manage debug tokens>" }
+```
+
+Then run `flutter run --dart-define-from-file=app_check_debug.json` (web, Android or iOS). The same token must be registered on each Firebase app you run. Revoke it in the console if the file leaks.
+
 ## Tests
 
 ```bash
