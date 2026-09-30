@@ -107,46 +107,46 @@ describe('Orders', () => {
 
   it('customer cannot mark their order paid or credit amountPaid', async () => {
     await assertFails(
-      updateDoc(doc(as('alice'), 'Orders/o1'), { paymentStatus: 'paid', updatedAt: serverTimestamp() }),
+      updateDoc(doc(as('alice'), 'Orders/o1'), { lastUpdatedBy: 'alice', paymentStatus: 'paid', updatedAt: serverTimestamp() }),
     );
     await assertFails(
-      updateDoc(doc(as('alice'), 'Orders/o1'), { amountPaid: 25000, updatedAt: serverTimestamp() }),
+      updateDoc(doc(as('alice'), 'Orders/o1'), { lastUpdatedBy: 'alice', amountPaid: 25000, updatedAt: serverTimestamp() }),
     );
   });
 
   it('customer cannot rewrite totals or the deposit', async () => {
     await assertFails(
-      updateDoc(doc(as('alice'), 'Orders/o1'), { total: 1, updatedAt: serverTimestamp() }),
+      updateDoc(doc(as('alice'), 'Orders/o1'), { lastUpdatedBy: 'alice', total: 1, updatedAt: serverTimestamp() }),
     );
     await assertFails(
-      updateDoc(doc(as('manager'), 'Orders/o1'), { depositAmount: 1, updatedAt: serverTimestamp() }),
+      updateDoc(doc(as('manager'), 'Orders/o1'), { lastUpdatedBy: 'manager', depositAmount: 1, updatedAt: serverTimestamp() }),
     );
   });
 
   it('customer can cancel an unpaid pending order, but not one with money on it', async () => {
     await assertSucceeds(
-      updateDoc(doc(as('alice'), 'Orders/o1'), { status: 'cancelled', updatedAt: serverTimestamp() }),
+      updateDoc(doc(as('alice'), 'Orders/o1'), { lastUpdatedBy: 'alice', status: 'cancelled', updatedAt: serverTimestamp() }),
     );
     await assertFails(
-      updateDoc(doc(as('alice'), 'Orders/paid'), { status: 'cancelled', updatedAt: serverTimestamp() }),
+      updateDoc(doc(as('alice'), 'Orders/paid'), { lastUpdatedBy: 'alice', status: 'cancelled', updatedAt: serverTimestamp() }),
     );
   });
 
   it('manager can flag invoiced but cannot mark paid by hand', async () => {
     await assertSucceeds(
-      updateDoc(doc(as('manager'), 'Orders/o1'), { paymentStatus: 'invoiced', updatedAt: serverTimestamp() }),
+      updateDoc(doc(as('manager'), 'Orders/o1'), { lastUpdatedBy: 'manager', paymentStatus: 'invoiced', updatedAt: serverTimestamp() }),
     );
     await assertFails(
-      updateDoc(doc(as('manager'), 'Orders/o1'), { paymentStatus: 'paid', updatedAt: serverTimestamp() }),
+      updateDoc(doc(as('manager'), 'Orders/o1'), { lastUpdatedBy: 'manager', paymentStatus: 'paid', updatedAt: serverTimestamp() }),
     );
     await assertFails(
-      updateDoc(doc(as('manager'), 'Orders/paid'), { paymentStatus: 'unpaid', updatedAt: serverTimestamp() }),
+      updateDoc(doc(as('manager'), 'Orders/paid'), { lastUpdatedBy: 'manager', paymentStatus: 'unpaid', updatedAt: serverTimestamp() }),
     );
   });
 
   it('manager can still move production status', async () => {
     await assertSucceeds(
-      updateDoc(doc(as('manager'), 'Orders/o1'), { status: 'confirmed', updatedAt: serverTimestamp() }),
+      updateDoc(doc(as('manager'), 'Orders/o1'), { lastUpdatedBy: 'manager', status: 'confirmed', updatedAt: serverTimestamp() }),
     );
   });
 });
@@ -277,7 +277,7 @@ describe('Existing protections still hold', () => {
 
   it('removing a required order field is rejected', async () => {
     await assertFails(
-      updateDoc(doc(as('manager'), 'Orders/o1'), { contactPhone: deleteField(), updatedAt: serverTimestamp() }),
+      updateDoc(doc(as('manager'), 'Orders/o1'), { lastUpdatedBy: 'manager', contactPhone: deleteField(), updatedAt: serverTimestamp() }),
     );
   });
 });
@@ -334,19 +334,19 @@ describe('Phase 2: artwork, proofs, customised carts', () => {
 
   it('production is blocked until the proof is approved, and clients cannot fake approval', async () => {
     await assertFails(
-      updateDoc(doc(as('manager'), 'Orders/decorated'), { status: 'inProduction', updatedAt: serverTimestamp() }),
+      updateDoc(doc(as('manager'), 'Orders/decorated'), { lastUpdatedBy: 'manager', status: 'inProduction', updatedAt: serverTimestamp() }),
     );
     await assertFails(
-      updateDoc(doc(as('manager'), 'Orders/decorated'), { proofStatus: 'approved', updatedAt: serverTimestamp() }),
+      updateDoc(doc(as('manager'), 'Orders/decorated'), { lastUpdatedBy: 'manager', proofStatus: 'approved', updatedAt: serverTimestamp() }),
     );
     await assertFails(
-      updateDoc(doc(as('alice'), 'Orders/decorated'), { proofStatus: 'approved', updatedAt: serverTimestamp() }),
+      updateDoc(doc(as('alice'), 'Orders/decorated'), { lastUpdatedBy: 'alice', proofStatus: 'approved', updatedAt: serverTimestamp() }),
     );
     await env.withSecurityRulesDisabled((ctx) =>
       updateDoc(doc(ctx.firestore(), 'Orders/decorated'), { proofStatus: 'approved' }),
     );
     await assertSucceeds(
-      updateDoc(doc(as('manager'), 'Orders/decorated'), { status: 'inProduction', updatedAt: serverTimestamp() }),
+      updateDoc(doc(as('manager'), 'Orders/decorated'), { lastUpdatedBy: 'manager', status: 'inProduction', updatedAt: serverTimestamp() }),
     );
   });
 
@@ -416,8 +416,8 @@ describe('Phase 3: accounts, coupons, refunds, integrations', () => {
 
   it('customers cannot grant themselves discounts, credit or refunds on orders', async () => {
     for (const field of [{ discountAmount: 5000 }, { refundedAmount: 1 }, { dueDate: now }, { etims: { status: 'submitted' } }]) {
-      await assertFails(updateDoc(doc(as('alice'), 'Orders/o1'), { ...field, updatedAt: serverTimestamp() }));
-      await assertFails(updateDoc(doc(as('manager'), 'Orders/o1'), { ...field, updatedAt: serverTimestamp() }));
+      await assertFails(updateDoc(doc(as('alice'), 'Orders/o1'), { lastUpdatedBy: 'alice', ...field, updatedAt: serverTimestamp() }));
+      await assertFails(updateDoc(doc(as('manager'), 'Orders/o1'), { lastUpdatedBy: 'manager', ...field, updatedAt: serverTimestamp() }));
     }
   });
 
@@ -431,5 +431,69 @@ describe('Phase 3: accounts, coupons, refunds, integrations', () => {
     await assertSucceeds(getDoc(doc(as('manager'), 'Integrations/etims')));
     await assertFails(getDoc(doc(as('alice'), 'Integrations/etims')));
     await assertFails(getDoc(doc(as('admin'), 'IntegrationSecrets/etims')));
+  });
+});
+
+describe('Phase 4: operations', () => {
+  beforeEach(async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, 'Users/driver'), { email: 'd@example.com', displayName: 'Driver', role: 'deliveryStaff', createdAt: now, updatedAt: now });
+      await setDoc(doc(db, 'Orders/inprod'), { ...baseOrder, status: 'inProduction', qcStatus: 'pending' });
+      await setDoc(doc(db, 'Orders/ready'), { ...baseOrder, status: 'readyForDelivery', qcStatus: 'passed', assignedStaffId: null });
+      await setDoc(doc(db, 'Orders/out'), { ...baseOrder, status: 'outForDelivery', qcStatus: 'passed', assignedStaffId: 'driver' });
+      await setDoc(doc(db, 'OrderSecrets/out'), { customerId: 'alice', deliveryCode: '1234' });
+      await setDoc(doc(db, 'ProductionJobs/inprod'), {
+        orderId: 'inprod', stage: 'queued', priority: 'normal', machineId: null, machineName: '',
+        operatorName: '', scheduledDate: null, estimatedMinutes: 0, notes: '', dueDate: null,
+        updatedAt: now, updatedBy: 'system',
+      });
+      await setDoc(doc(db, 'PurchaseOrders/po1'), { poNumber: 'PO-000001', status: 'draft', lines: [], total: 0 });
+      await setDoc(doc(db, 'AuditLog/a1'), { type: 'user.updated', summary: 'x' });
+    });
+  });
+
+  it('client order updates must name their author', async () => {
+    await assertFails(updateDoc(doc(as('manager'), 'Orders/o1'), { status: 'confirmed', updatedAt: serverTimestamp() }));
+    await assertFails(updateDoc(doc(as('manager'), 'Orders/o1'), { status: 'confirmed', lastUpdatedBy: 'alice', updatedAt: serverTimestamp() }));
+    await assertSucceeds(updateDoc(doc(as('manager'), 'Orders/o1'), { status: 'confirmed', lastUpdatedBy: 'manager', updatedAt: serverTimestamp() }));
+  });
+
+  it('nothing is handed over before quality control passes', async () => {
+    await assertSucceeds(updateDoc(doc(as('manager'), 'Orders/inprod'), { status: 'qualityCheck', lastUpdatedBy: 'manager', updatedAt: serverTimestamp() }));
+    await assertFails(updateDoc(doc(as('manager'), 'Orders/inprod'), { status: 'readyForDelivery', lastUpdatedBy: 'manager', updatedAt: serverTimestamp() }));
+    await assertFails(updateDoc(doc(as('manager'), 'Orders/inprod'), { qcStatus: 'passed', lastUpdatedBy: 'manager', updatedAt: serverTimestamp() }));
+  });
+
+  it('drivers can claim but not self-complete a delivery', async () => {
+    await assertSucceeds(updateDoc(doc(as('driver'), 'Orders/ready'), { status: 'outForDelivery', assignedStaffId: 'driver', lastUpdatedBy: 'driver', updatedAt: serverTimestamp() }));
+    await assertFails(updateDoc(doc(as('driver'), 'Orders/out'), { status: 'completed', lastUpdatedBy: 'driver', updatedAt: serverTimestamp() }));
+  });
+
+  it('only the customer can see the delivery code', async () => {
+    await assertSucceeds(getDoc(doc(as('alice'), 'OrderSecrets/out')));
+    await assertFails(getDoc(doc(as('driver'), 'OrderSecrets/out')));
+    await assertFails(getDoc(doc(as('manager'), 'OrderSecrets/out')));
+  });
+
+  it('managers schedule job cards within the allowed fields', async () => {
+    await assertSucceeds(updateDoc(doc(as('manager'), 'ProductionJobs/inprod'), {
+      stage: 'inProduction', priority: 'rush', estimatedMinutes: 120, operatorName: 'Wanjiru',
+      updatedBy: 'manager', updatedAt: serverTimestamp(),
+    }));
+    await assertFails(updateDoc(doc(as('manager'), 'ProductionJobs/inprod'), { orderId: 'other', updatedBy: 'manager', updatedAt: serverTimestamp() }));
+    await assertFails(getDoc(doc(as('alice'), 'ProductionJobs/inprod')));
+  });
+
+  it('purchase orders only move draft → sent / cancelled from the client', async () => {
+    await assertSucceeds(updateDoc(doc(as('manager'), 'PurchaseOrders/po1'), { status: 'sent', updatedBy: 'manager', updatedAt: serverTimestamp() }));
+    await assertFails(updateDoc(doc(as('manager'), 'PurchaseOrders/po1'), { status: 'received', updatedBy: 'manager', updatedAt: serverTimestamp() }));
+    await assertFails(setDoc(doc(as('manager'), 'PurchaseOrders/po2'), { poNumber: 'PO-9', status: 'draft' }));
+  });
+
+  it('the audit log is admin-read-only and immutable', async () => {
+    await assertSucceeds(getDoc(doc(as('admin'), 'AuditLog/a1')));
+    await assertFails(getDoc(doc(as('manager'), 'AuditLog/a1')));
+    await assertFails(updateDoc(doc(as('admin'), 'AuditLog/a1'), { summary: 'edited' }));
   });
 });

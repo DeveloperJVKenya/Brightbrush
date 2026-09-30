@@ -10,6 +10,7 @@ import '../../../catalog/domain/catalog_item.dart';
 import '../../../../core/firebase/firebase_providers.dart';
 import '../../../../core/errors/user_facing_error.dart';
 import '../../../../core/logging/app_logger.dart';
+import '../../../inventory/application/inventory_providers.dart';
 import 'customization_options_editor.dart';
 
 /// Create/edit form for a catalog item. Image upload degrades gracefully:
@@ -61,6 +62,7 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
       widget.existing?.category ?? CatalogCategory.tshirts;
   late bool _isActive = widget.existing?.isActive ?? true;
   late bool _isFeatured = widget.existing?.isFeatured ?? false;
+  late List<MaterialUse> _materials = [...?widget.existing?.materials];
   late CustomizationOptionsValue _options = CustomizationOptionsValue(
     priceTiers: widget.existing?.priceTiers ?? const [],
     sizes: widget.existing?.sizes ?? const [],
@@ -134,6 +136,7 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
         colours: _options.colours,
         decorationMethods: _options.decorationMethods,
         placements: _options.placements,
+        materials: _materials,
       );
 
       String itemId;
@@ -349,6 +352,10 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
                   labelText: 'Tags (comma separated)',
                 ),
               ),
+              _BomEditor(
+                materials: _materials,
+                onChanged: (v) => setState(() => _materials = v),
+              ),
               CustomizationOptionsEditor(
                 value: _options,
                 category: _category,
@@ -390,6 +397,121 @@ class _CatalogItemFormSheetState extends ConsumerState<_CatalogItemFormSheet> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// "Materials used per piece" — lets the server deduct stock automatically
+/// when an order for this item enters production.
+class _BomEditor extends ConsumerWidget {
+  const _BomEditor({required this.materials, required this.onChanged});
+
+  final List<MaterialUse> materials;
+  final ValueChanged<List<MaterialUse>> onChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final stock =
+        ref.watch(allInventoryMaterialsProvider).valueOrNull ?? const [];
+    final byId = {for (final m in stock) m.id: m};
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Divider(height: 28),
+        Text('Materials used per piece', style: theme.textTheme.labelLarge),
+        Text(
+          'Deducted from stock automatically when an order goes into production.',
+          style: theme.textTheme.bodySmall,
+        ),
+        for (final (i, m) in materials.indexed)
+          ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            title: Text(byId[m.materialId]?.name ?? 'Removed material'),
+            subtitle: Text(
+              '${m.perUnit} ${byId[m.materialId]?.unit ?? ''} per piece',
+            ),
+            trailing: IconButton(
+              icon: const Icon(Icons.close_rounded),
+              onPressed: () => onChanged([...materials]..removeAt(i)),
+            ),
+          ),
+        TextButton.icon(
+          onPressed: stock.isEmpty
+              ? null
+              : () async {
+                  var picked = stock.first;
+                  final qty = TextEditingController(text: '1');
+                  final use = await showDialog<MaterialUse>(
+                    context: context,
+                    builder: (context) => StatefulBuilder(
+                      builder: (context, setState) => AlertDialog(
+                        title: const Text('Material per piece'),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            DropdownButtonFormField(
+                              initialValue: picked,
+                              isExpanded: true,
+                              items: [
+                                for (final m in stock)
+                                  DropdownMenuItem(
+                                    value: m,
+                                    child: Text('${m.name} (${m.unit})'),
+                                  ),
+                              ],
+                              onChanged: (v) => setState(() => picked = v!),
+                            ),
+                            TextField(
+                              controller: qty,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              decoration: const InputDecoration(
+                                labelText: 'Amount per piece',
+                                helperText:
+                                    'e.g. 1 blank cap, 0.05 cone of thread',
+                              ),
+                            ),
+                          ],
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Cancel'),
+                          ),
+                          FilledButton(
+                            onPressed: () {
+                              final n = num.tryParse(qty.text.trim());
+                              if (n == null || n <= 0) return;
+                              Navigator.pop(
+                                context,
+                                MaterialUse(materialId: picked.id, perUnit: n),
+                              );
+                            },
+                            child: const Text('Add'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                  if (use != null) {
+                    onChanged([
+                      ...materials.where((m) => m.materialId != use.materialId),
+                      use,
+                    ]);
+                  }
+                },
+          icon: const Icon(Icons.add_rounded),
+          label: Text(
+            stock.isEmpty
+                ? 'Add stock materials under Inventory first'
+                : 'Add material',
+          ),
+        ),
+      ],
     );
   }
 }

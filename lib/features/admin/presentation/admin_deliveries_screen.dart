@@ -7,6 +7,7 @@ import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/live_orders_map.dart';
 import '../../auth/domain/user_profile.dart';
+import '../../ops/presentation/delivery_completion_sheet.dart';
 import '../../orders/application/orders_providers.dart';
 import '../../orders/domain/order_model.dart';
 import '../../orders/domain/order_status.dart';
@@ -258,11 +259,10 @@ class AdminDeliveriesScreen extends ConsumerWidget {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: () async {
+                  onPressed: () {
+                    final outer = Navigator.of(context).context;
                     Navigator.of(context).pop();
-                    await ref
-                        .read(ordersRepositoryProvider)
-                        .markDelivered(order.id);
+                    showDeliveryCompletionSheet(outer, order);
                   },
                   icon: const Icon(Icons.check_circle_outline_rounded),
                   label: const Text('Mark delivered'),

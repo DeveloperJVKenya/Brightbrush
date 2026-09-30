@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../core/logging/app_logger.dart';
 import '../../../core/logging/stream_error_logger.dart';
@@ -63,7 +64,11 @@ class CatalogRepository {
   Future<void> update(CatalogItem item) async {
     appLogger.i('[catalog] update(${item.id})');
     try {
-      await _items.doc(item.id).update(item.toFirestoreUpdate());
+      await _items.doc(item.id).update({
+        ...item.toFirestoreUpdate(),
+        // Who made the change, for the audit log (price changes etc.).
+        'lastUpdatedBy': ?FirebaseAuth.instance.currentUser?.uid,
+      });
     } catch (error, stack) {
       appLogger.e(
         '[catalog] update(${item.id}) failed',

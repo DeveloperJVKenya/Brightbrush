@@ -120,6 +120,9 @@ class OrderModel {
     this.overdue = false,
     this.etims = const {},
     this.cancellationFee = 0,
+    this.promisedDate,
+    this.qcStatus = 'passed',
+    this.proofOfDelivery = const {},
   }) : depositAmount = depositAmount ?? total;
 
   final String id;
@@ -182,6 +185,15 @@ class OrderModel {
   /// KRA eTIMS submission result (status, invcNo, rcptNo, qrUrl, error).
   final Map<String, dynamic> etims;
   final num cancellationFee;
+
+  /// When we promised the order would be ready (lead time + working days).
+  final DateTime? promisedDate;
+
+  /// 'pending' | 'passed' | 'failed' (orders from before QC count as passed).
+  final String qcStatus;
+
+  /// Recipient, code-verified flag, photo/signature URLs, time and GPS.
+  final Map<String, dynamic> proofOfDelivery;
 
   bool get isPickup => deliveryMethod == 'pickup';
   bool get isCredit => paymentPlan == 'credit';
@@ -280,6 +292,11 @@ class OrderModel {
       overdue: d['overdue'] as bool? ?? false,
       etims: Map<String, dynamic>.from((d['etims'] as Map?) ?? const {}),
       cancellationFee: d['cancellationFee'] as num? ?? 0,
+      promisedDate: (d['promisedDate'] as Timestamp?)?.toDate(),
+      qcStatus: d['qcStatus'] as String? ?? 'passed',
+      proofOfDelivery: Map<String, dynamic>.from(
+        (d['proofOfDelivery'] as Map?) ?? const {},
+      ),
     );
   }
 }

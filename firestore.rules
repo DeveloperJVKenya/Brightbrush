@@ -253,19 +253,30 @@ service cloud.firestore {
       let newAssigned = request.resource.data.assignedStaffId;
 
       return
-        (prevStatus == 'readyForDelivery' && newStatus == 'outForDelivery' &&
-          prevAssigned == null && newAssigned == request.auth.uid) ||
-        (prevStatus == 'outForDelivery' && newStatus == 'completed' &&
-          prevAssigned == request.auth.uid && newAssigned == prevAssigned);
+        // Completing a delivery needs proof (customer code, or photo +
+        // signature), so it only happens through the completeDelivery
+        // function — drivers can only claim here.
+        prevStatus == 'readyForDelivery' && newStatus == 'outForDelivery' &&
+          prevAssigned == null && newAssigned == request.auth.uid &&
+          resource.data.get('deliveryMethod', 'delivery') != 'pickup';
     }
 
     // A decorated order can't move into production (or anything after it)
     // until the customer has approved a proof. The sendProof and
     // respondToProof functions are the only writers of proofStatus.
     function isProofGateSatisfied() {
-      return !(request.resource.data.status in ['inProduction', 'readyForDelivery', 'outForDelivery', 'completed']) ||
+      return !(request.resource.data.status in ['inProduction', 'qualityCheck', 'readyForDelivery', 'outForDelivery', 'completed']) ||
         request.resource.data.status == resource.data.status ||
         resource.data.get('proofStatus', 'notRequired') in ['notRequired', 'approved'];
+    }
+
+    // Nothing is handed over until it passes quality control (the
+    // recordQualityCheck function sets qcStatus). Orders from before QC
+    // existed have no qcStatus and count as passed.
+    function isQcGateSatisfied() {
+      return !(request.resource.data.status in ['readyForDelivery', 'outForDelivery', 'completed']) ||
+        request.resource.data.status == resource.data.status ||
+        resource.data.get('qcStatus', 'passed') == 'passed';
     }
 
     // ===============================================================
@@ -285,7 +296,10 @@ service cloud.firestore {
               'name', 'category', 'description', 'basePrice', 'moq', 'leadTimeDays',
               'imageUrls', 'tags', 'isActive', 'isFeatured', 'createdBy', 'createdAt', 'updatedAt',
               // Customisation options — priced server-side in placeOrder.
-              'priceTiers', 'sizes', 'colours', 'decorationMethods', 'placements'
+              'priceTiers', 'sizes', 'colours', 'decorationMethods', 'placements',
+              // Bill of materials: [{materialId, perUnit}] — deducted from
+              // stock by the server when an order enters production.
+              'materials', 'lastUpdatedBy'
             ]) &&
             hasRequiredFields([
               'name', 'category', 'description', 'basePrice', 'moq', 'leadTimeDays',
@@ -306,7 +320,8 @@ service cloud.firestore {
             (!('sizes' in d) || (d.sizes is list && d.sizes.size() <= 15)) &&
             (!('colours' in d) || (d.colours is list && d.colours.size() <= 30)) &&
             (!('decorationMethods' in d) || isValidStringList('decorationMethods', 6, 20)) &&
-            (!('placements' in d) || isValidStringList('placements', 14, 20));
+            (!('placements' in d) || isValidStringList('placements', 14, 20)) &&
+            (!('materials' in d) || (d.materials is list && d.materials.size() <= 20));
     }
 
     function isValidPackage() {
@@ -344,7 +359,7 @@ service cloud.firestore {
 
     function isValidOrderStatus(value) {
       return value in [
-        'pendingReview', 'confirmed', 'awaitingProof', 'inProduction', 'readyForDelivery',
+        'pendingReview', 'confirmed', 'awaitingProof', 'inProduction', 'qualityCheck', 'readyForDelivery',
         'outForDelivery', 'completed', 'cancelled'
       ];
     }
@@ -393,7 +408,10 @@ service cloud.firestore {
               'invoiceNumber', 'refundedAmount', 'discountAmount', 'corporateDiscount',
               'couponCode', 'couponDiscount', 'deliveryMethod', 'deliveryZoneId', 'deliveryZoneName',
               'customerCompany', 'customerKraPin', 'dueDate', 'overdue', 'etims',
-              'cancellationFee', 'cancelReason'
+              'cancellationFee', 'cancelReason',
+              // Operations (server-written except lastUpdatedBy).
+              'promisedDate', 'qcStatus', 'materialsDeducted', 'materialsUsed',
+              'proofOfDelivery', 'lastUpdatedBy'
             ]) &&
             hasRequiredFields([
               'customerId', 'contactName', 'contactPhone', 'deliveryAddress',
@@ -448,7 +466,8 @@ service cloud.firestore {
     function isValidCompanyAsset() {
       let d = request.resource.data;
       return hasOnlyAllowedFields([
-              'name', 'category', 'condition', 'purchaseDate', 'notes', 'createdBy', 'createdAt', 'updatedAt'
+              'name', 'category', 'condition', 'purchaseDate', 'notes', 'dailyCapacityMinutes',
+              'createdBy', 'createdAt', 'updatedAt'
             ]) &&
             hasRequiredFields(['name', 'category', 'condition', 'createdBy', 'createdAt', 'updatedAt']) &&
             validStringLength('name', 2, 80) &&
@@ -711,15 +730,20 @@ service cloud.firestore {
           'invoiceNumber', 'refundedAmount', 'discountAmount', 'corporateDiscount',
           'couponCode', 'couponDiscount', 'deliveryMethod', 'deliveryZoneId', 'deliveryZoneName',
           'customerCompany', 'customerKraPin', 'dueDate', 'overdue', 'etims',
-          'cancellationFee', 'cancelReason'
+          'cancellationFee', 'cancelReason',
+          'promisedDate', 'qcStatus', 'materialsDeducted', 'materialsUsed', 'proofOfDelivery'
         ]) &&
         request.resource.data.updatedAt == request.time &&
+        // Every client change names its author, for the order timeline and
+        // audit log.
+        request.resource.data.lastUpdatedBy == request.auth.uid &&
         (
           // Manager/admin: full control over status/assignment. Payment
           // status is ledger-owned; staff may only toggle an order with
           // nothing paid yet between 'unpaid' and 'invoiced'.
           (isManagerOrAdmin() &&
             isProofGateSatisfied() &&
+            isQcGateSatisfied() &&
             (request.resource.data.paymentStatus == resource.data.paymentStatus ||
               (request.resource.data.paymentStatus in ['unpaid', 'invoiced'] &&
                 resource.data.get('amountPaid', 0) == 0 &&
@@ -820,9 +844,9 @@ service cloud.firestore {
     }
 
     match /CompanyAssets/{assetId} {
-      // Admin/CEO-level only — System Manager doesn't manage company
-      // machines/equipment records.
-      allow read: if isAdminOrDeveloper();
+      // Admin/CEO manages machines/equipment; System Manager can read them to
+      // schedule production.
+      allow read: if isManagerOrAdmin();
 
       allow create: if isAdminOrDeveloper() &&
         isValidCompanyAsset() &&
@@ -1054,6 +1078,74 @@ service cloud.firestore {
       // for staff screens. Credentials live in IntegrationSecrets, which the
       // default deny keeps from every client.
       allow read: if isManagerOrAdmin();
+      allow write: if false;
+    }
+
+    match /Orders/{orderId}/Events/{eventId} {
+      // Order timeline, written by the onOrderChanged trigger only.
+      allow read: if isOrderStaff() ||
+        (isAuthenticated() &&
+          get(/databases/$(database)/documents/Orders/$(orderId)).data.customerId == request.auth.uid);
+      allow write: if false;
+    }
+
+    match /Orders/{orderId}/QualityChecks/{checkId} {
+      allow read: if isManagerOrAdmin() ||
+        (isAuthenticated() &&
+          get(/databases/$(database)/documents/Orders/$(orderId)).data.customerId == request.auth.uid);
+      allow write: if false;
+    }
+
+    match /OrderSecrets/{orderId} {
+      // The customer's delivery handover code — never readable by drivers
+      // or staff, so completing a delivery proves the customer was there.
+      allow read: if isAuthenticated() && resource.data.customerId == request.auth.uid;
+      allow write: if false;
+    }
+
+    match /ProductionJobs/{orderId} {
+      // Job cards: created by the server when an order is confirmed;
+      // managers schedule them (stage, machine, operator, day, priority).
+      allow read: if isManagerOrAdmin();
+      allow create, delete: if false;
+      allow update: if isManagerOrAdmin() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'stage', 'priority', 'machineId', 'machineName', 'operatorName', 'scheduledDate',
+          'estimatedMinutes', 'notes', 'dueDate', 'updatedAt', 'updatedBy'
+        ]) &&
+        request.resource.data.stage in ['queued', 'digitizing', 'inProduction', 'finishing', 'qc', 'rework', 'done', 'cancelled'] &&
+        request.resource.data.priority in ['normal', 'rush'] &&
+        request.resource.data.estimatedMinutes is int &&
+        request.resource.data.estimatedMinutes >= 0 && request.resource.data.estimatedMinutes <= 100000 &&
+        (request.resource.data.scheduledDate == null || request.resource.data.scheduledDate is timestamp) &&
+        request.resource.data.notes is string && request.resource.data.notes.size() <= 1000 &&
+        request.resource.data.operatorName is string && request.resource.data.operatorName.size() <= 80 &&
+        request.resource.data.updatedBy == request.auth.uid &&
+        request.resource.data.updatedAt == request.time;
+    }
+
+    match /InventoryMovements/{movementId} {
+      // Stock ledger (production use, cancellations, deliveries received).
+      allow read: if isManagerOrAdmin();
+      allow write: if false;
+    }
+
+    match /PurchaseOrders/{poId} {
+      // Created and received through functions (numbering, stock); staff
+      // may only mark a draft sent, or cancel an open PO.
+      allow read: if isManagerOrAdmin();
+      allow create, delete: if false;
+      allow update: if isManagerOrAdmin() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt', 'updatedBy']) &&
+        ((resource.data.status == 'draft' && request.resource.data.status == 'sent') ||
+          (resource.data.status in ['draft', 'sent'] && request.resource.data.status == 'cancelled')) &&
+        request.resource.data.updatedBy == request.auth.uid &&
+        request.resource.data.updatedAt == request.time;
+    }
+
+    match /AuditLog/{entryId} {
+      // Append-only, server-written; Admin/CEO and Developer can read.
+      allow read: if isAdminOrDeveloper();
       allow write: if false;
     }
 

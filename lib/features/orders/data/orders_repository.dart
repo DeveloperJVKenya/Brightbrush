@@ -7,10 +7,14 @@ import '../domain/order_model.dart';
 import '../domain/order_status.dart';
 
 class OrdersRepository {
-  OrdersRepository(this._db, this._functions);
+  OrdersRepository(this._db, this._functions, this._currentUid);
 
   final FirebaseFirestore _db;
   final FirebaseFunctions _functions;
+
+  /// firestore.rules require every client order update to name its author
+  /// (lastUpdatedBy == auth uid) for the order timeline and audit log.
+  final String? Function() _currentUid;
 
   CollectionReference<Map<String, dynamic>> get _orders =>
       _db.collection('Orders');
@@ -94,6 +98,7 @@ class OrdersRepository {
         .update({
           'status': status.name,
           'updatedAt': FieldValue.serverTimestamp(),
+          'lastUpdatedBy': _currentUid(),
         })
         .catchError((error, stack) {
           appLogger.e(
@@ -112,6 +117,7 @@ class OrdersRepository {
         .update({
           'paymentStatus': status.name,
           'updatedAt': FieldValue.serverTimestamp(),
+          'lastUpdatedBy': _currentUid(),
         })
         .catchError((error, stack) {
           appLogger.e(
@@ -130,6 +136,7 @@ class OrdersRepository {
         .update({
           'status': OrderStatus.cancelled.name,
           'updatedAt': FieldValue.serverTimestamp(),
+          'lastUpdatedBy': _currentUid(),
         })
         .catchError((error, stack) {
           appLogger.e(
@@ -153,6 +160,7 @@ class OrdersRepository {
           'status': OrderStatus.outForDelivery.name,
           'assignedStaffId': staffUid,
           'updatedAt': FieldValue.serverTimestamp(),
+          'lastUpdatedBy': _currentUid(),
         })
         .catchError((error, stack) {
           appLogger.e(
@@ -171,6 +179,7 @@ class OrdersRepository {
         .update({
           'status': OrderStatus.completed.name,
           'updatedAt': FieldValue.serverTimestamp(),
+          'lastUpdatedBy': _currentUid(),
         })
         .catchError((error, stack) {
           appLogger.e(
@@ -196,6 +205,7 @@ class OrdersRepository {
           'deliveryLat': lat,
           'deliveryLng': lng,
           'updatedAt': FieldValue.serverTimestamp(),
+          'lastUpdatedBy': _currentUid(),
         })
         .catchError((error, stack) {
           appLogger.e(

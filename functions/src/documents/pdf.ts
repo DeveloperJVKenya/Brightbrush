@@ -28,6 +28,8 @@ export interface DocSpec {
   notes: string[];
   /// eTIMS block: printed with a QR code of the KRA verification link.
   etims?: { lines: string[]; qrUrl?: string | null };
+  /// Artwork thumbnails (job sheets). PNG/JPEG only; others are skipped.
+  images?: Array<{ url: string; caption: string }>;
   /// Plain table (statements) instead of item lines.
   table?: { headers: string[]; widths: number[]; rows: string[][]; alignRight: number[] };
 }
@@ -111,6 +113,33 @@ export async function renderPdf(settings: BusinessSettings, spec: DocSpec): Prom
     y += t.bold ? 18 : 15;
   }
 
+  if (spec.images?.length) {
+    y += 10;
+    let x = left;
+    const size = 110;
+    for (const img of spec.images) {
+      const bytes = await fetchImage(img.url);
+      if (!bytes) continue;
+      if (x + size > right) {
+        x = left;
+        y += size + 30;
+      }
+      if (y + size + 30 > doc.page.height - 80) {
+        doc.addPage();
+        y = 48;
+        x = left;
+      }
+      try {
+        doc.image(bytes, x, y, { fit: [size, size] });
+        doc.font('Helvetica').fontSize(8).fillColor('#333').text(img.caption, x, y + size + 4, { width: size });
+        x += size + 16;
+      } catch {
+        // Unsupported image format — skip it.
+      }
+    }
+    y += size + 36;
+  }
+
   if (spec.etims) {
     y += 10;
     if (y > doc.page.height - 150) {
@@ -142,6 +171,21 @@ export async function renderPdf(settings: BusinessSettings, spec: DocSpec): Prom
   );
   doc.end();
   return done;
+}
+
+/// Downloads a PNG/JPEG for embedding (job sheet artwork). Anything else,
+/// or any failure, returns null so the PDF still renders.
+async function fetchImage(url: string): Promise<Buffer | null> {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+    if (!res.ok) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    const png = buf.subarray(0, 4).toString('hex') === '89504e47';
+    const jpg = buf.subarray(0, 2).toString('hex') === 'ffd8';
+    return png || jpg ? buf : null;
+  } catch {
+    return null;
+  }
 }
 
 function drawTable(

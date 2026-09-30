@@ -16,6 +16,9 @@ import '../../commerce/application/commerce_providers.dart';
 import '../../commerce/data/commerce_repository.dart';
 import '../../commerce/presentation/refund_dialog.dart';
 import '../../customization/presentation/widgets/customization_summary.dart';
+import '../../ops/presentation/delivery_completion_sheet.dart';
+import '../../ops/presentation/order_timeline.dart';
+import '../../ops/presentation/qc_dialog.dart';
 import '../../payments/presentation/widgets/record_payment_dialog.dart';
 import '../../proofs/presentation/proof_widgets.dart';
 import 'widgets/order_status_filter_bar.dart';
@@ -219,6 +222,34 @@ class _ManagerOrderRowState extends ConsumerState<_ManagerOrderRow> {
     switch (action) {
       case 'invoice':
         await openDocument(context, ref, DocumentKind.invoice, order.id);
+      case 'jobSheet':
+        await openDocument(context, ref, DocumentKind.jobSheet, order.id);
+      case 'qc':
+        await showQualityCheckDialog(
+          context,
+          orderId: order.id,
+          orderLabel: order.displayNumber,
+        );
+      case 'handover':
+        await showDeliveryCompletionSheet(context, order);
+      case 'history':
+        await showDialog<void>(
+          context: context,
+          builder: (context) => AlertDialog(
+            content: SizedBox(
+              width: 480,
+              child: SingleChildScrollView(
+                child: OrderTimeline(order: order, staffView: true),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+        );
       case 'refund':
         await showRefundDialog(context, order);
       case 'etims':
@@ -381,6 +412,32 @@ class _ManagerOrderRowState extends ConsumerState<_ManagerOrderRow> {
                       value: 'invoice',
                       child: Text('Invoice PDF'),
                     ),
+                    const PopupMenuItem(
+                      value: 'history',
+                      child: Text('History'),
+                    ),
+                    if (![
+                      OrderStatus.pendingReview,
+                      OrderStatus.cancelled,
+                    ].contains(order.status))
+                      const PopupMenuItem(
+                        value: 'jobSheet',
+                        child: Text('Print job sheet'),
+                      ),
+                    if ([
+                      OrderStatus.inProduction,
+                      OrderStatus.qualityCheck,
+                    ].contains(order.status))
+                      const PopupMenuItem(
+                        value: 'qc',
+                        child: Text('Quality check'),
+                      ),
+                    if (order.isPickup &&
+                        order.status == OrderStatus.readyForDelivery)
+                      const PopupMenuItem(
+                        value: 'handover',
+                        child: Text('Hand over (pickup)'),
+                      ),
                     if (order.netPaid > 0)
                       const PopupMenuItem(
                         value: 'refund',

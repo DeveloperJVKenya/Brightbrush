@@ -14,7 +14,7 @@ export const paymentRef = (id: string) => db.collection('Payments').doc(id);
 /// pending → succeeded transition ever adds to the order's amountPaid.
 export async function markPaymentSucceeded(
   paymentId: string,
-  details: { receipt?: string; message?: string; providerTxnId?: string } = {},
+  details: { receipt?: string; message?: string; providerTxnId?: string; actor?: string } = {},
 ): Promise<boolean> {
   const applied = await db.runTransaction(async (tx) => {
     const pRef = paymentRef(paymentId);
@@ -45,6 +45,7 @@ export async function markPaymentSucceeded(
       updatedAt: FieldValue.serverTimestamp(),
     });
     tx.update(oRef, {
+      lastUpdatedBy: details.actor ?? 'system:payments',
       amountPaid,
       paymentStatus: paymentStatusFor(o.total as number, amountPaid),
       updatedAt: FieldValue.serverTimestamp(),

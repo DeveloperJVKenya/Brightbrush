@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/widgets/module_spec.dart';
 import '../../../shared/widgets/profile_screen.dart';
-import '../../inventory/presentation/inventory_screen.dart';
+import '../../ops/presentation/production_screen.dart';
+import '../../ops/presentation/supplies_screen.dart';
 import '../../customization/presentation/manager_artwork_screen.dart';
 import '../../quotes/presentation/manager_quotes_screen.dart';
 import 'manager_catalog_screen.dart';
@@ -56,6 +57,15 @@ final List<ModuleSpec> managerModules = [
     screenBuilder: (context, state) => const ManagerOrdersScreen(),
   ),
   ModuleSpec(
+    path: '/manager/production',
+    label: 'Production',
+    icon: Icons.precision_manufacturing_outlined,
+    selectedIcon: Icons.precision_manufacturing,
+    description:
+        'Job cards by stage, machine and operator scheduling, capacity, job sheets and quality checks.',
+    screenBuilder: (context, state) => const ProductionScreen(),
+  ),
+  ModuleSpec(
     path: '/manager/quotes',
     label: 'Quotes',
     icon: Icons.request_quote_outlined,
@@ -89,7 +99,7 @@ final List<ModuleSpec> managerModules = [
     selectedIcon: Icons.inventory,
     description:
         'Paint, blanks, thread and other materials — stock levels and reorder points.',
-    screenBuilder: (context, state) => const InventoryScreen(),
+    screenBuilder: (context, state) => const SuppliesScreen(),
   ),
   ModuleSpec(
     path: '/manager/staff',

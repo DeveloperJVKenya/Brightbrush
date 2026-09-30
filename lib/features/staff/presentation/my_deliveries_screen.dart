@@ -5,6 +5,7 @@ import '../../../core/firebase/firebase_providers.dart';
 import '../../../core/errors/user_facing_error.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../ops/presentation/delivery_completion_sheet.dart';
 import '../../orders/application/orders_providers.dart';
 import '../../orders/domain/order_model.dart';
 import 'widgets/delivery_order_card.dart';
@@ -219,11 +220,12 @@ class _ActiveCard extends ConsumerStatefulWidget {
 class _ActiveCardState extends ConsumerState<_ActiveCard> {
   bool _busy = false;
 
+  /// Completing needs proof: the customer's code, or photo + signature.
   Future<void> _markDelivered() async {
     setState(() => _busy = true);
     try {
-      appLogger.i('[delivery] Marking order ${widget.order.id} delivered');
-      await ref.read(ordersRepositoryProvider).markDelivered(widget.order.id);
+      appLogger.i('[delivery] Completing order ${widget.order.id} with proof');
+      await showDeliveryCompletionSheet(context, widget.order);
     } catch (error, stack) {
       appLogger.e(
         '[delivery] Failed to mark order ${widget.order.id} delivered',

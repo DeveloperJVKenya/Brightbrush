@@ -268,12 +268,85 @@ async function statementSpec(customerId: string, caller: Caller): Promise<[DocSp
   }, `statement-${new Date().toISOString().slice(0, 10)}.pdf`];
 }
 
+async function jobSheetSpec(orderId: string, caller: Caller): Promise<[DocSpec, string]> {
+  if (!isStaff(caller.role, STAFF)) throw new HttpsError('permission-denied', 'Staff only.');
+  const [orderSnap, jobSnap] = await Promise.all([
+    db.collection('Orders').doc(orderId).get(),
+    db.collection('ProductionJobs').doc(orderId).get(),
+  ]);
+  const o = orderSnap.data();
+  if (!o) throw new HttpsError('not-found', 'Order not found.');
+  const job = jobSnap.data() ?? {};
+  const images: Array<{ url: string; caption: string }> = [];
+  const rows: string[][] = [];
+  for (const i of o.items ?? []) {
+    const c = i.customization;
+    rows.push([
+      String(i.name),
+      String(i.quantity),
+      c ? Object.entries(c.sizeQuantities ?? {}).map(([s, q]) => `${s}: ${q}`).join('\n') : '—',
+      c?.colour ?? '—',
+    ]);
+    for (const d of c?.decorations ?? []) {
+      rows.push([
+        `   - ${label(d.placement)} — ${label(d.method)}, ${d.sizeClass}`,
+        '',
+        [d.artworkName, d.text ? `"${d.text}"` : ''].filter(Boolean).join(' ') || '—',
+        (d.threadColours ?? []).join(', ') || '—',
+      ]);
+      if (d.artworkUrl) images.push({ url: d.artworkUrl, caption: `${label(d.placement)}: ${d.artworkName ?? 'artwork'}` });
+    }
+    if (c?.names?.length) rows.push(['   - Names', String(c.names.length), c.names.join(', '), '']);
+  }
+  const due = job.dueDate ?? o.promisedDate;
+  return [{
+    title: 'Job sheet',
+    number: String(o.orderNumber ?? orderId),
+    date: new Date(),
+    meta: [
+      ['Priority', job.priority === 'rush' ? 'RUSH' : 'Normal'],
+      ...(due ? [['Due', formatDate(toDate(due))] as [string, string]] : []),
+      ...(job.machineName ? [['Machine', String(job.machineName)] as [string, string]] : []),
+      ...(job.operatorName ? [['Operator', String(job.operatorName)] as [string, string]] : []),
+      ['Proof', String(o.proofStatus ?? 'n/a')],
+    ],
+    billTo: [o.customerCompany, o.contactName, o.contactPhone, o.deliveryMethod === 'pickup' ? 'Store pickup' : o.deliveryAddress].filter(Boolean),
+    lines: [],
+    table: { headers: ['Item / decoration', 'Qty', 'Sizes / artwork', 'Colour / threads'], widths: [190, 45, 150, 114], rows, alignRight: [1] },
+    totals: [],
+    images,
+    notes: [o.notes ? `Customer notes: ${o.notes}` : '', job.notes ? `Production notes: ${job.notes}` : '', 'QC: check every item against the approved proof before handover.'],
+  }, `jobsheet-${o.orderNumber ?? orderId}.pdf`];
+}
+
+async function purchaseOrderSpec(poId: string, caller: Caller): Promise<[DocSpec, string]> {
+  if (!isStaff(caller.role, STAFF)) throw new HttpsError('permission-denied', 'Staff only.');
+  const po = (await db.collection('PurchaseOrders').doc(poId).get()).data();
+  if (!po) throw new HttpsError('not-found', 'Purchase order not found.');
+  return [{
+    title: 'Purchase order',
+    number: po.poNumber,
+    date: toDate(po.createdAt),
+    meta: po.expectedDate ? [['Needed by', formatDate(toDate(po.expectedDate))]] : [],
+    billTo: ['SUPPLIER', po.supplierName, po.supplierContact].filter(Boolean),
+    lines: (po.lines ?? []).map((l: any) => ({
+      description: l.name,
+      detail: l.unit ? `Unit: ${l.unit}` : undefined,
+      quantity: l.quantity,
+      unitPrice: l.unitCost,
+      amount: l.quantity * l.unitCost,
+    })),
+    totals: [{ label: 'Total', amount: po.total ?? 0, bold: true }],
+    notes: [po.notes ?? '', 'Please quote the PO number on your delivery note and invoice.'],
+  }, `${po.poNumber}.pdf`];
+}
+
 /// Returns a PDF (base64) for an invoice, receipt, credit note, quote or
 /// account statement. Customers get their own documents; staff get any.
 export const getDocument = onCall({ memory: '512MiB' }, async (request) => {
   const caller = await loadCaller(request);
   const data = asObject(request.data);
-  const kind = requireEnum(data, 'kind', ['invoice', 'receipt', 'creditNote', 'quote', 'statement']);
+  const kind = requireEnum(data, 'kind', ['invoice', 'receipt', 'creditNote', 'quote', 'statement', 'jobSheet', 'purchaseOrder']);
   const settings = await loadBusinessSettings();
   const id = kind === 'statement'
     ? (typeof data.id === 'string' && data.id ? data.id : caller.uid)
@@ -283,6 +356,8 @@ export const getDocument = onCall({ memory: '512MiB' }, async (request) => {
     : kind === 'receipt' ? await receiptSpec(id, caller, settings)
     : kind === 'creditNote' ? await creditNoteSpec(id, caller, settings)
     : kind === 'quote' ? await quoteSpec(id, caller, settings)
+    : kind === 'jobSheet' ? await jobSheetSpec(id, caller)
+    : kind === 'purchaseOrder' ? await purchaseOrderSpec(id, caller)
     : await statementSpec(id, caller);
   const pdf = await renderPdf(settings, spec);
   return { fileName, base64: pdf.toString('base64') };

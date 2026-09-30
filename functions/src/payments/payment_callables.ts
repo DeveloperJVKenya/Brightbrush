@@ -256,7 +256,7 @@ export const recordManualPayment = onCall(async (request) => {
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
   });
-  await markPaymentSucceeded(pRef.id);
+  await markPaymentSucceeded(pRef.id, { actor: caller.uid });
   logger.info('[payments] manual payment recorded', {
     paymentId: pRef.id,
     orderId,

@@ -3,6 +3,19 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../customization/domain/customization_options.dart';
 import 'catalog_category.dart';
 
+/// One bill-of-materials row: stock material consumed per piece.
+class MaterialUse {
+  const MaterialUse({required this.materialId, required this.perUnit});
+
+  final String materialId;
+  final num perUnit;
+
+  Map<String, dynamic> toMap() => {
+    'materialId': materialId,
+    'perUnit': perUnit,
+  };
+}
+
 class CatalogItem {
   const CatalogItem({
     required this.id,
@@ -24,6 +37,7 @@ class CatalogItem {
     this.colours = const [],
     this.decorationMethods = const [],
     this.placements = const [],
+    this.materials = const [],
   });
 
   final String id;
@@ -54,6 +68,9 @@ class CatalogItem {
   /// method is customisable: customers configure it before adding to cart.
   final List<DecorationMethod> decorationMethods;
   final List<Placement> placements;
+
+  /// Deducted from stock by the server when an order goes into production.
+  final List<MaterialUse> materials;
 
   bool get isCustomizable =>
       decorationMethods.isNotEmpty && placements.isNotEmpty;
@@ -89,6 +106,7 @@ class CatalogItem {
     colours: colours,
     decorationMethods: decorationMethods,
     placements: placements,
+    materials: materials,
   );
 
   /// Fields checked by search — spans name, category label, description and
@@ -139,6 +157,14 @@ class CatalogItem {
         for (final pl in (d['placements'] as List? ?? const []))
           ?Placement.fromName(pl as String?),
       ],
+      materials: [
+        for (final m in (d['materials'] as List? ?? const []))
+          if (m is Map && m['materialId'] is String)
+            MaterialUse(
+              materialId: m['materialId'] as String,
+              perUnit: m['perUnit'] as num? ?? 0,
+            ),
+      ],
     );
   }
 
@@ -148,6 +174,7 @@ class CatalogItem {
     'colours': [for (final c in colours) c.toMap()],
     'decorationMethods': [for (final m in decorationMethods) m.name],
     'placements': [for (final pl in placements) pl.name],
+    'materials': [for (final m in materials) m.toMap()],
   };
 
   Map<String, dynamic> toFirestoreCreate({required String uid}) {

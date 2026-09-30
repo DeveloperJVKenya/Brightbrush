@@ -174,6 +174,7 @@ export async function priceCartLines(
       category: (d.category as string) ?? 'other',
       unitPrice: Math.round(price.lineTotal / price.quantity),
       quantity: price.quantity,
+      leadTimeDays: typeof d.leadTimeDays === 'number' ? d.leadTimeDays : 7,
       lineTotal: price.lineTotal,
       customization: {
         ...(config.colour ? { colour: config.colour } : {}),

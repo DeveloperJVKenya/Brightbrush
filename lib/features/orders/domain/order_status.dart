@@ -11,6 +11,7 @@ enum OrderStatus {
     label: 'In Production',
     icon: Icons.precision_manufacturing_outlined,
   ),
+  qualityCheck(label: 'Quality check', icon: Icons.fact_check_rounded),
   readyForDelivery(
     label: 'Ready for Delivery',
     icon: Icons.inventory_2_outlined,
@@ -41,6 +42,7 @@ enum OrderStatus {
     OrderStatus.confirmed,
     OrderStatus.awaitingProof,
     OrderStatus.inProduction,
+    OrderStatus.qualityCheck,
     OrderStatus.readyForDelivery,
     OrderStatus.outForDelivery,
     OrderStatus.completed,

@@ -5,8 +5,10 @@ import '../../../core/errors/user_facing_error.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/live_orders_map.dart';
+import '../../ops/presentation/delivery_completion_sheet.dart';
 import '../../orders/application/orders_providers.dart';
 import '../../orders/domain/order_model.dart';
+import 'route_plan_sheet.dart';
 
 /// Shows the signed-in delivery staff member's active drops as pins on a
 /// real Google Map.
@@ -38,13 +40,29 @@ class RouteMapScreen extends ConsumerWidget {
           ),
         );
       },
-      data: (orders) => LiveOrdersMap(
-        orders: orders,
-        emptyIcon: Icons.map_outlined,
-        emptyTitle: 'No active route',
-        emptyMessage:
-            'Claim a delivery from My Deliveries and its stop will show up here.',
-        onMarkerTap: _showStopSheet,
+      data: (orders) => Stack(
+        children: [
+          Positioned.fill(
+            child: LiveOrdersMap(
+              orders: orders,
+              emptyIcon: Icons.map_outlined,
+              emptyTitle: 'No active route',
+              emptyMessage:
+                  'Claim a delivery from My Deliveries and its stop will show up here.',
+              onMarkerTap: _showStopSheet,
+            ),
+          ),
+          if (orders.length > 1)
+            Positioned(
+              right: 16,
+              bottom: 16,
+              child: FloatingActionButton.extended(
+                onPressed: () => showRoutePlanSheet(context, orders),
+                icon: const Icon(Icons.route_rounded),
+                label: const Text('Plan route'),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -94,11 +112,10 @@ class RouteMapScreen extends ConsumerWidget {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      onPressed: () async {
+                      onPressed: () {
+                        final outer = Navigator.of(context).context;
                         Navigator.of(context).pop();
-                        await ref
-                            .read(ordersRepositoryProvider)
-                            .markDelivered(order.id);
+                        showDeliveryCompletionSheet(outer, order);
                       },
                       icon: const Icon(Icons.check_circle_outline_rounded),
                       label: const Text('Mark delivered'),

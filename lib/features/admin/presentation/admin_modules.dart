@@ -4,7 +4,8 @@ import '../../../shared/widgets/module_spec.dart';
 import '../../assets/presentation/admin_assets_screen.dart';
 import '../../commerce/presentation/accounts_receivables_screen.dart';
 import '../../financials/presentation/admin_financials_screen.dart';
-import '../../inventory/presentation/inventory_screen.dart';
+import '../../ops/presentation/audit_log_screen.dart';
+import '../../ops/presentation/supplies_screen.dart';
 import '../../marketing/presentation/admin_marketing_screen.dart';
 import '../../payments/presentation/admin_payments_screen.dart';
 import 'admin_deliveries_screen.dart';
@@ -100,7 +101,7 @@ final List<ModuleSpec> adminModules = [
     selectedIcon: Icons.inventory,
     description:
         'Materials (paint, blanks, thread) and supplier relationships.',
-    screenBuilder: (context, state) => const InventoryScreen(),
+    screenBuilder: (context, state) => const SuppliesScreen(),
   ),
   ModuleSpec(
     path: '/admin/marketing',
@@ -119,6 +120,15 @@ final List<ModuleSpec> adminModules = [
     description:
         'Analytics across sales, production and delivery, with a copyable summary.',
     screenBuilder: (context, state) => const AdminReportsScreen(),
+  ),
+  ModuleSpec(
+    path: '/admin/audit',
+    label: 'Audit log',
+    icon: Icons.history_rounded,
+    selectedIcon: Icons.manage_history_rounded,
+    description:
+        'Who changed prices, roles, payments, refunds, settings and orders — permanent and tamper-proof.',
+    screenBuilder: (context, state) => const AuditLogScreen(),
   ),
   ModuleSpec(
     path: '/admin/settings',

@@ -4,7 +4,10 @@ import {
   Transaction,
 } from 'firebase-admin/firestore';
 
+import { randomInt } from 'node:crypto';
+
 import { db } from '../core/app';
+import { promisedDate } from '../ops/materials';
 import { OrderTotals } from './pricing';
 
 export interface PricedLine {
@@ -17,6 +20,8 @@ export interface PricedLine {
   /// Set for customised lines, whose total isn't unitPrice × quantity
   /// (one-off setup fees, size surcharges, personalisation).
   lineTotal?: number;
+  /// Catalog lead time, used for the promised completion date.
+  leadTimeDays?: number;
   customization?: Record<string, unknown>;
   pricing?: Record<string, number>;
 }
@@ -68,6 +73,14 @@ export function writeOrder(
   },
 ): void {
   const { totals } = params;
+  const lead = Math.max(0, ...params.lines.map((l) => l.leadTimeDays ?? 7));
+  // The customer's secret handover code: only they can read it
+  // (OrderSecrets rules), and the driver must enter it (or capture a photo
+  // and signature) to complete the delivery.
+  tx.create(db.collection('OrderSecrets').doc(params.ref.id), {
+    customerId: params.customerId,
+    deliveryCode: String(randomInt(0, 10000)).padStart(4, '0'),
+  });
   tx.create(params.ref, {
     orderNumber: params.orderNumber,
     // One invoice per order, numbered in step with the order (gapless).
@@ -85,11 +98,16 @@ export function writeOrder(
       category: l.category,
       unitPrice: l.unitPrice,
       quantity: l.quantity,
+      ...(l.leadTimeDays !== undefined ? { leadTimeDays: l.leadTimeDays } : {}),
       ...(l.lineTotal !== undefined ? { lineTotal: l.lineTotal } : {}),
       ...(l.customization ? { customization: l.customization } : {}),
       ...(l.pricing ? { pricing: l.pricing } : {}),
     })),
     requiresProof: params.requiresProof === true,
+    promisedDate: promisedDate(new Date(), lead),
+    // Quality check must pass before the order can be handed over.
+    qcStatus: 'pending',
+    lastUpdatedBy: params.customerId,
     proofStatus: params.requiresProof === true ? 'required' : 'notRequired',
     subtotal: totals.subtotal,
     deliveryFee: totals.deliveryFee,

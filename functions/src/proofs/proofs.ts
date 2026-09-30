@@ -55,6 +55,7 @@ export const sendProof = onCall(async (request) => {
       createdAt: FieldValue.serverTimestamp(),
     });
     tx.update(orderRef, {
+      lastUpdatedBy: caller.uid,
       status: 'awaitingProof',
       proofStatus: 'pending',
       proofVersion: next,
@@ -99,6 +100,7 @@ export const respondToProof = onCall(async (request) => {
       respondedAt: FieldValue.serverTimestamp(),
     });
     tx.update(orderRef, {
+      lastUpdatedBy: caller.uid,
       proofStatus: decision,
       updatedAt: FieldValue.serverTimestamp(),
     });

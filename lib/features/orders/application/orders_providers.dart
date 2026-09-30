@@ -11,6 +11,7 @@ final ordersRepositoryProvider = Provider<OrdersRepository>((ref) {
   return OrdersRepository(
     ref.watch(firestoreProvider),
     ref.watch(firebaseFunctionsProvider),
+    () => ref.read(currentUidProvider),
   );
 });
 

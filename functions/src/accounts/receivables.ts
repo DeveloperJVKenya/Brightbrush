@@ -23,10 +23,10 @@ export const markOverdueInvoices = onSchedule(
       const balance = (o.total ?? 0) - ((o.amountPaid ?? 0) - (o.refundedAmount ?? 0));
       const overdue = o.status !== 'cancelled' && balance > 0;
       if (overdue && o.overdue !== true) {
-        writer.update(doc.ref, { overdue: true, updatedAt: FieldValue.serverTimestamp() });
+        writer.update(doc.ref, { overdue: true, lastUpdatedBy: 'system:overdue', updatedAt: FieldValue.serverTimestamp() });
         flagged++;
       } else if (!overdue && o.overdue === true) {
-        writer.update(doc.ref, { overdue: false, updatedAt: FieldValue.serverTimestamp() });
+        writer.update(doc.ref, { overdue: false, lastUpdatedBy: 'system:overdue', updatedAt: FieldValue.serverTimestamp() });
         cleared++;
       }
     }

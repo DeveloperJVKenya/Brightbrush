@@ -270,12 +270,12 @@ async function submit(orderId: string, creditNote?: { refundId: string }): Promi
       mode: config.mode,
       submittedAt: FieldValue.serverTimestamp(),
     };
-    await target.update({ etims });
+    await target.update({ etims, lastUpdatedBy: 'system:etims' });
     logger.info('[etims] submitted', { orderId, invcNo, creditNote: !!creditNote });
     return etims;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    await target.update({ etims: { status: 'failed', invcNo, error: message.slice(0, 300), mode: config.mode, submittedAt: FieldValue.serverTimestamp() } });
+    await target.update({ lastUpdatedBy: 'system:etims', etims: { status: 'failed', invcNo, error: message.slice(0, 300), mode: config.mode, submittedAt: FieldValue.serverTimestamp() } });
     logger.error('[etims] submission failed', { orderId, invcNo, message });
     throw new HttpsError('unavailable', `KRA rejected the invoice: ${message}`);
   }

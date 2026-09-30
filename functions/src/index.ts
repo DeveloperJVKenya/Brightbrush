@@ -34,3 +34,20 @@ export {
 } from './etims/etims';
 export { getDocument } from './documents/documents';
 export { exportAccounting, markOverdueInvoices } from './accounts/receivables';
+export { onOrderChanged } from './ops/order_events';
+export {
+  auditAccounts,
+  auditCatalog,
+  auditCoupons,
+  auditGateways,
+  auditManualPayments,
+  auditRefunds,
+  auditSettings,
+  auditUsers,
+} from './ops/audit';
+export {
+  completeDelivery,
+  createPurchaseOrder,
+  receivePurchaseOrder,
+  recordQualityCheck,
+} from './ops/ops_callables';

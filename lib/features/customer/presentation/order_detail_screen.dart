@@ -11,6 +11,7 @@ import '../../orders/application/orders_providers.dart';
 import '../../orders/domain/order_model.dart';
 import '../../orders/domain/order_status.dart';
 import '../../commerce/presentation/order_documents_panel.dart';
+import '../../ops/presentation/order_timeline.dart';
 import '../../customization/presentation/widgets/customization_summary.dart';
 import '../../payments/presentation/widgets/order_payment_panel.dart';
 import '../../proofs/presentation/proof_widgets.dart';
@@ -100,6 +101,8 @@ class _OrderDetailBody extends ConsumerWidget {
               ?_outcomeBanner(context),
               _StatusCard(order: order),
               const SizedBox(height: 16),
+              DeliveryCodeCard(order: order),
+              const SizedBox(height: 16),
               CustomerProofPanel(order: order),
               const SizedBox(height: 16),
               OrderPaymentPanel(order: order),
@@ -109,6 +112,8 @@ class _OrderDetailBody extends ConsumerWidget {
               _ItemsSection(order: order),
               const SizedBox(height: 16),
               _DeliverySection(order: order),
+              const SizedBox(height: 16),
+              OrderTimeline(order: order),
             ],
           );
         }
@@ -120,6 +125,8 @@ class _OrderDetailBody extends ConsumerWidget {
               children: [
                 ?_outcomeBanner(context),
                 _StatusCard(order: order),
+                const SizedBox(height: 16),
+                DeliveryCodeCard(order: order),
                 const SizedBox(height: 16),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,6 +151,8 @@ class _OrderDetailBody extends ConsumerWidget {
                           OrderDocumentsPanel(order: order),
                           const SizedBox(height: 16),
                           _DeliverySection(order: order),
+                          const SizedBox(height: 16),
+                          OrderTimeline(order: order),
                         ],
                       ),
                     ),

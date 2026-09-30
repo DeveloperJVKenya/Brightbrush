@@ -149,6 +149,7 @@ export const placeOrder = onCall(async (request) => {
         category: (d.category as string) ?? 'other',
         unitPrice: d.basePrice as number,
         quantity,
+        leadTimeDays: typeof d.leadTimeDays === 'number' ? d.leadTimeDays : 7,
       };
     });
 

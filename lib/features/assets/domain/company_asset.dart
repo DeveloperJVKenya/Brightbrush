@@ -44,9 +44,13 @@ class CompanyAsset {
     required this.createdBy,
     required this.createdAt,
     required this.updatedAt,
+    this.dailyCapacityMinutes = 480,
   });
 
   final String id;
+
+  /// Machines: productive minutes per day, for production scheduling.
+  final int dailyCapacityMinutes;
   final String name;
   final AssetCategory category;
   final AssetCondition condition;
@@ -78,6 +82,7 @@ class CompanyAsset {
       updatedAt:
           (d['updatedAt'] as Timestamp?)?.toDate() ??
           DateTime.fromMillisecondsSinceEpoch(0),
+      dailyCapacityMinutes: (d['dailyCapacityMinutes'] as num?)?.toInt() ?? 480,
     );
   }
 
@@ -89,6 +94,7 @@ class CompanyAsset {
       if (purchaseDate != null)
         'purchaseDate': Timestamp.fromDate(purchaseDate!),
       if (notes.isNotEmpty) 'notes': notes,
+      'dailyCapacityMinutes': dailyCapacityMinutes,
       'createdBy': uid,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
@@ -103,6 +109,7 @@ class CompanyAsset {
       if (purchaseDate != null)
         'purchaseDate': Timestamp.fromDate(purchaseDate!),
       if (notes.isNotEmpty) 'notes': notes,
+      'dailyCapacityMinutes': dailyCapacityMinutes,
       'createdBy': createdBy,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': FieldValue.serverTimestamp(),

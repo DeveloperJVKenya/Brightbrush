@@ -8,7 +8,15 @@ import '../../../core/logging/app_logger.dart';
 import '../../../core/logging/stream_error_logger.dart';
 
 /// PDF kinds the getDocument function can produce.
-enum DocumentKind { invoice, receipt, creditNote, quote, statement }
+enum DocumentKind {
+  invoice,
+  receipt,
+  creditNote,
+  quote,
+  statement,
+  jobSheet,
+  purchaseOrder,
+}
 
 class CustomerAccount {
   const CustomerAccount({

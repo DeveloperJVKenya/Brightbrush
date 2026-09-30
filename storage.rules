@@ -112,6 +112,23 @@ service firebase.storage {
       allow delete: if isOrderStaff();
     }
 
+    // Proof of delivery (handover photo, signature) by the assigned driver
+    // or store staff; the order's customer can see it.
+    match /pod/{orderId}/{fileName} {
+      allow read: if isOrderStaff() ||
+        (isAuthenticated() &&
+          firestore.get(/databases/brightbrush-main/documents/Orders/$(orderId)).data.customerId == request.auth.uid);
+      allow create: if isValidImageUpload() && (isOrderStaff() ||
+        (isAuthenticated() &&
+          firestore.get(/databases/brightbrush-main/documents/Orders/$(orderId)).data.assignedStaffId == request.auth.uid));
+    }
+
+    // Quality-check photos (store staff).
+    match /qc/{orderId}/{fileName} {
+      allow read: if isOrderStaff();
+      allow create: if isOrderStaff() && isValidImageUpload();
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

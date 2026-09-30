@@ -38,6 +38,7 @@ export const deleteMyAccount = onCall(async (request) => {
   const writer = db.bulkWriter();
   for (const order of orders.docs) {
     writer.update(order.ref, {
+      lastUpdatedBy: 'system:accountDeletion',
       contactName: 'Deleted user',
       contactPhone: 'deleted',
       deliveryAddress: 'Removed on account deletion',

@@ -148,6 +148,7 @@ export const issueRefund = onCall(async (request) => {
       createdAt: FieldValue.serverTimestamp(),
     });
     tx.update(orderRef, {
+      lastUpdatedBy: caller.uid,
       refundedAmount: refundedTotal,
       ...(refundedTotal > 0 && refundedTotal >= (o.amountPaid ?? 0)
         ? { paymentStatus: 'refunded' }

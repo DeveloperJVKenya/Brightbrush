@@ -36,6 +36,16 @@ Ordering, production and delivery app for a Kenyan embroidery and branding busin
 - **Credit terms**: business accounts can pay "on account" with net-X terms and a credit limit. A daily job (06:00 Nairobi time) marks unpaid invoices overdue. The Receivables tab shows aging, statements and a pre-filled WhatsApp reminder.
 - **Accounting export**: CSVs of sales (Xero sales-invoice layout, which QuickBooks also imports), payments, refunds and expenses, with a cash-basis profit & loss summary.
 
+## Operations
+
+- **Order history.** `onOrderChanged` records every status, payment, assignment, proof, QC and eTIMS change in `Orders/{id}/Events` with its author. Client order updates must set `lastUpdatedBy` to the signed-in user, and the rules reject any that don't.
+- **Production.** Each confirmed order gets a `ProductionJobs/{orderId}` card with a promised date based on lead time in working days. **Manager → Production** has the job board, machine and operator scheduling, a capacity week view (machines are Company Assets with daily hours), and a job sheet PDF with the artwork.
+- **Stock.** Each catalog item has a bill of materials. Stock is deducted when an order enters production, restored if it's cancelled, and every change is logged in `InventoryMovements`. Numbered purchase orders ("suggest from low stock", PO PDF) add stock when received and can book the cost as an expense.
+- **Quality check.** Nothing reaches *ready for delivery* until `recordQualityCheck` passes the checklist; the rules enforce this.
+- **Proof of delivery.** Each order has a secret 4-digit code in `OrderSecrets` that only the customer can read. `completeDelivery` needs that code, or a handover photo plus a signature. Drivers can no longer mark an order delivered directly.
+- **Route planning.** Stops are ordered nearest-neighbour + 2-opt from the shop address and opened as a single multi-stop Google Maps route.
+- **Audit log.** Triggers record changes to roles, prices, settings, gateways, business accounts, coupons, refunds, manual payments and order moves in `AuditLog`, which is admin-read-only and append-only.
+
 ## Payment gateways
 
 M-Pesa (Daraja STK Push), Stripe Checkout, PayPal and Flutterwave are fully implemented. Each stays hidden from customers until an **Admin** opens **Payments & Settings**, pastes that provider's credentials, passes **Test connection**, and switches it on.

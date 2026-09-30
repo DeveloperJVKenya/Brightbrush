@@ -34,6 +34,9 @@ class _AssetFormSheetState extends ConsumerState<_AssetFormSheet> {
   final _formKey = GlobalKey<FormState>();
   late final _name = TextEditingController(text: widget.existing?.name ?? '');
   late final _notes = TextEditingController(text: widget.existing?.notes ?? '');
+  late final _capacity = TextEditingController(
+    text: '${((widget.existing?.dailyCapacityMinutes ?? 480) / 60).round()}',
+  );
   late AssetCategory _category =
       widget.existing?.category ?? AssetCategory.equipment;
   late AssetCondition _condition =
@@ -46,6 +49,7 @@ class _AssetFormSheetState extends ConsumerState<_AssetFormSheet> {
   void dispose() {
     _name.dispose();
     _notes.dispose();
+    _capacity.dispose();
     super.dispose();
   }
 
@@ -79,6 +83,8 @@ class _AssetFormSheetState extends ConsumerState<_AssetFormSheet> {
         condition: _condition,
         purchaseDate: _purchaseDate,
         notes: _notes.text.trim(),
+        dailyCapacityMinutes:
+            ((int.tryParse(_capacity.text.trim()) ?? 8).clamp(1, 24)) * 60,
         createdBy: widget.existing?.createdBy ?? uid ?? '',
         createdAt: widget.existing?.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
@@ -189,6 +195,15 @@ class _AssetFormSheetState extends ConsumerState<_AssetFormSheet> {
                 trailing: const Icon(Icons.calendar_today_outlined),
                 onTap: _pickDate,
               ),
+              if (_category == AssetCategory.machine)
+                TextFormField(
+                  controller: _capacity,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Productive hours per day',
+                    helperText: 'Used to spot overbooked days in Production',
+                  ),
+                ),
               TextFormField(
                 controller: _notes,
                 decoration: const InputDecoration(
