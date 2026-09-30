@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "bright-brush"
+    "default": "bright-brush",
+    "production": "bright-brush"
   }
 }

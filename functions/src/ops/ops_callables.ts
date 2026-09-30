@@ -6,6 +6,7 @@ import { HttpsError, onCall } from 'firebase-functions/v2/https';
 
 import { db } from '../core/app';
 import { isStaff, loadCaller, requireRole } from '../core/authz';
+import { rateLimit } from '../platform/platform';
 import { asObject, optionalString, requireString } from '../core/validate';
 
 export const QC_CHECKLIST = [
@@ -82,6 +83,7 @@ function codesMatch(a: string, b: string): boolean {
 /// mark orders delivered without one of these (firestore.rules).
 export const completeDelivery = onCall(async (request) => {
   const caller = await loadCaller(request);
+  await rateLimit(`completeDelivery_${caller.uid}`, 30, 600);
   const data = asObject(request.data);
   const orderId = requireString(data, 'orderId', 'Order', 1, 100);
   const recipientName = requireString(data, 'recipientName', 'Recipient name', 2, 80);

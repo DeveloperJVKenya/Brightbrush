@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/monitoring/monitoring.dart';
 
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/errors/user_facing_error.dart';
@@ -207,9 +208,11 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
                   ? email
                   : _displayName.text.trim(),
             );
+        Monitoring.signUp();
       } else {
         appLogger.i('[auth] Signing in $email');
         await auth.signInWithEmailAndPassword(email: email, password: password);
+        Monitoring.login();
       }
     });
   }

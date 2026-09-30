@@ -11,6 +11,7 @@ import '../../catalog/application/catalog_providers.dart';
 import '../../orders/application/orders_providers.dart';
 import '../../orders/domain/order_model.dart';
 import '../../orders/domain/order_status.dart';
+import '../../reports/order_stats.dart';
 
 /// System Manager's landing screen: what needs attention today, at a
 /// glance, plus a shortcut into every other Manager section.
@@ -161,6 +162,8 @@ class ManagerDashboardScreen extends ConsumerWidget {
                       ],
                     ],
                   ),
+                const SizedBox(height: 28),
+                const AllTimeStatsSection(),
                 const SizedBox(height: 28),
                 Text(
                   'Jump to',

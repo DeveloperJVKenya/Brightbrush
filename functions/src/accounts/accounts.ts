@@ -4,6 +4,7 @@ import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { db } from '../core/app';
 import { loadCaller } from '../core/authz';
 import { asObject, requireNumber } from '../core/validate';
+import { rateLimit } from '../platform/platform';
 import { Coupon, computeDiscount } from '../orders/pricing';
 
 /// CustomerAccounts/{uid} — set by Admin/CEO for business customers:
@@ -151,6 +152,7 @@ export function redeemCoupon(
 /// directly (codes would leak), so validation happens here.
 export const previewDiscount = onCall(async (request) => {
   const caller = await loadCaller(request);
+  await rateLimit(`previewDiscount_${caller.uid}`, 30, 600);
   const data = asObject(request.data);
   const subtotal = requireNumber(data, 'subtotal', 'Subtotal', 0, 1e10);
   const rawCode = typeof data.couponCode === 'string' ? data.couponCode : '';

@@ -10,6 +10,7 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../support/application/support_providers.dart';
 import '../../../shared/whatsapp.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../payments/application/payments_providers.dart';
 import '../../support/domain/support_ticket.dart';
 
 class CustomerSupportScreen extends ConsumerStatefulWidget {
@@ -116,6 +117,7 @@ class _CustomerSupportScreenState extends ConsumerState<CustomerSupportScreen> {
               label: AppLocalizations.of(context).whatsappUs,
               message: AppLocalizations.of(context).waSupportMessage,
             ),
+            const _ContactInfo(),
             const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.all(16),
@@ -294,6 +296,57 @@ class _TicketCard extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Working hours, phone and email from Settings → Business.
+class _ContactInfo extends ConsumerWidget {
+  const _ContactInfo();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(businessSettingsProvider).valueOrNull;
+    if (s == null) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    final rows = <(IconData, String)>[
+      if (s.workingHours.isNotEmpty)
+        (
+          Icons.schedule_rounded,
+          '${AppLocalizations.of(context).workingHours}: ${s.workingHours}',
+        ),
+      if (s.supportPhone.isNotEmpty) (Icons.call_outlined, s.supportPhone),
+      if (s.supportEmail.isNotEmpty)
+        (Icons.mail_outline_rounded, s.supportEmail),
+    ];
+    if (rows.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final (icon, text) in rows)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                children: [
+                  Icon(
+                    icon,
+                    size: 18,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: SelectableText(
+                      text,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }

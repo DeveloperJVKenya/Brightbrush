@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
@@ -6,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
+import 'core/firebase/firebase_providers.dart';
+import 'core/monitoring/monitoring.dart';
 import 'core/settings/shared_preferences_provider.dart';
 import 'firebase_options.dart';
 
@@ -30,6 +33,16 @@ void main() async {
         ? const AppleDebugProvider()
         : const AppleAppAttestProvider(),
   );
+  // Offline cache (on by default on mobile; web needs it switched on) so
+  // screens open instantly and drivers keep working with a patchy signal.
+  FirebaseFirestore.instanceFor(
+    app: Firebase.app(),
+    databaseId: firestoreDatabaseId,
+  ).settings = const Settings(
+    persistenceEnabled: true,
+    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+  );
+  await Monitoring.init();
   final prefs = await SharedPreferences.getInstance();
   runApp(
     ProviderScope(

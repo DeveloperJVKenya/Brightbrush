@@ -104,7 +104,7 @@ class DeliveryOrderCard extends StatelessWidget {
                     context,
                     phone: order.contactPhone,
                     message:
-                        'Hello ${order.contactName}, this is your BrightBrush driver with order ${order.displayNumber}. I\'m on my way to ${order.deliveryAddress}. ',
+                        'Hello ${order.contactName}, this is your ${businessNameOf(context)} driver with order ${order.displayNumber}. I\'m on my way to ${order.deliveryAddress}. ',
                   ),
                   icon: const Icon(
                     Icons.chat_rounded,

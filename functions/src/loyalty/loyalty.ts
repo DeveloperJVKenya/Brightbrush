@@ -7,6 +7,7 @@ import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { db } from '../core/app';
 import { loadCaller } from '../core/authz';
 import { asObject, requireString } from '../core/validate';
+import { rateLimit } from '../platform/platform';
 import { notifyUser } from '../notifications/notify';
 
 /// Settings/loyalty (admin-editable).
@@ -175,6 +176,7 @@ export const getMyReferralCode = onCall(async (request) => {
 /// New customers enter a friend's code before their first order.
 export const claimReferral = onCall(async (request) => {
   const caller = await loadCaller(request);
+  await rateLimit(`claimReferral_${caller.uid}`, 5, 3600);
   const data = asObject(request.data);
   const code = requireString(data, 'code', 'Referral code', 4, 20).toUpperCase().replace(/\s/g, '');
   const [codeSnap, orders, existing] = await Promise.all([

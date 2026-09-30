@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng;
+import '../../../core/monitoring/monitoring.dart';
 
 import '../../../core/errors/user_facing_error.dart';
 import '../../../core/firebase/firebase_providers.dart';
@@ -235,6 +236,9 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
   @override
   void initState() {
     super.initState();
+    Monitoring.beginCheckout(
+      widget.lines.fold<num>(0, (t, l) => t + l.unitPrice * l.quantity),
+    );
     final user = ref.read(currentUserProvider);
     _contactName.text = user?.displayName ?? '';
     _contactPhone.text = user?.phoneNumber ?? '';

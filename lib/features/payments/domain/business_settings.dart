@@ -55,6 +55,7 @@ class BusinessSettings {
     this.pickupAddress = '',
     this.webPushVapidKey = '',
     this.whatsappNumber = '',
+    this.workingHours = '',
   });
 
   final String businessName;
@@ -93,6 +94,9 @@ class BusinessSettings {
   /// back to the support phone when empty.
   final String whatsappNumber;
 
+  /// Free text shown on the support screen, e.g. "Mon–Fri 8am–6pm, Sat 9am–1pm".
+  final String workingHours;
+
   bool get depositsAvailable =>
       allowDeposit && depositPercent > 0 && depositPercent < 100;
 
@@ -129,6 +133,7 @@ class BusinessSettings {
       pickupAddress: str('pickupAddress', f.pickupAddress),
       webPushVapidKey: str('webPushVapidKey', f.webPushVapidKey),
       whatsappNumber: str('whatsappNumber', f.whatsappNumber),
+      workingHours: str('workingHours', f.workingHours),
     );
   }
 
@@ -154,6 +159,7 @@ class BusinessSettings {
       'pickupAddress': pickupAddress,
       'webPushVapidKey': webPushVapidKey,
       'whatsappNumber': whatsappNumber,
+      'workingHours': workingHours,
       'updatedAt': FieldValue.serverTimestamp(),
       'updatedBy': uid,
     };

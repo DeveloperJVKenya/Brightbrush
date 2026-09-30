@@ -31,6 +31,7 @@ import {
   writeOrder,
 } from './order_writer';
 import { computeDiscount, computeTotals } from './pricing';
+import { rateLimit } from '../platform/platform';
 
 export { readContact } from './fulfilment';
 
@@ -46,6 +47,7 @@ const MAX_QUANTITY = 100000;
 /// totals — so nothing about what's charged can be tampered with.
 export const placeOrder = onCall(async (request) => {
   const caller = await loadCaller(request);
+  await rateLimit(`placeOrder_${caller.uid}`, 10, 600);
   const data = asObject(request.data);
   const paymentPlan = requireEnum(data, 'paymentPlan', ['full', 'deposit', 'credit'], 'full');
   const couponCode = normalizeCouponCode(

@@ -19,6 +19,7 @@ import { GATEWAY_IDS, GatewayId, loadGateway } from './gateway_config';
 import { ProviderError } from './http_util';
 import { markPaymentClosed, markPaymentSucceeded, paymentRef } from './ledger';
 import { PROVIDERS } from './providers';
+import { rateLimit } from '../platform/platform';
 import { normalizeKenyanPhone } from './providers/mpesa';
 
 /// A second M-Pesa prompt while the first is still open confuses customers
@@ -38,6 +39,7 @@ function friendlyProviderError(error: unknown): string {
 /// outstanding balance) — the client only picks which of the two.
 export const initiatePayment = onCall(async (request) => {
   const caller = await loadCaller(request);
+  await rateLimit(`initiatePayment_${caller.uid}`, 10, 600);
   const data = asObject(request.data);
   const orderId = requireString(data, 'orderId', 'Order', 1, 100);
   const gatewayId = requireEnum<GatewayId>(data, 'gateway', GATEWAY_IDS);
@@ -177,6 +179,7 @@ export const initiatePayment = onCall(async (request) => {
 /// when a callback is lost or the customer closed the checkout tab early.
 export const refreshPaymentStatus = onCall(async (request) => {
   const caller = await loadCaller(request);
+  await rateLimit(`refreshPayment_${caller.uid}`, 30, 600);
   const data = asObject(request.data);
   const paymentId = requireString(data, 'paymentId', 'Payment', 1, 100);
   const snap = await paymentRef(paymentId).get();

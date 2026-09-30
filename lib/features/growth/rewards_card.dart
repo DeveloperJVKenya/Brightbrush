@@ -8,6 +8,7 @@ import '../../core/firebase/firebase_providers.dart';
 import '../../core/formatting/currency.dart';
 import '../payments/application/payments_providers.dart';
 import 'growth_providers.dart';
+import '../../shared/whatsapp.dart';
 
 /// Profile card: loyalty points, the customer's referral code to share,
 /// and a place to enter a friend's code before the first order.
@@ -46,7 +47,7 @@ class _RewardsCardState extends ConsumerState<RewardsCard> {
         ref.read(businessSettingsProvider).valueOrNull?.appBaseUrl ??
         'https://bright-brush.web.app';
     final text =
-        'Get your custom branding from BrightBrush Creations! Use my code $_code when you sign up '
+        'Get your custom branding from ${businessNameOf(context)}! Use my code $_code when you sign up '
         'and we both get ${s.referralBonusPoints} points after your first order. $base';
     await SharePlus.instance.share(ShareParams(text: text));
   }

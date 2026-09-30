@@ -8,6 +8,7 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../ops/presentation/delivery_completion_sheet.dart';
 import '../../orders/application/orders_providers.dart';
 import '../../orders/domain/order_model.dart';
+import '../../ops/application/pending_deliveries.dart';
 import 'widgets/delivery_order_card.dart';
 
 class MyDeliveriesScreen extends StatelessWidget {
@@ -38,6 +39,8 @@ class MyDeliveriesScreen extends StatelessWidget {
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
+                  const SizedBox(height: 8),
+                  const PendingDeliveriesBanner(),
                 ],
               ),
             ),

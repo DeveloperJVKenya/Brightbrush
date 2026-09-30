@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/errors/user_facing_error.dart';
 import '../../orders/domain/order_model.dart';
 import '../application/ops_providers.dart';
+import '../application/pending_deliveries.dart';
 
 /// Hand an order over with proof: the customer's 4-digit code, or a photo
 /// of the handover plus the recipient's signature. Used by drivers (route
@@ -61,6 +63,46 @@ class _CompletionSheetState extends ConsumerState<_CompletionSheet> {
     setState(() => _photo = bytes);
   }
 
+  Future<bool> _offline() async {
+    try {
+      final r = await Connectivity().checkConnectivity();
+      return r.every((c) => c == ConnectivityResult.none);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// No signal: keep the code-confirmed handover on the phone and send it
+  /// automatically when the connection returns (the server still checks
+  /// the code then). Photo + signature proof needs a connection to upload.
+  void _saveForLater() {
+    final code = _code.text.trim();
+    if (code.length != 4) {
+      setState(() => _error = "Enter the customer's 4-digit code.");
+      return;
+    }
+    ref
+        .read(pendingDeliveriesProvider.notifier)
+        .enqueue(
+          PendingDelivery(
+            orderId: widget.order.id,
+            orderLabel: widget.order.displayNumber,
+            recipientName: _name.text.trim(),
+            code: code,
+            savedAt: DateTime.now(),
+          ),
+        );
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          "No connection — saved on this phone. It will be sent automatically when you're back online.",
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+    Navigator.of(context).pop(true);
+  }
+
   Future<void> _submit() async {
     setState(() {
       _busy = true;
@@ -78,6 +120,10 @@ class _CompletionSheetState extends ConsumerState<_CompletionSheet> {
           return;
         }
       }
+      if (_useCode && await _offline()) {
+        _saveForLater();
+        return;
+      }
       await ref
           .read(opsRepositoryProvider)
           .completeDelivery(
@@ -89,7 +135,11 @@ class _CompletionSheetState extends ConsumerState<_CompletionSheet> {
           );
       if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
-      setState(() => _error = friendlyError(error));
+      if (_useCode && (isOfflineError(error) || await _offline())) {
+        _saveForLater();
+        return;
+      }
+      if (mounted) setState(() => _error = friendlyError(error));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

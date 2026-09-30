@@ -192,4 +192,7 @@ class AppLocalizationsSw extends AppLocalizations {
   @override
   String get waSupportMessage =>
       'Habari BrightBrush, ninahitaji msaada kuhusu: ';
+
+  @override
+  String get workingHours => 'Saa za kazi';
 }

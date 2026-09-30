@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -9,6 +10,7 @@ import '../../../shared/search/search_utils.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/live_search_field.dart';
 import '../../orders/application/orders_providers.dart';
+import '../../orders/data/orders_repository.dart';
 import '../../orders/domain/order_model.dart';
 import '../../orders/domain/order_status.dart';
 
@@ -45,7 +47,22 @@ class ManagerHistoryScreen extends ConsumerWidget {
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 16),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TextButton.icon(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    fullscreenDialog: true,
+                    builder: (_) => const OrderArchiveScreen(),
+                  ),
+                ),
+                icon: const Icon(Icons.manage_search_rounded),
+                label: const Text(
+                  'Older than ${OrdersRepository.recentDays} days? Search the full archive',
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
             LiveSearchField(
               hintText: 'Search by customer, phone, order id, or item',
               onChanged: (v) =>
@@ -163,6 +180,134 @@ class _HistoryRow extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Every order ever placed, searchable by order/invoice number, customer
+/// name, company, phone or email, loaded 30 at a time. The live lists
+/// only hold the recent working set, so this is where old jobs are found.
+class OrderArchiveScreen extends ConsumerStatefulWidget {
+  const OrderArchiveScreen({super.key});
+
+  @override
+  ConsumerState<OrderArchiveScreen> createState() => _OrderArchiveScreenState();
+}
+
+class _OrderArchiveScreenState extends ConsumerState<OrderArchiveScreen> {
+  final _orders = <OrderModel>[];
+  DocumentSnapshot<Map<String, dynamic>>? _next;
+  String _query = '';
+  bool _loading = false;
+  bool _done = false;
+  Object? _error;
+  int _generation = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _load(reset: true);
+  }
+
+  Future<void> _load({bool reset = false}) async {
+    if (_loading && !reset) return;
+    final gen = reset ? ++_generation : _generation;
+    setState(() {
+      _loading = true;
+      _error = null;
+      if (reset) {
+        _orders.clear();
+        _next = null;
+        _done = false;
+      }
+    });
+    try {
+      final page = await ref
+          .read(ordersRepositoryProvider)
+          .searchArchive(query: _query, after: _next);
+      if (!mounted || gen != _generation) return;
+      setState(() {
+        _orders.addAll(page.orders);
+        _next = page.next;
+        _done = page.next == null;
+      });
+    } catch (error, stack) {
+      appLogger.e('[archive] search failed', error: error, stackTrace: stack);
+      if (mounted && gen == _generation) setState(() => _error = error);
+    } finally {
+      if (mounted && gen == _generation) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Order archive')),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: Column(
+            children: [
+              LiveSearchField(
+                hintText: 'Order number, customer, company, phone or email',
+                onChanged: (v) {
+                  if (archiveSearchKey(v) == archiveSearchKey(_query)) return;
+                  _query = v;
+                  _load(reset: true);
+                },
+              ),
+              const SizedBox(height: 12),
+              Expanded(child: _body()),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _body() {
+    if (_error != null && _orders.isEmpty) {
+      return EmptyState(
+        icon: Icons.cloud_off_rounded,
+        title: "Couldn't search the archive",
+        message: friendlyError(_error!),
+        action: TextButton.icon(
+          onPressed: () => _load(reset: true),
+          icon: const Icon(Icons.refresh_rounded),
+          label: const Text('Retry'),
+        ),
+      );
+    }
+    if (_orders.isEmpty) {
+      return _loading
+          ? const Center(
+              child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+            )
+          : const EmptyState(
+              icon: Icons.search_off_rounded,
+              title: 'No orders found',
+              message: 'Try an order number, a surname or a phone number.',
+            );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.only(bottom: 24),
+      itemCount: _orders.length + 1,
+      separatorBuilder: (context, index) => const SizedBox(height: 10),
+      itemBuilder: (context, index) {
+        if (index < _orders.length) return _HistoryRow(order: _orders[index]);
+        if (_done) return const SizedBox(height: 8);
+        return Center(
+          child: _loading
+              ? const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+                )
+              : OutlinedButton(
+                  onPressed: _load,
+                  child: const Text('Load more'),
+                ),
+        );
+      },
     );
   }
 }

@@ -48,7 +48,7 @@ Ordering, production and delivery app for a Kenyan embroidery and branding busin
 
 ## Growth
 
-- **Notifications (no SMS).** `notifyUser` / `notifyStaff` write to the in-app inbox (`Notifications`, shown behind the bell) and send push (FCM). Email (Resend, SendGrid or Brevo) and WhatsApp (Meta Cloud API template) go out once they're configured under Payments & Settings → Notifications. Web push also needs the VAPID key under Business settings. Customers choose their channels in their inbox. Triggers cover new orders, status moves, proofs, payments, refunds, overdue invoices, quotes, chat messages, reviews and cart reminders (daily 10:00).
+- **Notifications (no SMS).** `notifyUser` / `notifyStaff` write to the in-app inbox (`Notifications`, shown behind the bell) and send push (FCM). Email (Resend, SendGrid or Brevo) and WhatsApp (Meta Cloud API template) go out once they're configured under Payments & Settings → Notifications. Web push works in every browser with the project's built-in key; a custom VAPID key under Business settings is optional. Customers choose their channels in their inbox. Triggers cover new orders, status moves, proofs, payments, refunds, overdue invoices, quotes, chat messages, reviews and cart reminders (daily 10:00).
 - **Chat.** Each order has a thread in `Orders/{id}/Messages` with photo and PDF attachments and unread counters.
 - **Companies.** Accounts & Receivables → Companies & uniforms. Buyers in the same company share the discount, credit limit and terms (credit exposure counts all members' orders). Uniform programs turn a company's past customised lines into approved items; buyers see them on Home and only pick sizes.
 - **Checkout.** Saved addresses, a map pin for exact drop-off, and loyalty points (Settings/loyalty) redeemed on the server.
@@ -57,6 +57,34 @@ Ordering, production and delivery app for a Kenyan embroidery and branding busin
 - **SEO.** `web/services.html` (crawlable landing page), JSON-LD structured data, `robots.txt`, `sitemap.xml`, and a `<noscript>` fallback.
 - **Languages.** English and Kiswahili via `lib/l10n/*.arb` (run `flutter gen-l10n`), switchable in Settings.
 - **Currency.** Customers can see approximate prices in other currencies (admin-set rates in Settings/currency); everything is still charged in KES.
+
+## Platform
+
+- **Scales with history.** Staff screens stream a working set: open orders of any age, completed orders still owing money, and the last 120 days. All-time and last-30-day numbers come from counters kept by `aggregateOrderStats` (`Stats/totals`, `Stats/daily-YYYY-MM-DD`). Admin → Dashboard → **Recount** (`rebuildOrderStats`) rebuilds them from every order; run it once after the first deploy. Older orders are found in Manager → History → **Search the full archive**, which is paged and searches `searchKeywords` (order/invoice number, name, company, phone, email) kept by `indexOrderSearch`.
+- **Abuse protection.** Every callable requires App Check (`enforceAppCheck`), and the sensitive ones are rate-limited per user (`RateLimits`, auto-deleted by TTL).
+- **Offline.** Firestore caches data on the device (web included), so screens open without a signal. Drivers who confirm a handover with the customer's code while offline have it saved on the phone and sent when the connection returns; the server still checks the code then.
+- **Monitoring.** Crashlytics on Android and iOS. Web errors go to `ClientErrors` via `logClientError` (throttled, kept 30 days). Analytics records screen views and the sales funnel (view item, add to cart, begin checkout, purchase, payment, sign-up, login). Firebase Performance collects start-up and network traces.
+- **Backups.** `backupFirestore` exports the whole database every night at 02:00 Nairobi time to `gs://bright-brush-firestore-backups`, which keeps 30 days. To restore, run `gcloud firestore import gs://bright-brush-firestore-backups/<date> --database=brightbrush-main`.
+- **Branding.** App icons and the launch screen are generated from `assets/branding/` (see `STORE_LISTING.md`). That file also holds the store texts, the data-safety answers and the pre-launch checklist.
+
+## Release process
+
+CI (`.github/workflows/ci.yml`) runs on every push and pull request: analyze, Flutter tests, functions build and tests, rules tests on the emulator, and a web build.
+
+`.github/workflows/deploy.yml` runs after CI:
+
+- **Push to main.** The web app goes to the private `staging` preview channel, so you can check it before customers see it.
+- **Actions → Deploy → Run workflow → production.** Deploys functions, then hosting, then rules and indexes.
+
+It needs one repository secret, `FIREBASE_SERVICE_ACCOUNT_PROD`: a JSON key for a service account with these roles:
+
+- Firebase Admin
+- Cloud Functions Admin
+- Service Account User
+- Cloud Scheduler Admin
+- Artifact Registry Writer
+
+Until that secret exists, the deploy steps are skipped.
 
 ## Payment gateways
 

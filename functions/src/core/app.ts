@@ -7,7 +7,10 @@ import { setGlobalOptions } from 'firebase-functions/v2';
 /// `firebaseFunctionsProvider` — the two must always match).
 export const REGION = 'europe-west1';
 
-setGlobalOptions({ region: REGION, maxInstances: 20 });
+/// enforceAppCheck: callables reject requests that don't carry a valid App
+/// Check token (the app attaches one automatically), which blocks scripted
+/// abuse from outside the real app. Webhooks (onRequest) are unaffected.
+setGlobalOptions({ region: REGION, maxInstances: 20, enforceAppCheck: true });
 
 export const app = initializeApp();
 

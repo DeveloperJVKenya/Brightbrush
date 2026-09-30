@@ -83,6 +83,10 @@ dependencies:
   file_picker: ^13.1.0
   share_plus: ^13.3.0
   firebase_messaging: ^16.7.0
+  firebase_analytics: ^12.6.0
+  firebase_crashlytics: ^5.4.0
+  firebase_performance: ^0.11.6
+  connectivity_plus: ^7.3.1
 
 dev_dependencies:
   flutter_test:
@@ -98,6 +102,8 @@ dev_dependencies:
   # Lets widget tests override FirebaseAuth with a fake instead of hitting
   # real Firebase (flutter test has no platform channels for it).
   firebase_auth_mocks: ^0.15.2
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.8
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -142,3 +148,27 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# App icons: dart run flutter_launcher_icons
+# (assets/branding/* is a placeholder mark — replace the PNGs with the real
+# logo and re-run both commands.)
+flutter_launcher_icons:
+  image_path: assets/branding/icon.png
+  android: true
+  adaptive_icon_background: "#8A1C24"
+  adaptive_icon_foreground: assets/branding/icon_foreground.png
+  ios: true
+  remove_alpha_ios: true
+  web:
+    generate: true
+    background_color: "#D8232B"
+    theme_color: "#D8232B"
+
+# Native launch screen: dart run flutter_native_splash:create
+flutter_native_splash:
+  color: "#D8232B"
+  image: assets/branding/splash.png
+  android_12:
+    color: "#D8232B"
+    image: assets/branding/icon_foreground.png
+  web: false

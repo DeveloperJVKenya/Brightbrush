@@ -59,3 +59,11 @@ export {
 export { onOrderCreated, onQuoteWritten, remindAbandonedCarts } from './notifications/triggers';
 export { onChatMessage, onReviewWritten } from './notifications/social_triggers';
 export { claimReferral, getMyReferralCode } from './loyalty/loyalty';
+export {
+  aggregateOrderStats,
+  backupFirestore,
+  indexCatalogSearch,
+  indexOrderSearch,
+  logClientError,
+  rebuildOrderStats,
+} from './platform/platform';

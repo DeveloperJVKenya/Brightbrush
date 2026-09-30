@@ -9,6 +9,7 @@ import { asObject, requireEnum, requireString } from '../core/validate';
 import { nextOrderNumber, writeOrder } from '../orders/order_writer';
 import { readContact } from '../orders/place_order';
 import { computeTotals } from '../orders/pricing';
+import { rateLimit } from '../platform/platform';
 import { loadBusinessSettings } from '../settings/business_settings';
 
 /// Turns a staff-priced QuoteRequest into an Order at the quoted price. The
@@ -18,6 +19,7 @@ import { loadBusinessSettings } from '../settings/business_settings';
 /// setting as catalog prices.
 export const acceptQuote = onCall(async (request) => {
   const caller = await loadCaller(request);
+  await rateLimit(`acceptQuote_${caller.uid}`, 10, 600);
   const data = asObject(request.data);
   const quoteId = requireString(data, 'quoteId', 'Quote', 1, 100);
   const contact = readContact(data);

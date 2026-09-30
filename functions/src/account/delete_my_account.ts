@@ -2,6 +2,7 @@ import { logger } from 'firebase-functions/v2';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 
 import { app, auth, db } from '../core/app';
+import { rateLimit } from '../platform/platform';
 import { loadCaller } from '../core/authz';
 
 const TERMINAL = ['completed', 'cancelled'];
@@ -16,6 +17,7 @@ const TERMINAL = ['completed', 'cancelled'];
 /// delete an account that other records depend on by accident.
 export const deleteMyAccount = onCall(async (request) => {
   const caller = await loadCaller(request);
+  await rateLimit(`deleteMyAccount_${caller.uid}`, 3, 3600);
   if (caller.role !== 'user') {
     throw new HttpsError(
       'failed-precondition',

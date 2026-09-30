@@ -17,6 +17,7 @@ import '../../orders/domain/order_status.dart';
 import '../../payments/presentation/widgets/record_payment_dialog.dart';
 import '../application/commerce_providers.dart';
 import '../data/commerce_repository.dart';
+import '../../../shared/whatsapp.dart';
 
 /// Admin/CEO: money owed, business customers' terms, promo codes and the
 /// accountant's export — the back office for items 21–27.
@@ -245,7 +246,7 @@ class _ReceivablesTab extends ConsumerWidget {
         )
         .join('\n');
     final text =
-        'Hello ${d.name}, this is a friendly reminder from BrightBrush Creations. '
+        'Hello ${d.name}, this is a friendly reminder from ${businessNameOf(ref.context)}. '
         'The following balance is outstanding:\n$lines\n'
         'Total: ${currencyFormat.format(d.total)}. You can pay from your order page in the app. Thank you!';
     await launchUrl(

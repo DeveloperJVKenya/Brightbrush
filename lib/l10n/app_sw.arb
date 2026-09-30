@@ -57,5 +57,6 @@
   "waOrderMessage": "Habari BrightBrush, ninawasiliana kuhusu oda yangu {orderNumber} (hali: {status}). ",
   "waItemMessage": "Habari BrightBrush, ningependa kuuliza kuhusu \"{item}\". ",
   "waQuoteMessage": "Habari BrightBrush, kuhusu ombi langu la bei \"{title}\": ",
-  "waSupportMessage": "Habari BrightBrush, ninahitaji msaada kuhusu: "
+  "waSupportMessage": "Habari BrightBrush, ninahitaji msaada kuhusu: ",
+  "workingHours": "Saa za kazi"
 }

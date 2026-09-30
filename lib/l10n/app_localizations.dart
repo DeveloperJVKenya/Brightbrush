@@ -445,6 +445,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hello BrightBrush, I need help with: '**
   String get waSupportMessage;
+
+  /// No description provided for @workingHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Working hours'**
+  String get workingHours;
 }
 
 class _AppLocalizationsDelegate

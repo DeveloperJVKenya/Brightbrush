@@ -301,7 +301,7 @@ service cloud.firestore {
               // stock by the server when an order enters production.
               'materials', 'lastUpdatedBy',
               // Written by the review trigger.
-              'ratingAvg', 'ratingCount'
+              'ratingAvg', 'ratingCount', 'searchKeywords'
             ]) &&
             hasRequiredFields([
               'name', 'category', 'description', 'basePrice', 'moq', 'leadTimeDays',
@@ -414,7 +414,8 @@ service cloud.firestore {
               // Operations (server-written except lastUpdatedBy).
               'promisedDate', 'qcStatus', 'materialsDeducted', 'materialsUsed',
               'proofOfDelivery', 'lastUpdatedBy',
-              'companyId', 'pointsRedeemed', 'loyaltyDiscount', 'pointsRestored', 'loyaltyAwarded', 'pointsEarned'
+              'companyId', 'pointsRedeemed', 'loyaltyDiscount', 'pointsRestored', 'loyaltyAwarded', 'pointsEarned',
+              'searchKeywords'
             ]) &&
             hasRequiredFields([
               'customerId', 'contactName', 'contactPhone', 'deliveryAddress',
@@ -537,7 +538,7 @@ service cloud.firestore {
       return hasOnlyAllowedFields([
               'businessName', 'appBaseUrl', 'supportPhone', 'supportEmail', 'kraPin',
               'physicalAddress', 'paymentInstructions', 'invoiceFooter',
-              'deliveryZones', 'allowPickup', 'pickupAddress', 'webPushVapidKey', 'whatsappNumber',
+              'deliveryZones', 'allowPickup', 'pickupAddress', 'webPushVapidKey', 'whatsappNumber', 'workingHours',
               'vatEnabled', 'vatRate', 'pricesIncludeVat', 'deliveryFlatFee',
               'freeDeliveryThreshold', 'allowDeposit', 'depositPercent', 'updatedAt', 'updatedBy'
             ]) &&
@@ -559,6 +560,7 @@ service cloud.firestore {
             (!('deliveryZones' in d) || (d.deliveryZones is list && d.deliveryZones.size() <= 30)) &&
             (!('allowPickup' in d) || d.allowPickup is bool) &&
             (!('pickupAddress' in d) || validStringLength('pickupAddress', 0, 300)) &&
+            (!('workingHours' in d) || validStringLength('workingHours', 0, 200)) &&
             d.updatedBy == request.auth.uid;
     }
 
@@ -757,7 +759,8 @@ service cloud.firestore {
           'customerCompany', 'customerKraPin', 'dueDate', 'overdue', 'etims',
           'cancellationFee', 'cancelReason',
           'promisedDate', 'qcStatus', 'materialsDeducted', 'materialsUsed', 'proofOfDelivery',
-          'companyId', 'pointsRedeemed', 'loyaltyDiscount', 'pointsRestored', 'loyaltyAwarded', 'pointsEarned'
+          'companyId', 'pointsRedeemed', 'loyaltyDiscount', 'pointsRestored', 'loyaltyAwarded', 'pointsEarned',
+          'searchKeywords'
         ]) &&
         request.resource.data.updatedAt == request.time &&
         // Every client change names its author, for the order timeline and
@@ -1336,7 +1339,19 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // ReferralCodes and CartReminders are server-only (default deny).
+    // ReferralCodes, CartReminders and RateLimits are server-only (default deny).
+
+    match /Stats/{docId} {
+      // Server-maintained counters for dashboards.
+      allow read: if isManagerOrAdmin();
+      allow write: if false;
+    }
+
+    match /ClientErrors/{errorId} {
+      // Web error reports (no Crashlytics on web); admins review them.
+      allow read, delete: if isAdminOrDeveloper();
+      allow create, update: if false;
+    }
 
     match /PaymentGateways/{gatewayId} {
       // Public status only (enabled/configured/mode/label/public key) —

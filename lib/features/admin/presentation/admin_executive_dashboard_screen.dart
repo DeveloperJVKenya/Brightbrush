@@ -10,6 +10,7 @@ import '../../../shared/widgets/stat_card.dart';
 import '../../financials/application/financials_providers.dart';
 import '../../orders/application/orders_providers.dart';
 import '../../orders/domain/order_status.dart';
+import '../../reports/order_stats.dart';
 
 /// Admin/CEO's landing screen: revenue, real P&L (revenue collected against
 /// logged Expenses — same computation as the Financials screen), and order
@@ -99,7 +100,7 @@ class AdminExecutiveDashboardScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'Revenue and order pipeline across the whole company, at a glance.',
+              'Recent business (open orders plus the last 120 days) and all-time totals.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -139,6 +140,8 @@ class AdminExecutiveDashboardScreen extends ConsumerWidget {
                 ),
               ],
             ),
+            const SizedBox(height: 28),
+            const AllTimeStatsSection(canRecount: true),
             const SizedBox(height: 28),
             Text(
               'Order pipeline',

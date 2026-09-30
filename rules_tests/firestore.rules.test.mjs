@@ -565,3 +565,50 @@ describe('Phase 5: growth', () => {
     await assertFails(updateDoc(doc(as('alice'), 'Orders/o1'), { loyaltyDiscount: 5000, lastUpdatedBy: 'alice', updatedAt: serverTimestamp() }));
   });
 });
+
+describe('Phase 6: platform', () => {
+  beforeEach(async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, 'Stats/totals'), { ordersPlaced: 3 });
+      await setDoc(doc(db, 'ClientErrors/e1'), { uid: 'alice', message: 'x' });
+      await setDoc(doc(db, 'RateLimits/placeOrder_alice'), { count: 1, windowStart: 0 });
+      await setDoc(doc(db, 'CatalogItems/cap1'), { name: 'Cap', searchKeywords: ['ca', 'cap'] });
+    });
+  });
+
+  it('stats are readable by managers and admins only, and never client-writable', async () => {
+    await assertSucceeds(getDoc(doc(as('manager'), 'Stats/totals')));
+    await assertSucceeds(getDoc(doc(as('admin'), 'Stats/totals')));
+    await assertFails(getDoc(doc(as('alice'), 'Stats/totals')));
+    await assertFails(setDoc(doc(as('admin'), 'Stats/totals'), { ordersPlaced: 0 }));
+  });
+
+  it('client error reports are admin-readable and written only by the server', async () => {
+    await assertSucceeds(getDoc(doc(as('admin'), 'ClientErrors/e1')));
+    await assertFails(getDoc(doc(as('alice'), 'ClientErrors/e1')));
+    await assertFails(getDoc(doc(as('manager'), 'ClientErrors/e1')));
+    await assertFails(setDoc(doc(as('alice'), 'ClientErrors/e2'), { message: 'spam' }));
+  });
+
+  it('rate-limit counters are unreachable', async () => {
+    await assertFails(getDoc(doc(as('alice'), 'RateLimits/placeOrder_alice')));
+    await assertFails(setDoc(doc(as('alice'), 'RateLimits/placeOrder_alice'), { count: 0, windowStart: 0 }));
+    await assertFails(getDoc(doc(as('admin'), 'RateLimits/placeOrder_alice')));
+  });
+
+  it('search keywords on orders are server-maintained', async () => {
+    await assertFails(updateDoc(doc(as('manager'), 'Orders/o1'), { searchKeywords: ['x'], lastUpdatedBy: 'manager', updatedAt: serverTimestamp() }));
+    await assertFails(updateDoc(doc(as('alice'), 'Orders/o1'), { searchKeywords: ['x'], lastUpdatedBy: 'alice', updatedAt: serverTimestamp() }));
+  });
+
+  it('business settings accept working hours up to 200 characters', async () => {
+    const base = {
+      businessName: 'BrightBrush Creations', appBaseUrl: 'https://bright-brush.web.app', supportPhone: '', supportEmail: '',
+      kraPin: '', vatEnabled: true, vatRate: 0.16, pricesIncludeVat: true, deliveryFlatFee: 300,
+      freeDeliveryThreshold: 20000, allowDeposit: true, depositPercent: 50, updatedBy: 'admin', updatedAt: serverTimestamp(),
+    };
+    await assertSucceeds(setDoc(doc(as('admin'), 'Settings/business'), { ...base, workingHours: 'Mon–Fri 8am–6pm' }));
+    await assertFails(setDoc(doc(as('admin'), 'Settings/business'), { ...base, workingHours: 'x'.repeat(201) }));
+  });
+});

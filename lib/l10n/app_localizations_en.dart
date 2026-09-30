@@ -190,4 +190,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get waSupportMessage => 'Hello BrightBrush, I need help with: ';
+
+  @override
+  String get workingHours => 'Working hours';
 }

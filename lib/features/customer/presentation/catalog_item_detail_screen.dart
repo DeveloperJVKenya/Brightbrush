@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/formatting/currency.dart';
+import '../../../core/monitoring/monitoring.dart';
 
 import '../../../core/errors/user_facing_error.dart';
 import '../../../core/firebase/firebase_providers.dart';
@@ -228,6 +229,12 @@ class _DetailBody extends ConsumerWidget {
                     final qty = await ref
                         .read(cartActionsProvider)
                         .addCatalogItem(item);
+                    Monitoring.addToCart(
+                      id: item.id,
+                      name: item.name,
+                      quantity: qty,
+                      value: item.basePrice * qty,
+                    );
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(

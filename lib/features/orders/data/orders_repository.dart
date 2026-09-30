@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
 import '../../../core/logging/app_logger.dart';
 import '../../../core/logging/stream_error_logger.dart';
+import '../../../core/monitoring/monitoring.dart';
 import '../domain/order_model.dart';
 import '../domain/order_status.dart';
 
@@ -34,20 +37,105 @@ class OrdersRepository {
         );
   }
 
-  /// Every order — the Manager/Admin/Developer view. Grouping by
-  /// status/lifecycle happens client-side rather than via more composite
-  /// indexes.
+  /// How far back the staff working set reaches for finished orders.
+  /// Older ones live in the searchable archive ([searchArchive]).
+  static const recentDays = 120;
+
+  /// The Manager/Admin/Developer working set, newest first: every open
+  /// order (any age), completed orders still owing money (any age), and
+  /// everything from the last [recentDays] days. This stays small no
+  /// matter how many years of history pile up, unlike streaming the whole
+  /// collection. Reports over all time read the Stats counters instead.
   Stream<List<OrderModel>> streamAll() {
-    appLogger.d('[orders] streamAll()');
-    return _orders
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snap) => snap.docs.map(OrderModel.fromFirestore).toList())
-        .transform(
-          logStreamErrors(
-            '[orders] streamAll() failed — likely signed in as a role without isOrderStaff()',
+    appLogger.d('[orders] streamAll() — open + owing + last $recentDays days');
+    final open = OrderStatus.values
+        .where((s) => !s.isTerminal)
+        .map((s) => s.name)
+        .toList();
+    final since = Timestamp.fromDate(
+      DateTime.now().subtract(const Duration(days: recentDays)),
+    );
+    final queries = <Query<Map<String, dynamic>>>[
+      _orders.where('status', whereIn: open),
+      _orders
+          .where('status', isEqualTo: OrderStatus.completed.name)
+          .where(
+            'paymentStatus',
+            whereIn: ['unpaid', 'invoiced', 'partiallyPaid'],
           ),
-        );
+      _orders
+          .where('createdAt', isGreaterThanOrEqualTo: since)
+          .orderBy('createdAt', descending: true),
+    ];
+    return _mergeQueries(queries).transform(
+      logStreamErrors(
+        '[orders] streamAll() failed — likely signed in as a role without isOrderStaff()',
+      ),
+    );
+  }
+
+  /// Live union of several queries, de-duplicated by id, newest first.
+  Stream<List<OrderModel>> _mergeQueries(
+    List<Query<Map<String, dynamic>>> queries,
+  ) {
+    late final StreamController<List<OrderModel>> controller;
+    final latest = List<Map<String, OrderModel>?>.filled(queries.length, null);
+    final subs = <StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>[];
+    void emit() {
+      if (latest.any((m) => m == null)) return;
+      final byId = <String, OrderModel>{};
+      for (final m in latest) {
+        byId.addAll(m!);
+      }
+      final list = byId.values.toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      controller.add(list);
+    }
+
+    controller = StreamController<List<OrderModel>>(
+      onListen: () {
+        for (var i = 0; i < queries.length; i++) {
+          subs.add(
+            queries[i].snapshots().listen((snap) {
+              latest[i] = {
+                for (final d in snap.docs) d.id: OrderModel.fromFirestore(d),
+              };
+              emit();
+            }, onError: controller.addError),
+          );
+        }
+      },
+      onCancel: () async {
+        for (final s in subs) {
+          await s.cancel();
+        }
+      },
+    );
+    return controller.stream;
+  }
+
+  /// The full order history, searched by order number, customer name,
+  /// phone or email (Orders.searchKeywords, kept up to date by the
+  /// indexOrderSearch function). Pass the returned next cursor as [after]
+  /// for the following page; it is null on the last page.
+  Future<
+    ({List<OrderModel> orders, DocumentSnapshot<Map<String, dynamic>>? next})
+  >
+  searchArchive({
+    String query = '',
+    DocumentSnapshot<Map<String, dynamic>>? after,
+    int limit = 30,
+  }) async {
+    final key = archiveSearchKey(query);
+    Query<Map<String, dynamic>> q = _orders;
+    if (key.isNotEmpty) q = q.where('searchKeywords', arrayContains: key);
+    q = q.orderBy('createdAt', descending: true).limit(limit);
+    if (after != null) q = q.startAfterDocument(after);
+    final snap = await q.get();
+    return (
+      orders: snap.docs.map(OrderModel.fromFirestore).toList(),
+      next: snap.docs.length < limit ? null : snap.docs.last,
+    );
   }
 
   /// Places an order from the signed-in customer's saved cart. Pricing,
@@ -85,6 +173,10 @@ class OrdersRepository {
       final data = Map<String, dynamic>.from(result.data as Map);
       appLogger.i(
         '[orders] placed ${data['orderId']} (${data['orderNumber']}) total=${data['total']}',
+      );
+      Monitoring.purchase(
+        orderId: data['orderId'] as String,
+        value: (data['total'] as num?) ?? 0,
       );
       return data['orderId'] as String;
     } catch (error, stack) {
@@ -222,4 +314,24 @@ class OrdersRepository {
           throw error;
         });
   }
+}
+
+/// The one keyword to look up for a search box entry — mirrors
+/// searchKeywords() in functions/src/platform/platform.ts: words are split
+/// on anything that isn't a letter or digit and indexed as 2–15 character
+/// prefixes; phone numbers also by their last 9 digits (so 07…, 2547… and
+/// +2547… all match). The longest word wins as the most selective.
+String archiveSearchKey(String query) {
+  final lower = query.toLowerCase().trim();
+  final digits = lower.replaceAll(RegExp(r'[^0-9]'), '');
+  final looksLikePhone = RegExp(r'^[0-9+\s()-]+$').hasMatch(lower);
+  if (looksLikePhone && digits.length >= 9) {
+    return digits.substring(digits.length - 9);
+  }
+  final words =
+      lower.split(RegExp(r'[^a-z0-9]+')).where((w) => w.length >= 2).toList()
+        ..sort((a, b) => b.length.compareTo(a.length));
+  if (words.isEmpty) return '';
+  final w = words.first;
+  return w.length > 15 ? w.substring(0, 15) : w;
 }

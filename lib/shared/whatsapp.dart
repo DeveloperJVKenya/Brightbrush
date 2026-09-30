@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../features/payments/application/payments_providers.dart';
+import '../features/payments/domain/business_settings.dart';
 
 /// Normalises a Kenyan (or already international) number for wa.me:
 /// 0712…/+254712…/254712… → 254712…; other international numbers pass
@@ -47,6 +48,14 @@ Future<bool> openWhatsApp(
   }
   return ok;
 }
+
+/// The trading name from Settings → Business (for outgoing messages).
+String businessNameOf(BuildContext context) =>
+    ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(businessSettingsProvider).valueOrNull?.businessName ??
+    const BusinessSettings().businessName;
 
 /// The business line customers message (Settings → WhatsApp number, else
 /// the support phone).

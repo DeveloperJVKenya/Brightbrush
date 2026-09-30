@@ -509,6 +509,7 @@ class _BusinessSettingsCardState extends ConsumerState<_BusinessSettingsCard> {
   final _pickupAddress = TextEditingController();
   final _vapidKey = TextEditingController();
   final _whatsapp = TextEditingController();
+  final _hours = TextEditingController();
   bool _allowPickup = false;
   List<DeliveryZone> _zones = [];
   bool _vatEnabled = false;
@@ -535,6 +536,7 @@ class _BusinessSettingsCardState extends ConsumerState<_BusinessSettingsCard> {
       _pickupAddress,
       _vapidKey,
       _whatsapp,
+      _hours,
     ]) {
       c.dispose();
     }
@@ -562,6 +564,7 @@ class _BusinessSettingsCardState extends ConsumerState<_BusinessSettingsCard> {
     _pickupAddress.text = s.pickupAddress;
     _vapidKey.text = s.webPushVapidKey;
     _whatsapp.text = s.whatsappNumber;
+    _hours.text = s.workingHours;
     _allowPickup = s.allowPickup;
     _zones = [...s.deliveryZones];
   }
@@ -675,6 +678,7 @@ class _BusinessSettingsCardState extends ConsumerState<_BusinessSettingsCard> {
               deliveryZones: _zones,
               webPushVapidKey: _vapidKey.text.trim(),
               whatsappNumber: _whatsapp.text.trim(),
+              workingHours: _hours.text.trim(),
             ),
             uid: uid,
           );
@@ -905,6 +909,16 @@ class _BusinessSettingsCardState extends ConsumerState<_BusinessSettingsCard> {
                   helperText:
                       'Customers tap "WhatsApp us" to open a chat with this number, with their order/item already written in. Leave blank to use the support phone.',
                   helperMaxLines: 3,
+                ),
+              ),
+              TextFormField(
+                controller: _hours,
+                maxLength: 200,
+                decoration: const InputDecoration(
+                  labelText: 'Working hours',
+                  hintText:
+                      'e.g. Mon–Fri 8am–6pm · Sat 9am–1pm · Closed Sundays',
+                  helperText: 'Shown to customers on the Support screen.',
                 ),
               ),
               TextFormField(

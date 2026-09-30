@@ -5,6 +5,7 @@ import { db } from '../core/app';
 import { Caller, isStaff, loadCaller } from '../core/authz';
 import { asObject, requireEnum, requireString } from '../core/validate';
 import { BusinessSettings, loadBusinessSettings } from '../settings/business_settings';
+import { rateLimit } from '../platform/platform';
 import { DocLine, DocSpec, DocTotalRow, formatDate, formatMoney, renderPdf } from './pdf';
 
 const STAFF: Array<'systemManager' | 'admin'> = ['systemManager', 'admin'];
@@ -346,6 +347,7 @@ async function purchaseOrderSpec(poId: string, caller: Caller): Promise<[DocSpec
 /// account statement. Customers get their own documents; staff get any.
 export const getDocument = onCall({ memory: '512MiB' }, async (request) => {
   const caller = await loadCaller(request);
+  await rateLimit(`getDocument_${caller.uid}`, 60, 600);
   const data = asObject(request.data);
   const kind = requireEnum(data, 'kind', ['invoice', 'receipt', 'creditNote', 'quote', 'statement', 'jobSheet', 'purchaseOrder']);
   const settings = await loadBusinessSettings();

@@ -229,7 +229,7 @@ class _ManagerOrderRowState extends ConsumerState<_ManagerOrderRow> {
           context,
           phone: order.contactPhone,
           message:
-              'Hello ${order.contactName}, this is BrightBrush about your order ${order.displayNumber} (${order.status.label}). ',
+              'Hello ${order.contactName}, this is ${businessNameOf(context)} about your order ${order.displayNumber} (${order.status.label}). ',
         );
       case 'jobSheet':
         await openDocument(context, ref, DocumentKind.jobSheet, order.id);

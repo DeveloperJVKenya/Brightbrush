@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import '../../../core/monitoring/monitoring.dart';
 
 import '../../../core/logging/app_logger.dart';
 import '../../../core/logging/stream_error_logger.dart';
@@ -95,6 +96,7 @@ class PaymentsRepository {
         'amountChoice': amountChoice,
         'phone': ?phone,
       });
+      Monitoring.paymentStarted(gateway.name, 0);
       return PaymentStartResult.fromMap(
         Map<String, dynamic>.from(result.data as Map),
       );
