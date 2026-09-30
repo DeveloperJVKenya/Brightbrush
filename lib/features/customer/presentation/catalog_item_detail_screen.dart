@@ -15,6 +15,7 @@ import '../../growth/growth_settings.dart';
 import '../../growth/social_widgets.dart';
 import '../../quotes/presentation/request_quote_sheet.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../shared/whatsapp.dart';
 import '../application/cart_providers.dart';
 
 class CatalogItemDetailScreen extends ConsumerWidget {
@@ -34,7 +35,26 @@ class CatalogItemDetailScreen extends ConsumerWidget {
           onPressed: () => context.pop(),
         ),
         title: const Text('Item details'),
-        actions: [WishlistButton(itemId: itemId)],
+        actions: [
+          Builder(
+            builder: (context) {
+              final name =
+                  ref
+                      .watch(activeCatalogItemsProvider)
+                      .valueOrNull
+                      ?.where((i) => i.id == itemId)
+                      .firstOrNull
+                      ?.name ??
+                  '';
+              return WhatsAppUsButton(
+                compact: true,
+                label: AppLocalizations.of(context).whatsappUs,
+                message: AppLocalizations.of(context).waItemMessage(name),
+              );
+            },
+          ),
+          WishlistButton(itemId: itemId),
+        ],
       ),
       body: itemsAsync.when(
         loading: () => const Center(

@@ -18,6 +18,8 @@ import '../../customization/presentation/widgets/customization_summary.dart';
 import '../../payments/presentation/widgets/order_payment_panel.dart';
 import '../../proofs/presentation/proof_widgets.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../shared/whatsapp.dart';
+import '../../../core/l10n/language.dart';
 import '../application/cart_providers.dart';
 
 class OrderDetailScreen extends ConsumerWidget {
@@ -144,10 +146,23 @@ class _OrderDetailBody extends ConsumerWidget {
                 const SizedBox(height: 12),
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: OrderChatButton(
-                    orderId: order.id,
-                    orderLabel: order.displayNumber,
-                    asStaff: false,
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      OrderChatButton(
+                        orderId: order.id,
+                        orderLabel: order.displayNumber,
+                        asStaff: false,
+                      ),
+                      WhatsAppUsButton(
+                        label: AppLocalizations.of(context).whatsappUs,
+                        message: AppLocalizations.of(context).waOrderMessage(
+                          order.displayNumber,
+                          order.status.localized(context),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 16),

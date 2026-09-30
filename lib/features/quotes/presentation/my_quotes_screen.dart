@@ -14,6 +14,8 @@ import '../../payments/application/payments_providers.dart';
 import '../../payments/domain/business_settings.dart';
 import '../application/quotes_providers.dart';
 import '../domain/quote_request.dart';
+import '../../../shared/whatsapp.dart';
+import '../../../l10n/app_localizations.dart';
 import 'request_quote_sheet.dart';
 
 /// Customer view of their quote requests: waiting, priced (accept / turn
@@ -227,6 +229,12 @@ class _QuoteCard extends ConsumerWidget {
                       icon: const Icon(Icons.picture_as_pdf_outlined),
                       label: const Text('Quote PDF'),
                     ),
+                  WhatsAppUsButton(
+                    label: AppLocalizations.of(context).whatsappUs,
+                    message: AppLocalizations.of(
+                      context,
+                    ).waQuoteMessage(quote.title),
+                  ),
                   if (quote.orderId != null)
                     OutlinedButton.icon(
                       onPressed: () =>

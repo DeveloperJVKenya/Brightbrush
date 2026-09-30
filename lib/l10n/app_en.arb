@@ -53,5 +53,13 @@
   "review": "Review",
   "cartEmpty": "Your cart is empty",
   "wishlist": "Wishlist",
-  "rewards": "Rewards"
+  "rewards": "Rewards",
+  "whatsappUs": "WhatsApp us",
+  "waOrderMessage": "Hello BrightBrush, I'm contacting you about my order {orderNumber} (status: {status}). ",
+  "@waOrderMessage": { "placeholders": { "orderNumber": { "type": "String" }, "status": { "type": "String" } } },
+  "waItemMessage": "Hello BrightBrush, I'd like to ask about \"{item}\". ",
+  "@waItemMessage": { "placeholders": { "item": { "type": "String" } } },
+  "waQuoteMessage": "Hello BrightBrush, about my quote request \"{title}\": ",
+  "@waQuoteMessage": { "placeholders": { "title": { "type": "String" } } },
+  "waSupportMessage": "Hello BrightBrush, I need help with: "
 }

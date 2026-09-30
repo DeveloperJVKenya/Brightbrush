@@ -115,19 +115,20 @@ class NotificationsRepository {
   Future<void> savePrefs(String uid, NotificationPrefs prefs) =>
       _prefs(uid).set(prefs.toMap());
 
-  /// Asks for permission and registers this device for push. Web needs the
-  /// project's VAPID key (Payments & Settings → Notifications). Safe to call
-  /// repeatedly; failures are logged, never thrown.
+  /// Asks for permission and registers this device for push. One VAPID key
+  /// serves every browser and account of the project: the admin's optional
+  /// key from Business settings if set, otherwise Firebase's built-in default
+  /// key. Each device still gets its own token. Safe to call repeatedly;
+  /// failures are logged, never thrown.
   Future<bool> registerDevice(String uid, {String? vapidKey}) async {
     try {
-      if (kIsWeb && (vapidKey ?? '').isEmpty) return false;
       final messaging = FirebaseMessaging.instance;
       final settings = await messaging.requestPermission();
       if (settings.authorizationStatus == AuthorizationStatus.denied) {
         return false;
       }
       final token = await messaging.getToken(
-        vapidKey: kIsWeb ? vapidKey : null,
+        vapidKey: kIsWeb && (vapidKey ?? '').isNotEmpty ? vapidKey : null,
       );
       if (token == null) return false;
       await _db

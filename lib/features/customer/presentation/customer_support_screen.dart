@@ -8,6 +8,8 @@ import '../../../core/firebase/firebase_providers.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../support/application/support_providers.dart';
+import '../../../shared/whatsapp.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../support/domain/support_ticket.dart';
 
 class CustomerSupportScreen extends ConsumerStatefulWidget {
@@ -108,6 +110,11 @@ class _CustomerSupportScreenState extends ConsumerState<CustomerSupportScreen> {
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
+            ),
+            const SizedBox(height: 8),
+            WhatsAppUsButton(
+              label: AppLocalizations.of(context).whatsappUs,
+              message: AppLocalizations.of(context).waSupportMessage,
             ),
             const SizedBox(height: 20),
             Container(

@@ -22,6 +22,7 @@ import '../../ops/presentation/order_timeline.dart';
 import '../../ops/presentation/qc_dialog.dart';
 import '../../payments/presentation/widgets/record_payment_dialog.dart';
 import '../../proofs/presentation/proof_widgets.dart';
+import '../../../shared/whatsapp.dart';
 import 'widgets/order_status_filter_bar.dart';
 
 final _managerOrdersSearchProvider = StateProvider<String>((ref) => '');
@@ -223,6 +224,13 @@ class _ManagerOrderRowState extends ConsumerState<_ManagerOrderRow> {
     switch (action) {
       case 'invoice':
         await openDocument(context, ref, DocumentKind.invoice, order.id);
+      case 'whatsapp':
+        await openWhatsApp(
+          context,
+          phone: order.contactPhone,
+          message:
+              'Hello ${order.contactName}, this is BrightBrush about your order ${order.displayNumber} (${order.status.label}). ',
+        );
       case 'jobSheet':
         await openDocument(context, ref, DocumentKind.jobSheet, order.id);
       case 'qc':
@@ -421,6 +429,10 @@ class _ManagerOrderRowState extends ConsumerState<_ManagerOrderRow> {
                     const PopupMenuItem(
                       value: 'history',
                       child: Text('History'),
+                    ),
+                    const PopupMenuItem(
+                      value: 'whatsapp',
+                      child: Text('WhatsApp customer'),
                     ),
                     if (![
                       OrderStatus.pendingReview,

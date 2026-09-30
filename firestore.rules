@@ -537,7 +537,7 @@ service cloud.firestore {
       return hasOnlyAllowedFields([
               'businessName', 'appBaseUrl', 'supportPhone', 'supportEmail', 'kraPin',
               'physicalAddress', 'paymentInstructions', 'invoiceFooter',
-              'deliveryZones', 'allowPickup', 'pickupAddress', 'webPushVapidKey',
+              'deliveryZones', 'allowPickup', 'pickupAddress', 'webPushVapidKey', 'whatsappNumber',
               'vatEnabled', 'vatRate', 'pricesIncludeVat', 'deliveryFlatFee',
               'freeDeliveryThreshold', 'allowDeposit', 'depositPercent', 'updatedAt', 'updatedBy'
             ]) &&

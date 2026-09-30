@@ -415,6 +415,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rewards'**
   String get rewards;
+
+  /// No description provided for @whatsappUs.
+  ///
+  /// In en, this message translates to:
+  /// **'WhatsApp us'**
+  String get whatsappUs;
+
+  /// No description provided for @waOrderMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Hello BrightBrush, I\'m contacting you about my order {orderNumber} (status: {status}). '**
+  String waOrderMessage(String orderNumber, String status);
+
+  /// No description provided for @waItemMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Hello BrightBrush, I\'d like to ask about \"{item}\". '**
+  String waItemMessage(String item);
+
+  /// No description provided for @waQuoteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Hello BrightBrush, about my quote request \"{title}\": '**
+  String waQuoteMessage(String title);
+
+  /// No description provided for @waSupportMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Hello BrightBrush, I need help with: '**
+  String get waSupportMessage;
 }
 
 class _AppLocalizationsDelegate

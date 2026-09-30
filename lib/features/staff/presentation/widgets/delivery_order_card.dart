@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/formatting/currency.dart';
 
 import '../../../orders/domain/order_model.dart';
+import '../../../../shared/whatsapp.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// One order in a Delivery Staff list — available to claim, currently
 /// active, or historical — with an optional trailing action button that
@@ -92,6 +94,31 @@ class DeliveryOrderCard extends StatelessWidget {
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              children: [
+                TextButton.icon(
+                  onPressed: () => openWhatsApp(
+                    context,
+                    phone: order.contactPhone,
+                    message:
+                        'Hello ${order.contactName}, this is your BrightBrush driver with order ${order.displayNumber}. I\'m on my way to ${order.deliveryAddress}. ',
+                  ),
+                  icon: const Icon(
+                    Icons.chat_rounded,
+                    color: Color(0xFF25D366),
+                  ),
+                  label: const Text('WhatsApp customer'),
+                ),
+                TextButton.icon(
+                  onPressed: () =>
+                      launchUrl(Uri(scheme: 'tel', path: order.contactPhone)),
+                  icon: const Icon(Icons.call_outlined),
+                  label: const Text('Call'),
+                ),
+              ],
             ),
             if (assignedLabel != null) ...[
               const SizedBox(height: 6),

@@ -52,5 +52,10 @@
   "review": "Tathmini",
   "cartEmpty": "Kikapu chako ni tupu",
   "wishlist": "Orodha ya matamanio",
-  "rewards": "Zawadi"
+  "rewards": "Zawadi",
+  "whatsappUs": "Tuandikie WhatsApp",
+  "waOrderMessage": "Habari BrightBrush, ninawasiliana kuhusu oda yangu {orderNumber} (hali: {status}). ",
+  "waItemMessage": "Habari BrightBrush, ningependa kuuliza kuhusu \"{item}\". ",
+  "waQuoteMessage": "Habari BrightBrush, kuhusu ombi langu la bei \"{title}\": ",
+  "waSupportMessage": "Habari BrightBrush, ninahitaji msaada kuhusu: "
 }

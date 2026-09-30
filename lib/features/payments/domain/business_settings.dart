@@ -54,6 +54,7 @@ class BusinessSettings {
     this.allowPickup = false,
     this.pickupAddress = '',
     this.webPushVapidKey = '',
+    this.whatsappNumber = '',
   });
 
   final String businessName;
@@ -87,6 +88,10 @@ class BusinessSettings {
   /// Public Web Push (VAPID) key from Firebase Console → Cloud Messaging;
   /// needed for push notifications in browsers.
   final String webPushVapidKey;
+
+  /// The business WhatsApp line customers message (click-to-chat). Falls
+  /// back to the support phone when empty.
+  final String whatsappNumber;
 
   bool get depositsAvailable =>
       allowDeposit && depositPercent > 0 && depositPercent < 100;
@@ -123,6 +128,7 @@ class BusinessSettings {
       allowPickup: d['allowPickup'] as bool? ?? f.allowPickup,
       pickupAddress: str('pickupAddress', f.pickupAddress),
       webPushVapidKey: str('webPushVapidKey', f.webPushVapidKey),
+      whatsappNumber: str('whatsappNumber', f.whatsappNumber),
     );
   }
 
@@ -147,6 +153,7 @@ class BusinessSettings {
       'allowPickup': allowPickup,
       'pickupAddress': pickupAddress,
       'webPushVapidKey': webPushVapidKey,
+      'whatsappNumber': whatsappNumber,
       'updatedAt': FieldValue.serverTimestamp(),
       'updatedBy': uid,
     };

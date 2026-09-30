@@ -508,6 +508,7 @@ class _BusinessSettingsCardState extends ConsumerState<_BusinessSettingsCard> {
   final _invoiceFooter = TextEditingController();
   final _pickupAddress = TextEditingController();
   final _vapidKey = TextEditingController();
+  final _whatsapp = TextEditingController();
   bool _allowPickup = false;
   List<DeliveryZone> _zones = [];
   bool _vatEnabled = false;
@@ -533,6 +534,7 @@ class _BusinessSettingsCardState extends ConsumerState<_BusinessSettingsCard> {
       _invoiceFooter,
       _pickupAddress,
       _vapidKey,
+      _whatsapp,
     ]) {
       c.dispose();
     }
@@ -559,6 +561,7 @@ class _BusinessSettingsCardState extends ConsumerState<_BusinessSettingsCard> {
     _invoiceFooter.text = s.invoiceFooter;
     _pickupAddress.text = s.pickupAddress;
     _vapidKey.text = s.webPushVapidKey;
+    _whatsapp.text = s.whatsappNumber;
     _allowPickup = s.allowPickup;
     _zones = [...s.deliveryZones];
   }
@@ -671,6 +674,7 @@ class _BusinessSettingsCardState extends ConsumerState<_BusinessSettingsCard> {
               allowPickup: _allowPickup,
               deliveryZones: _zones,
               webPushVapidKey: _vapidKey.text.trim(),
+              whatsappNumber: _whatsapp.text.trim(),
             ),
             uid: uid,
           );
@@ -894,11 +898,21 @@ class _BusinessSettingsCardState extends ConsumerState<_BusinessSettingsCard> {
                 ),
               ),
               TextFormField(
+                controller: _whatsapp,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  labelText: 'Business WhatsApp number',
+                  helperText:
+                      'Customers tap "WhatsApp us" to open a chat with this number, with their order/item already written in. Leave blank to use the support phone.',
+                  helperMaxLines: 3,
+                ),
+              ),
+              TextFormField(
                 controller: _vapidKey,
                 decoration: const InputDecoration(
-                  labelText: 'Web push key (VAPID)',
+                  labelText: 'Web push key (VAPID) — optional',
                   helperText:
-                      'Firebase Console → Project settings → Cloud Messaging → Web Push certificates → Key pair. Needed for browser push.',
+                      'Leave blank to use Firebase\x27s built-in key (works for every browser). Only set your own from Firebase Console → Cloud Messaging → Web Push certificates.',
                   helperMaxLines: 3,
                 ),
               ),

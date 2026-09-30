@@ -170,4 +170,26 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get rewards => 'Zawadi';
+
+  @override
+  String get whatsappUs => 'Tuandikie WhatsApp';
+
+  @override
+  String waOrderMessage(String orderNumber, String status) {
+    return 'Habari BrightBrush, ninawasiliana kuhusu oda yangu $orderNumber (hali: $status). ';
+  }
+
+  @override
+  String waItemMessage(String item) {
+    return 'Habari BrightBrush, ningependa kuuliza kuhusu \"$item\". ';
+  }
+
+  @override
+  String waQuoteMessage(String title) {
+    return 'Habari BrightBrush, kuhusu ombi langu la bei \"$title\": ';
+  }
+
+  @override
+  String get waSupportMessage =>
+      'Habari BrightBrush, ninahitaji msaada kuhusu: ';
 }

@@ -169,4 +169,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get rewards => 'Rewards';
+
+  @override
+  String get whatsappUs => 'WhatsApp us';
+
+  @override
+  String waOrderMessage(String orderNumber, String status) {
+    return 'Hello BrightBrush, I\'m contacting you about my order $orderNumber (status: $status). ';
+  }
+
+  @override
+  String waItemMessage(String item) {
+    return 'Hello BrightBrush, I\'d like to ask about \"$item\". ';
+  }
+
+  @override
+  String waQuoteMessage(String title) {
+    return 'Hello BrightBrush, about my quote request \"$title\": ';
+  }
+
+  @override
+  String get waSupportMessage => 'Hello BrightBrush, I need help with: ';
 }
