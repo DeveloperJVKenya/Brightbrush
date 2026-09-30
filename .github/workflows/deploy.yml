@@ -42,7 +42,7 @@ jobs:
       SA_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_PROD }}
       FUNCTIONS_DISCOVERY_TIMEOUT: 120
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Check credentials
         id: gate
         run: |

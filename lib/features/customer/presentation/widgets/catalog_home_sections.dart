@@ -672,17 +672,23 @@ class TrustStrip extends ConsumerWidget {
     ];
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    Widget chip((IconData, String) e) => Padding(
-      padding: const EdgeInsets.only(right: 18),
+    // On desktop each entry shares the row and truncates if a translation
+    // or font runs long; on phones the strip scrolls sideways instead.
+    Widget chip((IconData, String) e, {bool shrink = false}) => Padding(
+      padding: EdgeInsets.only(left: shrink ? 8 : 0, right: shrink ? 8 : 18),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(e.$1, size: 18, color: scheme.primary),
           const SizedBox(width: 6),
-          Text(
-            e.$2,
-            style: theme.textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w600,
+          Flexible(
+            child: Text(
+              e.$2,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -699,7 +705,9 @@ class TrustStrip extends ConsumerWidget {
       child: isWideCatalog(context)
           ? Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [for (final e in entries) chip(e)],
+              children: [
+                for (final e in entries) Flexible(child: chip(e, shrink: true)),
+              ],
             )
           : ListView(
               scrollDirection: Axis.horizontal,

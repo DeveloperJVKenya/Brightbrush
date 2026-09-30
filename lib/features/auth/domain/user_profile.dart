@@ -41,6 +41,15 @@ class UserProfile {
   /// permission immediately — see hasStaffRole() in firestore.rules.
   final bool disabled;
 
+  /// Email domain every account created by the local `seed/` scripts uses.
+  static const demoEmailDomain = '@brightbrush.demo';
+
+  /// Seeded demonstration account (not a real sign-up). Role Management
+  /// keeps these on their own tab so they never mix with real accounts.
+  bool get isDemo => email.toLowerCase().endsWith(demoEmailDomain);
+
+  String get nameOrEmail => displayName.isEmpty ? email : displayName;
+
   factory UserProfile.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> doc,
   ) {

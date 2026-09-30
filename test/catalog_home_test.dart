@@ -50,19 +50,43 @@ CatalogItem _item(
   createdAt: _now.subtract(Duration(days: ageDays)),
   updatedAt: _now,
   priceTiers: tiers,
-  decorationMethods: customisable ? const [DecorationMethod.embroidery] : const [],
+  decorationMethods: customisable
+      ? const [DecorationMethod.embroidery]
+      : const [],
   placements: customisable ? const [Placement.leftChest] : const [],
   ratingAvg: rating,
   ratingCount: reviews,
 );
 
 final sampleItems = [
-  _item(1, featured: true, customisable: true, rating: 4.5, reviews: 12, name: 'Embroidered cap'),
-  _item(2, category: CatalogCategory.hoodies, tiers: const [PriceTier(minQty: 50, unitPrice: 600)], ageDays: 5),
+  _item(
+    1,
+    featured: true,
+    customisable: true,
+    rating: 4.5,
+    reviews: 12,
+    name: 'Embroidered cap',
+  ),
+  _item(
+    2,
+    category: CatalogCategory.hoodies,
+    tiers: const [PriceTier(minQty: 50, unitPrice: 600)],
+    ageDays: 5,
+  ),
   _item(3, category: CatalogCategory.waterBottles, rating: 3.8, reviews: 4),
-  _item(4, featured: true, category: CatalogCategory.caps, tiers: const [PriceTier(minQty: 100, unitPrice: 700)]),
+  _item(
+    4,
+    featured: true,
+    category: CatalogCategory.caps,
+    tiers: const [PriceTier(minQty: 100, unitPrice: 700)],
+  ),
   for (var i = 5; i < 16; i++)
-    _item(i, category: CatalogCategory.values[i % CatalogCategory.values.length], ageDays: i * 4, customisable: i.isEven),
+    _item(
+      i,
+      category: CatalogCategory.values[i % CatalogCategory.values.length],
+      ageDays: i * 4,
+      customisable: i.isEven,
+    ),
 ];
 
 Future<void> pumpHome(
@@ -81,11 +105,17 @@ Future<void> pumpHome(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
         currentUidProvider.overrideWith((ref) => null),
-        activeCatalogItemsProvider.overrideWith((ref) => Stream.value(items ?? sampleItems)),
-        activeAnnouncementsProvider.overrideWith((ref) => Stream.value(const [])),
+        activeCatalogItemsProvider.overrideWith(
+          (ref) => Stream.value(items ?? sampleItems),
+        ),
+        activeAnnouncementsProvider.overrideWith(
+          (ref) => Stream.value(const []),
+        ),
         activePackagesProvider.overrideWith((ref) => Stream.value(const [])),
         businessSettingsProvider.overrideWith(
-          (ref) => Stream.value(const BusinessSettings(freeDeliveryThreshold: 20000)),
+          (ref) => Stream.value(
+            const BusinessSettings(freeDeliveryThreshold: 20000),
+          ),
         ),
         wishlistProvider.overrideWith((ref) => Stream.value(const <String>{})),
         cartItemCountProvider.overrideWith((ref) => 3),
@@ -101,7 +131,9 @@ Future<void> pumpHome(
         ],
         supportedLocales: AppLocalizations.supportedLocales,
         builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(textScale)),
           child: child!,
         ),
         home: const CustomerCatalogScreen(),
@@ -119,7 +151,11 @@ Future<void> scrollThrough(WidgetTester tester) async {
     await tester.drag(_outer, const Offset(0, -500));
     await tester.pump(const Duration(milliseconds: 400));
   }
-  expect(find.byType(SearchBar), findsNothing, reason: 'search bar hides while scrolling down');
+  expect(
+    find.byType(SearchBar),
+    findsNothing,
+    reason: 'search bar hides while scrolling down',
+  );
   // A finger moving back up brings the search bar back.
   final g = await tester.startGesture(tester.getCenter(_outer));
   for (var i = 0; i < 12; i++) {
@@ -147,7 +183,12 @@ Future<void> loadRealFonts() async {
     await loader.load();
   }
 
-  await load('Roboto', ['roboto-regular.ttf', 'roboto-medium.ttf', 'roboto-bold.ttf', 'roboto-black.ttf']);
+  await load('Roboto', [
+    'roboto-regular.ttf',
+    'roboto-medium.ttf',
+    'roboto-bold.ttf',
+    'roboto-black.ttf',
+  ]);
   await load('MaterialIcons', ['materialicons-regular.otf']);
 }
 
@@ -155,7 +196,9 @@ Future<void> loadRealFonts() async {
 final _shots = Platform.environment['CATALOG_SHOTS'] == '1';
 
 void main() {
-  setUpAll(loadRealFonts);
+  setUpAll(() async {
+    if (Platform.environment['NO_REAL_FONTS'] != '1') await loadRealFonts();
+  });
   for (final (label, size, scale) in [
     ('small phone', const Size(340, 720), 1.0),
     ('phone, large text', const Size(390, 844), 1.3),
@@ -163,23 +206,37 @@ void main() {
     ('desktop', const Size(1440, 900), 1.0),
     ('wide desktop', const Size(2200, 1200), 1.0),
   ]) {
-    testWidgets('home lays out and scrolls without overflow on $label', (tester) async {
+    testWidgets('home lays out and scrolls without overflow on $label', (
+      tester,
+    ) async {
       await pumpHome(tester, size: size, textScale: scale);
       expect(find.text('Shop by category'), findsOneWidget);
       expect(find.text('Featured'), findsWidgets);
       if (_shots) {
-        await expectLater(find.byType(MaterialApp), matchesGoldenFile('goldens/home_${label.replaceAll(RegExp('[^a-z]+'), '_')}.png'));
+        await expectLater(
+          find.byType(MaterialApp),
+          matchesGoldenFile(
+            'goldens/home_${label.replaceAll(RegExp('[^a-z]+'), '_')}.png',
+          ),
+        );
       }
       await scrollThrough(tester);
       if (_shots) {
-        await expectLater(find.byType(MaterialApp), matchesGoldenFile('goldens/home_${label.replaceAll(RegExp('[^a-z]+'), '_')}_scrolled.png'));
+        await expectLater(
+          find.byType(MaterialApp),
+          matchesGoldenFile(
+            'goldens/home_${label.replaceAll(RegExp('[^a-z]+'), '_')}_scrolled.png',
+          ),
+        );
       }
       expect(tester.takeException(), isNull);
       await tester.pump(const Duration(seconds: 6));
     });
   }
 
-  testWidgets('choosing a category switches to results and back', (tester) async {
+  testWidgets('choosing a category switches to results and back', (
+    tester,
+  ) async {
     await pumpHome(tester, size: const Size(390, 844));
     await tester.tap(find.text('Hoodies').first);
     await tester.pump(const Duration(milliseconds: 500));
@@ -198,10 +255,20 @@ void main() {
 
   testWidgets('filter sheet opens and shows a live count', (tester) async {
     await pumpHome(tester, size: const Size(390, 844));
-    await tester.scrollUntilVisible(find.text('Filter'), 400, scrollable: find.descendant(of: _outer, matching: find.byType(Scrollable)).first);
+    await tester.scrollUntilVisible(
+      find.text('Filter'),
+      400,
+      scrollable: find
+          .descendant(of: _outer, matching: find.byType(Scrollable))
+          .first,
+    );
     await tester.pump(const Duration(milliseconds: 300));
     await tester.tap(find.text('Filter').first);
-    await tester.pumpAndSettle(const Duration(milliseconds: 100), EnginePhase.sendSemanticsUpdate, const Duration(seconds: 3));
+    await tester.pumpAndSettle(
+      const Duration(milliseconds: 100),
+      EnginePhase.sendSemanticsUpdate,
+      const Duration(seconds: 3),
+    );
     expect(find.textContaining('Show'), findsOneWidget);
     await tester.tap(find.text('Can add my logo'));
     await tester.pump(const Duration(milliseconds: 300));
