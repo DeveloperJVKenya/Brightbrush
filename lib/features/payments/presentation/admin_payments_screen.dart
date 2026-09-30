@@ -8,6 +8,8 @@ import '../../../core/firebase/firebase_providers.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../commerce/presentation/etims_card.dart';
+import '../../growth/growth_settings.dart';
+import '../../notifications/presentation/notification_channels_card.dart';
 import '../../customization/presentation/decoration_pricing_card.dart';
 import '../application/payments_providers.dart';
 import '../domain/business_settings.dart';
@@ -56,6 +58,10 @@ class AdminPaymentsScreen extends ConsumerWidget {
                 const DecorationPricingCard(),
                 const SizedBox(height: 16),
                 const EtimsCard(),
+                const SizedBox(height: 16),
+                const NotificationChannelsCard(),
+                const SizedBox(height: 16),
+                const LoyaltyCurrencyCard(),
                 const SizedBox(height: 28),
                 Text(
                   'Payment gateways',
@@ -501,6 +507,7 @@ class _BusinessSettingsCardState extends ConsumerState<_BusinessSettingsCard> {
   final _paymentInstructions = TextEditingController();
   final _invoiceFooter = TextEditingController();
   final _pickupAddress = TextEditingController();
+  final _vapidKey = TextEditingController();
   bool _allowPickup = false;
   List<DeliveryZone> _zones = [];
   bool _vatEnabled = false;
@@ -525,6 +532,7 @@ class _BusinessSettingsCardState extends ConsumerState<_BusinessSettingsCard> {
       _paymentInstructions,
       _invoiceFooter,
       _pickupAddress,
+      _vapidKey,
     ]) {
       c.dispose();
     }
@@ -550,6 +558,7 @@ class _BusinessSettingsCardState extends ConsumerState<_BusinessSettingsCard> {
     _paymentInstructions.text = s.paymentInstructions;
     _invoiceFooter.text = s.invoiceFooter;
     _pickupAddress.text = s.pickupAddress;
+    _vapidKey.text = s.webPushVapidKey;
     _allowPickup = s.allowPickup;
     _zones = [...s.deliveryZones];
   }
@@ -661,6 +670,7 @@ class _BusinessSettingsCardState extends ConsumerState<_BusinessSettingsCard> {
               pickupAddress: _pickupAddress.text.trim(),
               allowPickup: _allowPickup,
               deliveryZones: _zones,
+              webPushVapidKey: _vapidKey.text.trim(),
             ),
             uid: uid,
           );
@@ -881,6 +891,15 @@ class _BusinessSettingsCardState extends ConsumerState<_BusinessSettingsCard> {
                   labelText: 'Payment instructions on invoices',
                   hintText:
                       'e.g. M-Pesa Paybill 123456, Acc: invoice no. · Bank: ...',
+                ),
+              ),
+              TextFormField(
+                controller: _vapidKey,
+                decoration: const InputDecoration(
+                  labelText: 'Web push key (VAPID)',
+                  helperText:
+                      'Firebase Console → Project settings → Cloud Messaging → Web Push certificates → Key pair. Needed for browser push.',
+                  helperMaxLines: 3,
                 ),
               ),
               TextFormField(

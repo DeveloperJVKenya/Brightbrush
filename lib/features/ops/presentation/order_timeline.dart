@@ -6,6 +6,7 @@ import '../../../core/formatting/currency.dart';
 import '../../orders/domain/order_model.dart';
 import '../../orders/domain/order_status.dart';
 import '../application/ops_providers.dart';
+import '../../../l10n/app_localizations.dart';
 import '../data/ops_repository.dart';
 
 /// Human-readable history of an order (status, payments, proof, QC,
@@ -58,7 +59,7 @@ class OrderTimeline extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'History',
+          AppLocalizations.of(context).history,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
           ),
@@ -147,8 +148,8 @@ class DeliveryCodeCard extends ConsumerWidget {
             Expanded(
               child: Text(
                 order.isPickup
-                    ? 'Show this code when you collect your order.'
-                    : 'Give this code to the driver when your order arrives — only then will they hand it over.',
+                    ? AppLocalizations.of(context).pickupCodeHint
+                    : AppLocalizations.of(context).deliveryCodeHint,
               ),
             ),
             const SizedBox(width: 12),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../features/orders/domain/order_status.dart';
+import '../../core/l10n/language.dart';
 
 /// Horizontal progress timeline through [OrderStatus.pipeline], with a
 /// separate "cancelled" treatment when that's the terminal state. Each
@@ -58,7 +59,7 @@ class OrderStatusTimeline extends StatelessWidget {
 
     return Semantics(
       label:
-          'Order status: ${steps[currentIndex].label}, '
+          'Order status: ${steps[currentIndex].localized(context)}, '
           'step ${currentIndex + 1} of ${steps.length}',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -88,7 +89,7 @@ class OrderStatusTimeline extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            steps[currentIndex].label,
+            steps[currentIndex].localized(context),
             style: theme.textTheme.labelMedium?.copyWith(
               fontWeight: FontWeight.w700,
               color: theme.colorScheme.primary,

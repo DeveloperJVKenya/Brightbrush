@@ -11,6 +11,7 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/live_search_field.dart';
 import '../../../shared/widgets/staggered_entrance.dart';
 import '../../catalog/application/catalog_providers.dart';
+import '../../growth/companies.dart';
 import '../application/cart_providers.dart';
 import 'widgets/ai_search_dialog.dart';
 import 'widgets/catalog_item_card.dart';
@@ -69,6 +70,7 @@ class CustomerCatalogScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
               const AnnouncementBanner(),
+              const MyUniformProgramsCard(),
               const SizedBox(height: 12),
               Row(
                 children: [

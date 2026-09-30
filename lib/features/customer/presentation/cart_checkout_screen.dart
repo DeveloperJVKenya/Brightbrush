@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng;
 
 import '../../../core/errors/user_facing_error.dart';
 import '../../../core/firebase/firebase_providers.dart';
@@ -11,12 +12,16 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../catalog/application/catalog_providers.dart';
 import '../../commerce/application/commerce_providers.dart';
 import '../../commerce/data/commerce_repository.dart';
+import '../../growth/growth_providers.dart';
+import '../../growth/growth_settings.dart';
+import '../../growth/map_pin_picker.dart';
 import '../../customization/application/customization_providers.dart';
 import '../../customization/domain/customization_pricing.dart';
 import '../../customization/presentation/widgets/customization_summary.dart';
 import '../../orders/application/orders_providers.dart';
 import '../../payments/application/payments_providers.dart';
 import '../../payments/domain/business_settings.dart';
+import '../../../l10n/app_localizations.dart';
 import '../application/cart_providers.dart';
 
 /// One resolved cart row — a catalog item or a package — with what the
@@ -109,9 +114,9 @@ class CartCheckoutScreen extends ConsumerWidget {
 
     final cart = cartAsync.value!;
     if (cart.isEmpty && customLines.isEmpty) {
-      return const EmptyState(
+      return EmptyState(
         icon: Icons.shopping_cart_outlined,
-        title: 'Your cart is empty',
+        title: AppLocalizations.of(context).cartEmpty,
         message:
             'Add items or seasonal packages from the catalog to start an order.',
       );
@@ -222,6 +227,11 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
   num? _couponCheckedFor;
   bool _checkingCoupon = false;
 
+  double? _pinLat;
+  double? _pinLng;
+  bool _saveAddress = false;
+  bool _usePoints = false;
+
   @override
   void initState() {
     super.initState();
@@ -309,7 +319,28 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
             couponCode: _couponPreview?.valid == true
                 ? _coupon.text.trim()
                 : '',
+            deliveryLat: _deliveryMethod == 'delivery' ? _pinLat : null,
+            deliveryLng: _deliveryMethod == 'delivery' ? _pinLng : null,
+            redeemPoints: _usePoints
+                ? (ref.read(myPointsProvider).valueOrNull ?? 0)
+                : 0,
           );
+      if (_saveAddress && _deliveryMethod == 'delivery') {
+        await ref
+            .read(addressActionsProvider)
+            .save(
+              SavedAddress(
+                id: '',
+                label: 'Delivery address',
+                address: _deliveryAddress.text.trim(),
+                contactName: _contactName.text.trim(),
+                contactPhone: _contactPhone.text.trim(),
+                lat: _pinLat,
+                lng: _pinLng,
+              ),
+            )
+            .catchError((Object _) {});
+      }
       // placeOrder empties the saved cart server-side in the same
       // transaction that creates the order.
       if (mounted) {
@@ -355,13 +386,21 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
     final couponAmount = couponCurrent && _couponPreview!.valid
         ? _couponPreview!.coupon
         : 0;
+    final loyalty =
+        ref.watch(loyaltySettingsProvider).valueOrNull ??
+        const LoyaltySettings();
+    final myPoints = ref.watch(myPointsProvider).valueOrNull ?? 0;
+    final points = _usePoints
+        ? loyalty.redeemable(myPoints, _subtotal - corporate - couponAmount)
+        : (points: 0, value: 0);
+    final addresses = ref.watch(savedAddressesProvider).valueOrNull ?? const [];
     final pricing = OrderPricing.compute(
       _subtotal,
       settings,
       paymentPlan: _paymentPlan,
       includeDelivery: _deliveryMethod == 'delivery',
       deliveryFee: zone?.fee,
-      discount: corporate + couponAmount,
+      discount: corporate + couponAmount + points.value,
       creditAllowed: account?.creditEnabled ?? false,
     );
     final problem =
@@ -491,7 +530,7 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Delivery details',
+              AppLocalizations.of(context).deliveryDetails,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
@@ -546,7 +585,9 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _contactName,
-              decoration: const InputDecoration(labelText: 'Contact name'),
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context).contactName,
+              ),
               maxLength: 80,
               validator: (v) =>
                   (v == null || v.trim().length < 2) ? 'Enter your name' : null,
@@ -554,12 +595,81 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
             TextFormField(
               controller: _contactPhone,
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: 'Contact phone'),
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context).contactPhone,
+              ),
               validator: (v) => (v == null || v.trim().length < 9)
                   ? 'Enter a phone number'
                   : null,
             ),
             const SizedBox(height: 12),
+            if (_deliveryMethod == 'delivery' && addresses.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final a in addresses)
+                      ActionChip(
+                        avatar: Icon(
+                          a.hasPin ? Icons.place_rounded : Icons.home_outlined,
+                          size: 18,
+                        ),
+                        label: Text(a.label.isEmpty ? a.address : a.label),
+                        onPressed: () => setState(() {
+                          _deliveryAddress.text = a.address;
+                          if (a.contactName.isNotEmpty) {
+                            _contactName.text = a.contactName;
+                          }
+                          if (a.contactPhone.isNotEmpty) {
+                            _contactPhone.text = a.contactPhone;
+                          }
+                          _pinLat = a.lat;
+                          _pinLng = a.lng;
+                        }),
+                      ),
+                  ],
+                ),
+              ),
+            if (_deliveryMethod == 'delivery')
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: () async {
+                        final p = await pickLocationOnMap(
+                          context,
+                          initial: _pinLat == null
+                              ? null
+                              : LatLng(_pinLat!, _pinLng!),
+                        );
+                        if (p != null) {
+                          setState(() {
+                            _pinLat = p.latitude;
+                            _pinLng = p.longitude;
+                          });
+                        }
+                      },
+                      icon: Icon(
+                        _pinLat == null
+                            ? Icons.add_location_alt_outlined
+                            : Icons.place_rounded,
+                      ),
+                      label: Text(
+                        _pinLat == null
+                            ? 'Drop a pin for the driver (optional)'
+                            : 'Pin set — tap to adjust',
+                      ),
+                    ),
+                  ),
+                  Checkbox(
+                    value: _saveAddress,
+                    onChanged: (v) => setState(() => _saveAddress = v ?? false),
+                  ),
+                  const Text('Save'),
+                ],
+              ),
             if (_deliveryMethod == 'delivery')
               TextFormField(
                 controller: _deliveryAddress,
@@ -615,12 +725,25 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
               ],
             ),
             const SizedBox(height: 12),
-            moneyRow('Subtotal', pricing.subtotal),
+            moneyRow(AppLocalizations.of(context).subtotal, pricing.subtotal),
             if (corporate > 0)
               moneyRow(
                 'Account discount (${account!.discountPercent}%)',
                 -corporate,
               ),
+            if (loyalty.enabled && myPoints > 0)
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                value: _usePoints,
+                onChanged: (v) => setState(() => _usePoints = v ?? false),
+                title: Text('Use my points ($myPoints available)'),
+                subtitle: Text(
+                  'Up to ${loyalty.maxRedeemPercent}% of the order',
+                ),
+              ),
+            if (points.value > 0)
+              moneyRow('Points (${points.points})', -points.value),
             if (couponAmount > 0)
               moneyRow(
                 'Promo ${_coupon.text.trim().toUpperCase()}',
@@ -638,7 +761,15 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
                 pricing.taxAmount,
               ),
             const Divider(),
-            moneyRow('Total', pricing.total, bold: true),
+            moneyRow(
+              AppLocalizations.of(context).total,
+              pricing.total,
+              bold: true,
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: ApproxPrice(kes: pricing.total),
+            ),
             if (settings.depositsAvailable ||
                 (account?.creditEnabled ?? false)) ...[
               const SizedBox(height: 12),
@@ -718,7 +849,7 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
                         ),
                       )
                     : const Icon(Icons.send_rounded),
-                label: const Text('Place order'),
+                label: Text(AppLocalizations.of(context).placeOrder),
               ),
             ),
           ],

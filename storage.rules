@@ -129,6 +129,31 @@ service firebase.storage {
       allow create: if isOrderStaff() && isValidImageUpload();
     }
 
+    // Order chat attachments (images/PDFs) — the order's customer and staff.
+    match /chat/{orderId}/{fileName} {
+      allow read: if isOrderStaff() ||
+        (isAuthenticated() &&
+          firestore.get(/databases/brightbrush-main/documents/Orders/$(orderId)).data.customerId == request.auth.uid);
+      allow create: if request.resource.size < 10 * 1024 * 1024 &&
+        (request.resource.contentType.matches('image/.*') || request.resource.contentType == 'application/pdf') &&
+        (isOrderStaff() ||
+          (isAuthenticated() &&
+            firestore.get(/databases/brightbrush-main/documents/Orders/$(orderId)).data.customerId == request.auth.uid));
+    }
+
+    // Review photos (public once the review is approved).
+    match /reviews/{uid}/{fileName} {
+      allow read: if true;
+      allow create: if isOwner(uid) && isValidImageUpload();
+    }
+
+    // Portfolio gallery (public).
+    match /portfolio/{fileName} {
+      allow read: if true;
+      allow write: if isOrderStaff() && isValidImageUpload();
+      allow delete: if isOrderStaff();
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

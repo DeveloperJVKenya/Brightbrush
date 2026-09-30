@@ -53,6 +53,7 @@ class BusinessSettings {
     this.deliveryZones = const [],
     this.allowPickup = false,
     this.pickupAddress = '',
+    this.webPushVapidKey = '',
   });
 
   final String businessName;
@@ -82,6 +83,10 @@ class BusinessSettings {
   final List<DeliveryZone> deliveryZones;
   final bool allowPickup;
   final String pickupAddress;
+
+  /// Public Web Push (VAPID) key from Firebase Console → Cloud Messaging;
+  /// needed for push notifications in browsers.
+  final String webPushVapidKey;
 
   bool get depositsAvailable =>
       allowDeposit && depositPercent > 0 && depositPercent < 100;
@@ -117,6 +122,7 @@ class BusinessSettings {
       ],
       allowPickup: d['allowPickup'] as bool? ?? f.allowPickup,
       pickupAddress: str('pickupAddress', f.pickupAddress),
+      webPushVapidKey: str('webPushVapidKey', f.webPushVapidKey),
     );
   }
 
@@ -140,6 +146,7 @@ class BusinessSettings {
       'deliveryZones': [for (final z in deliveryZones) z.toMap()],
       'allowPickup': allowPickup,
       'pickupAddress': pickupAddress,
+      'webPushVapidKey': webPushVapidKey,
       'updatedAt': FieldValue.serverTimestamp(),
       'updatedBy': uid,
     };

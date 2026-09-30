@@ -10,11 +10,14 @@ import '../../../shared/widgets/order_status_timeline.dart';
 import '../../orders/application/orders_providers.dart';
 import '../../orders/domain/order_model.dart';
 import '../../orders/domain/order_status.dart';
+import '../../chat/order_chat.dart';
 import '../../commerce/presentation/order_documents_panel.dart';
+import '../../growth/social_widgets.dart';
 import '../../ops/presentation/order_timeline.dart';
 import '../../customization/presentation/widgets/customization_summary.dart';
 import '../../payments/presentation/widgets/order_payment_panel.dart';
 import '../../proofs/presentation/proof_widgets.dart';
+import '../../../l10n/app_localizations.dart';
 import '../application/cart_providers.dart';
 
 class OrderDetailScreen extends ConsumerWidget {
@@ -102,6 +105,15 @@ class _OrderDetailBody extends ConsumerWidget {
               _StatusCard(order: order),
               const SizedBox(height: 16),
               DeliveryCodeCard(order: order),
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: OrderChatButton(
+                  orderId: order.id,
+                  orderLabel: order.displayNumber,
+                  asStaff: false,
+                ),
+              ),
               const SizedBox(height: 16),
               CustomerProofPanel(order: order),
               const SizedBox(height: 16),
@@ -127,6 +139,17 @@ class _OrderDetailBody extends ConsumerWidget {
                 _StatusCard(order: order),
                 const SizedBox(height: 16),
                 DeliveryCodeCard(order: order),
+                const SizedBox(height: 12),
+                OrderReviewCard(order: order),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: OrderChatButton(
+                    orderId: order.id,
+                    orderLabel: order.displayNumber,
+                    asStaff: false,
+                  ),
+                ),
                 const SizedBox(height: 16),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -283,7 +306,7 @@ class _ItemsSection extends ConsumerWidget {
               TextButton.icon(
                 onPressed: () => _reorder(context, ref),
                 icon: const Icon(Icons.replay_rounded),
-                label: const Text('Order again'),
+                label: Text(AppLocalizations.of(context).orderAgain),
               ),
           ],
         ),
@@ -423,7 +446,7 @@ class _DeliverySectionState extends ConsumerState<_DeliverySection> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.cancel_outlined),
-            label: const Text('Cancel order'),
+            label: Text(AppLocalizations.of(context).cancelOrder),
           ),
         ],
       ],

@@ -11,6 +11,12 @@ import {
   redeemCoupon,
 } from '../accounts/accounts';
 import { asObject, requireEnum } from '../core/validate';
+import {
+  applyPoints,
+  loadLoyaltySettings,
+  readBalance,
+  redeemable,
+} from '../loyalty/loyalty';
 import { loadBusinessSettings } from '../settings/business_settings';
 import {
   loadDecorationPricing,
@@ -61,7 +67,16 @@ export const placeOrder = onCall(async (request) => {
       'Credit terms aren\'t enabled on your account. Choose another way to pay.',
     );
   }
-  const owed = paymentPlan === 'credit' ? await outstandingBalance(caller.uid) : 0;
+  const owed = paymentPlan === 'credit' ? await outstandingBalance(caller.uid, account.memberIds) : 0;
+  const requestedPoints =
+    typeof data.redeemPoints === 'number' && data.redeemPoints > 0 ? Math.floor(data.redeemPoints) : 0;
+  const loyalty = requestedPoints > 0 ? await loadLoyaltySettings() : null;
+  // Exact drop-off pin chosen on the map at checkout.
+  const pin =
+    typeof data.deliveryLat === 'number' && typeof data.deliveryLng === 'number' &&
+    Math.abs(data.deliveryLat) <= 90 && Math.abs(data.deliveryLng) <= 180
+      ? { deliveryLat: data.deliveryLat, deliveryLng: data.deliveryLng }
+      : {};
 
   const cartRef = db.collection('Carts').doc(caller.uid);
   const orderRef = db.collection('Orders').doc();
@@ -98,6 +113,7 @@ export const placeOrder = onCall(async (request) => {
     const couponRead = couponCode
       ? await readCoupon(tx, couponCode, caller.uid)
       : null;
+    const pointsBalance = loyalty ? await readBalance(tx, caller.uid) : 0;
     const now = Date.now();
 
     const lines: PricedLine[] = entries.map(([key, rawQty], index) => {
@@ -165,11 +181,14 @@ export const placeOrder = onCall(async (request) => {
         `Spend at least KES ${couponRead.coupon.minSubtotal} to use "${couponCode}".`,
       );
     }
+    const points = loyalty
+      ? redeemable(requestedPoints, pointsBalance, subtotal - discount.total, loyalty)
+      : { points: 0, value: 0 };
     const totals = computeTotals(subtotal, settings, {
       paymentPlan,
       includeDelivery: fulfilment.method === 'delivery',
       deliveryFee: fulfilment.deliveryFee,
-      discount: discount.total,
+      discount: discount.total + points.value,
       creditAllowed: account.creditEnabled,
     });
     if (
@@ -201,12 +220,18 @@ export const placeOrder = onCall(async (request) => {
         ...(discount.corporate > 0 ? { corporateDiscount: discount.corporate } : {}),
         ...(couponRead ? { couponCode, couponDiscount: discount.coupon } : {}),
         ...(account.companyName ? { customerCompany: account.companyName } : {}),
+        ...(account.companyId ? { companyId: account.companyId } : {}),
+        ...(points.points > 0 ? { pointsRedeemed: points.points, loyaltyDiscount: points.value } : {}),
+        ...pin,
         ...(account.kraPin ? { customerKraPin: account.kraPin } : {}),
         ...(totals.paymentPlan === 'credit'
           ? { dueDate: new Date(now + account.paymentTermsDays * 86400000) }
           : {}),
       },
     });
+    if (points.points > 0) {
+      applyPoints(tx, caller.uid, pointsBalance, -points.points, 'redeemed', orderRef.id);
+    }
     if (couponRead) {
       redeemCoupon(tx, couponCode, caller.uid, couponRead.redemptionCount, orderRef.id);
     }

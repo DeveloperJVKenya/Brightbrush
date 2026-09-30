@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../quotes/presentation/my_quotes_screen.dart';
 import '../../customization/presentation/item_configurator_screen.dart';
 import '../../customization/presentation/my_artwork_screen.dart';
+import '../../growth/social_widgets.dart';
 import 'catalog_item_detail_screen.dart';
 import 'order_detail_screen.dart';
 
@@ -11,10 +12,15 @@ import 'order_detail_screen.dart';
 /// shell/chrome as the Home module.
 final List<RouteBase> customerExtraRoutes = [
   GoRoute(
+    path: '/customer/wishlist',
+    builder: (context, state) => const WishlistScreen(),
+  ),
+  GoRoute(
     path: '/customer/catalog/:id/customize',
     builder: (context, state) => ItemConfiguratorScreen(
       itemId: state.pathParameters['id']!,
       lineId: state.uri.queryParameters['line'],
+      programKey: state.uri.queryParameters['program'],
     ),
   ),
   GoRoute(

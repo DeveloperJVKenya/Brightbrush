@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/widgets/module_spec.dart';
 import '../../../shared/widgets/profile_screen.dart';
+import '../../growth/social_widgets.dart';
 import 'cart_checkout_screen.dart';
 import 'customer_catalog_screen.dart';
-import 'customer_notifications_screen.dart';
+import '../../notifications/presentation/inbox_screen.dart';
 import 'customer_support_screen.dart';
 import 'customer_tracking_screen.dart';
 import 'my_orders_screen.dart';
@@ -35,6 +36,15 @@ final List<ModuleSpec> customerModules = [
         'Seasonal & campaign branding bundles (e.g. Valentine\'s, election-campaign packs) '
         'curated by the System Manager.',
     screenBuilder: (context, state) => const PackagesScreen(),
+  ),
+  ModuleSpec(
+    path: '/customer/portfolio',
+    label: 'Our work',
+    icon: Icons.photo_library_outlined,
+    selectedIcon: Icons.photo_library,
+    description:
+        'Branding we\'ve made for schools, companies, events and teams.',
+    screenBuilder: (context, state) => const PortfolioScreen(),
   ),
   ModuleSpec(
     path: '/customer/orders',
@@ -70,7 +80,7 @@ final List<ModuleSpec> customerModules = [
     icon: Icons.notifications_outlined,
     selectedIcon: Icons.notifications,
     description: 'Order status changes, delivery updates and seasonal offers.',
-    screenBuilder: (context, state) => const CustomerNotificationsScreen(),
+    screenBuilder: (context, state) => const InboxScreen(),
   ),
   ModuleSpec(
     path: '/customer/support',

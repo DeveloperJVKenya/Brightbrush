@@ -7,6 +7,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/auth/app_role.dart';
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/settings/app_font.dart';
+import '../../growth/growth_settings.dart';
+import '../../../core/l10n/language.dart';
 import '../../../core/settings/settings_providers.dart';
 
 /// Personal display preferences, reachable from every role via the shell's
@@ -190,6 +192,16 @@ class SettingsScreen extends ConsumerWidget {
               onChanged: (v) =>
                   ref.read(inAppNotificationsEnabledProvider.notifier).set(v),
             ),
+          ),
+          const SizedBox(height: 20),
+          _SectionHeader(
+            title: 'Language & currency',
+            icon: Icons.translate_rounded,
+          ),
+          const SizedBox(height: 12),
+          const Card(
+            margin: EdgeInsets.zero,
+            child: Column(children: [LanguageTile(), DisplayCurrencyTile()]),
           ),
           const SizedBox(height: 20),
           _SectionHeader(title: 'About & support', icon: Icons.info_outline),

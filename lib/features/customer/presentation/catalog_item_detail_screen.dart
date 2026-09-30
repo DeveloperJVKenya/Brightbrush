@@ -11,7 +11,10 @@ import '../../../shared/widgets/catalog_image.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../catalog/application/catalog_providers.dart';
 import '../../catalog/domain/catalog_item.dart';
+import '../../growth/growth_settings.dart';
+import '../../growth/social_widgets.dart';
 import '../../quotes/presentation/request_quote_sheet.dart';
+import '../../../l10n/app_localizations.dart';
 import '../application/cart_providers.dart';
 
 class CatalogItemDetailScreen extends ConsumerWidget {
@@ -31,6 +34,7 @@ class CatalogItemDetailScreen extends ConsumerWidget {
           onPressed: () => context.pop(),
         ),
         title: const Text('Item details'),
+        actions: [WishlistButton(itemId: itemId)],
       ),
       body: itemsAsync.when(
         loading: () => const Center(
@@ -123,6 +127,7 @@ class _DetailBody extends ConsumerWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
+          ApproxPrice(kes: item.fromPrice),
           const SizedBox(height: 16),
           Wrap(
             spacing: 16,
@@ -183,7 +188,7 @@ class _DetailBody extends ConsumerWidget {
                 onPressed: () =>
                     context.push('/customer/catalog/${item.id}/customize'),
                 icon: const Icon(Icons.design_services_rounded),
-                label: const Text('Customise & order'),
+                label: Text(AppLocalizations.of(context).customiseAndOrder),
               ),
             )
           else
@@ -234,7 +239,7 @@ class _DetailBody extends ConsumerWidget {
                   }
                 },
                 icon: const Icon(Icons.add_shopping_cart_rounded),
-                label: const Text('Add to cart'),
+                label: Text(AppLocalizations.of(context).addToCart),
               ),
             ),
           const SizedBox(height: 8),
@@ -248,9 +253,10 @@ class _DetailBody extends ConsumerWidget {
                 initialQuantity: item.moq < 1 ? 1 : item.moq,
               ),
               icon: const Icon(Icons.request_quote_outlined),
-              label: const Text('Custom job or bulk price? Request a quote'),
+              label: Text(AppLocalizations.of(context).requestQuote),
             ),
           ),
+          ItemReviewsSection(itemId: item.id),
         ],
       ),
     );

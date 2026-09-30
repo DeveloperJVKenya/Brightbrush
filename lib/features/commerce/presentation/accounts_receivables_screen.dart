@@ -10,6 +10,7 @@ import '../../../core/errors/user_facing_error.dart';
 import '../../../core/firebase/firebase_providers.dart';
 import '../../../core/formatting/currency.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../growth/companies.dart';
 import '../../orders/application/orders_providers.dart';
 import '../../orders/domain/order_model.dart';
 import '../../orders/domain/order_status.dart';
@@ -25,7 +26,7 @@ class AccountsReceivablesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const DefaultTabController(
-      length: 4,
+      length: 5,
       child: Column(
         children: [
           TabBar(
@@ -36,6 +37,10 @@ class AccountsReceivablesScreen extends StatelessWidget {
                 icon: Icon(Icons.business_outlined),
                 text: 'Business accounts',
               ),
+              Tab(
+                icon: Icon(Icons.apartment_rounded),
+                text: 'Companies & uniforms',
+              ),
               Tab(icon: Icon(Icons.local_offer_outlined), text: 'Promo codes'),
               Tab(icon: Icon(Icons.file_download_outlined), text: 'Export'),
             ],
@@ -45,6 +50,7 @@ class AccountsReceivablesScreen extends StatelessWidget {
               children: [
                 _ReceivablesTab(),
                 _AccountsTab(),
+                CompaniesTab(),
                 _CouponsTab(),
                 _ExportTab(),
               ],

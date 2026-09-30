@@ -12,6 +12,7 @@ import '../../../shared/widgets/order_status_timeline.dart';
 import '../../orders/application/orders_providers.dart';
 import '../../orders/domain/order_model.dart';
 import '../../orders/domain/order_status.dart';
+import '../../chat/order_chat.dart';
 import '../../commerce/application/commerce_providers.dart';
 import '../../commerce/data/commerce_repository.dart';
 import '../../commerce/presentation/refund_dialog.dart';
@@ -403,6 +404,11 @@ class _ManagerOrderRowState extends ConsumerState<_ManagerOrderRow> {
                     visualDensity: VisualDensity.compact,
                     backgroundColor: theme.colorScheme.errorContainer,
                   ),
+                OrderChatButton(
+                  orderId: order.id,
+                  orderLabel: order.displayNumber,
+                  asStaff: true,
+                ),
                 PopupMenuButton<String>(
                   tooltip: 'More',
                   icon: const Icon(Icons.more_horiz_rounded),

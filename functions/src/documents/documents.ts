@@ -76,6 +76,7 @@ function orderTotals(o: Record<string, any>): DocTotalRow[] {
   return [
     { label: 'Subtotal', amount: o.subtotal ?? 0 },
     ...((o.corporateDiscount ?? 0) > 0 ? [{ label: 'Account discount', amount: -o.corporateDiscount }] : []),
+    ...((o.loyaltyDiscount ?? 0) > 0 ? [{ label: `Loyalty points (${o.pointsRedeemed})`, amount: -o.loyaltyDiscount }] : []),
     ...((o.couponDiscount ?? 0) > 0 ? [{ label: `Coupon ${o.couponCode ?? ''}`, amount: -o.couponDiscount }] : []),
     ...((o.deliveryFee ?? 0) > 0 ? [{ label: `Delivery${o.deliveryZoneName ? ` (${o.deliveryZoneName})` : ''}`, amount: o.deliveryFee }] : []),
     ...((o.taxAmount ?? 0) > 0 ? [{ label: inclusive ? `Includes VAT ${vatPct}%` : `VAT ${vatPct}%`, amount: o.taxAmount }] : []),

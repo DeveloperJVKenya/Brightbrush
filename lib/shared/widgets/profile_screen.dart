@@ -15,6 +15,7 @@ import '../../core/errors/user_facing_error.dart';
 import '../../core/logging/app_logger.dart';
 import '../../features/auth/presentation/widgets/account_safety_section.dart';
 import '../../features/commerce/presentation/customer_account_tile.dart';
+import '../../features/growth/rewards_card.dart';
 import '../../features/catalog/application/catalog_providers.dart';
 import 'empty_state.dart';
 
@@ -448,6 +449,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                   ],
                   if (role == AppRole.user) const CustomerAccountTile(),
+                  if (role == AppRole.user) const RewardsCard(),
+                  if (role == AppRole.user)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: Card(
+                        margin: EdgeInsets.zero,
+                        child: ListTile(
+                          leading: const Icon(Icons.favorite_border_rounded),
+                          title: const Text('Wishlist'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => context.push('/customer/wishlist'),
+                        ),
+                      ),
+                    ),
                   AccountSafetySection(role: role),
                   const SizedBox(height: 20),
                   SizedBox(

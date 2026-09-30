@@ -299,7 +299,9 @@ service cloud.firestore {
               'priceTiers', 'sizes', 'colours', 'decorationMethods', 'placements',
               // Bill of materials: [{materialId, perUnit}] — deducted from
               // stock by the server when an order enters production.
-              'materials', 'lastUpdatedBy'
+              'materials', 'lastUpdatedBy',
+              // Written by the review trigger.
+              'ratingAvg', 'ratingCount'
             ]) &&
             hasRequiredFields([
               'name', 'category', 'description', 'basePrice', 'moq', 'leadTimeDays',
@@ -411,7 +413,8 @@ service cloud.firestore {
               'cancellationFee', 'cancelReason',
               // Operations (server-written except lastUpdatedBy).
               'promisedDate', 'qcStatus', 'materialsDeducted', 'materialsUsed',
-              'proofOfDelivery', 'lastUpdatedBy'
+              'proofOfDelivery', 'lastUpdatedBy',
+              'companyId', 'pointsRedeemed', 'loyaltyDiscount', 'pointsRestored', 'loyaltyAwarded', 'pointsEarned'
             ]) &&
             hasRequiredFields([
               'customerId', 'contactName', 'contactPhone', 'deliveryAddress',
@@ -534,7 +537,7 @@ service cloud.firestore {
       return hasOnlyAllowedFields([
               'businessName', 'appBaseUrl', 'supportPhone', 'supportEmail', 'kraPin',
               'physicalAddress', 'paymentInstructions', 'invoiceFooter',
-              'deliveryZones', 'allowPickup', 'pickupAddress',
+              'deliveryZones', 'allowPickup', 'pickupAddress', 'webPushVapidKey',
               'vatEnabled', 'vatRate', 'pricesIncludeVat', 'deliveryFlatFee',
               'freeDeliveryThreshold', 'allowDeposit', 'depositPercent', 'updatedAt', 'updatedBy'
             ]) &&
@@ -611,6 +614,28 @@ service cloud.firestore {
             (!('validFrom' in d) || d.validFrom is timestamp) &&
             (!('validTo' in d) || d.validTo is timestamp) &&
             d.createdAt is timestamp && d.updatedAt is timestamp;
+    }
+
+    function isValidLoyaltySettings() {
+      let d = request.resource.data;
+      return hasOnlyAllowedFields([
+              'enabled', 'pointsPerHundred', 'pointValue', 'referralBonusPoints', 'maxRedeemPercent',
+              'updatedAt', 'updatedBy'
+            ]) &&
+            d.enabled is bool &&
+            d.pointsPerHundred is number && d.pointsPerHundred >= 0 && d.pointsPerHundred <= 100 &&
+            d.pointValue is number && d.pointValue >= 0 && d.pointValue <= 1000 &&
+            d.referralBonusPoints is number && d.referralBonusPoints >= 0 &&
+            d.maxRedeemPercent is number && d.maxRedeemPercent >= 0 && d.maxRedeemPercent <= 100 &&
+            d.updatedBy == request.auth.uid;
+    }
+
+    // Display-only exchange rates (KES per unit); everything is charged in KES.
+    function isValidCurrencySettings() {
+      let d = request.resource.data;
+      return hasOnlyAllowedFields(['rates', 'updatedAt', 'updatedBy']) &&
+        d.rates is map && d.rates.size() <= 10 &&
+        d.updatedBy == request.auth.uid;
     }
 
     function isValidQuoteStatus(value) {
@@ -731,7 +756,8 @@ service cloud.firestore {
           'couponCode', 'couponDiscount', 'deliveryMethod', 'deliveryZoneId', 'deliveryZoneName',
           'customerCompany', 'customerKraPin', 'dueDate', 'overdue', 'etims',
           'cancellationFee', 'cancelReason',
-          'promisedDate', 'qcStatus', 'materialsDeducted', 'materialsUsed', 'proofOfDelivery'
+          'promisedDate', 'qcStatus', 'materialsDeducted', 'materialsUsed', 'proofOfDelivery',
+          'companyId', 'pointsRedeemed', 'loyaltyDiscount', 'pointsRestored', 'loyaltyAwarded', 'pointsEarned'
         ]) &&
         request.resource.data.updatedAt == request.time &&
         // Every client change names its author, for the order timeline and
@@ -949,7 +975,9 @@ service cloud.firestore {
       allow create, update: if isAdminOrDeveloper() &&
         request.resource.data.updatedAt == request.time &&
         ((docId == 'business' && isValidBusinessSettings()) ||
-          (docId == 'decoration' && isValidDecorationSettings()));
+          (docId == 'decoration' && isValidDecorationSettings()) ||
+          (docId == 'loyalty' && isValidLoyaltySettings()) ||
+          (docId == 'currency' && isValidCurrencySettings()));
       allow delete: if false;
     }
 
@@ -1148,6 +1176,167 @@ service cloud.firestore {
       allow read: if isAdminOrDeveloper();
       allow write: if false;
     }
+
+    // ---------------------------------------------------------------
+    // Phase 5: notifications, chat, reviews, companies, loyalty
+    // ---------------------------------------------------------------
+
+    match /Notifications/{notificationId} {
+      // Per-user inbox written by the server; owners mark read or delete.
+      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.uid == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']) &&
+        request.resource.data.read is bool;
+      allow delete: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow create: if false;
+    }
+
+    match /Users/{uid}/Devices/{token} {
+      // Push notification tokens for the owner's devices.
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid) &&
+        request.resource.data.keys().hasOnly(['platform', 'updatedAt']) &&
+        request.resource.data.platform is string && request.resource.data.platform.size() <= 20;
+    }
+
+    match /Users/{uid}/Settings/{docId} {
+      // Personal preferences: notification channels, language, currency.
+      allow read: if isOwner(uid);
+      allow write: if isOwner(uid) && docId in ['notifications', 'preferences'] &&
+        request.resource.data.size() <= 10;
+    }
+
+    match /Users/{uid}/Addresses/{addressId} {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid) &&
+        request.resource.data.keys().hasOnly(['label', 'address', 'contactName', 'contactPhone', 'lat', 'lng', 'isDefault', 'updatedAt']) &&
+        request.resource.data.label is string && request.resource.data.label.size() <= 40 &&
+        request.resource.data.address is string && request.resource.data.address.size() >= 5 && request.resource.data.address.size() <= 300 &&
+        (!('lat' in request.resource.data) || request.resource.data.lat == null || (request.resource.data.lat is number && request.resource.data.lat >= -90 && request.resource.data.lat <= 90)) &&
+        (!('lng' in request.resource.data) || request.resource.data.lng == null || (request.resource.data.lng is number && request.resource.data.lng >= -180 && request.resource.data.lng <= 180));
+    }
+
+    match /Users/{uid}/Wishlist/{itemId} {
+      allow read, delete: if isOwner(uid);
+      allow create: if isOwner(uid) && request.resource.data.keys().hasOnly(['addedAt']);
+    }
+
+    function isOrderCustomer(orderId) {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/Orders/$(orderId)).data.customerId == request.auth.uid;
+    }
+
+    match /Orders/{orderId}/Messages/{messageId} {
+      allow read: if isManagerOrAdmin() || isOrderCustomer(orderId);
+      allow create: if request.resource.data.keys().hasOnly(['from', 'fromRole', 'fromName', 'text', 'attachments', 'at']) &&
+        request.resource.data.from == request.auth.uid &&
+        request.resource.data.text is string && request.resource.data.text.size() <= 2000 &&
+        request.resource.data.attachments is list && request.resource.data.attachments.size() <= 5 &&
+        (request.resource.data.text.size() > 0 || request.resource.data.attachments.size() > 0) &&
+        request.resource.data.fromName is string && request.resource.data.fromName.size() <= 80 &&
+        request.resource.data.at == request.time &&
+        ((request.resource.data.fromRole == 'customer' && isOrderCustomer(orderId)) ||
+          (request.resource.data.fromRole == 'staff' && isManagerOrAdmin()));
+      allow update, delete: if false;
+    }
+
+    match /Orders/{orderId}/ChatState/{docId} {
+      // Unread counters (server-maintained); each side can only clear its own.
+      allow read: if isManagerOrAdmin() || isOrderCustomer(orderId);
+      allow update: if (isOrderCustomer(orderId) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['customerUnread']) &&
+          request.resource.data.customerUnread == 0) ||
+        (isManagerOrAdmin() &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['staffUnread']) &&
+          request.resource.data.staffUnread == 0);
+      allow create, delete: if false;
+    }
+
+    match /Reviews/{orderId} {
+      // One review per completed order, moderated before it's public.
+      allow read: if resource.data.status == 'approved' ||
+        (isAuthenticated() && resource.data.customerId == request.auth.uid) ||
+        isManagerOrAdmin();
+      allow create: if isAuthenticated() &&
+        request.resource.data.customerId == request.auth.uid &&
+        get(/databases/$(database)/documents/Orders/$(orderId)).data.customerId == request.auth.uid &&
+        get(/databases/$(database)/documents/Orders/$(orderId)).data.status == 'completed' &&
+        request.resource.data.keys().hasOnly(['customerId', 'customerName', 'rating', 'comment', 'photoUrls', 'itemIds', 'status', 'createdAt']) &&
+        request.resource.data.status == 'pending' &&
+        request.resource.data.rating is int && request.resource.data.rating >= 1 && request.resource.data.rating <= 5 &&
+        request.resource.data.comment is string && request.resource.data.comment.size() <= 1000 &&
+        request.resource.data.customerName is string && request.resource.data.customerName.size() <= 80 &&
+        request.resource.data.photoUrls is list && request.resource.data.photoUrls.size() <= 4 &&
+        request.resource.data.itemIds is list && request.resource.data.itemIds.size() <= 50 &&
+        request.resource.data.createdAt == request.time;
+      allow update: if isManagerOrAdmin() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reply', 'moderatedBy']) &&
+        request.resource.data.status in ['pending', 'approved', 'hidden'] &&
+        request.resource.data.moderatedBy == request.auth.uid &&
+        (!('reply' in request.resource.data) || (request.resource.data.reply is string && request.resource.data.reply.size() <= 1000));
+      allow delete: if false;
+    }
+
+    match /Portfolio/{workId} {
+      // Public gallery of past work (guests included).
+      allow read: if true;
+      allow create, update: if isManagerOrAdmin() &&
+        request.resource.data.keys().hasOnly(['title', 'description', 'imageUrls', 'tags', 'category', 'featured', 'createdAt', 'updatedAt']) &&
+        request.resource.data.title is string && request.resource.data.title.size() >= 2 && request.resource.data.title.size() <= 100 &&
+        request.resource.data.imageUrls is list && request.resource.data.imageUrls.size() >= 1 && request.resource.data.imageUrls.size() <= 10 &&
+        request.resource.data.featured is bool;
+      allow delete: if isManagerOrAdmin();
+    }
+
+    match /Companies/{companyId} {
+      // Business customers with several buyers sharing terms and credit.
+      allow read: if isManagerOrAdmin() ||
+        (isAuthenticated() && request.auth.uid in resource.data.memberIds);
+      allow create, update: if isAdminOrDeveloper() &&
+        request.resource.data.keys().hasOnly([
+          'name', 'kraPin', 'discountPercent', 'creditEnabled', 'creditLimit', 'paymentTermsDays',
+          'memberIds', 'memberEmails', 'notes', 'updatedAt', 'updatedBy'
+        ]) &&
+        request.resource.data.name is string && request.resource.data.name.size() >= 2 &&
+        request.resource.data.memberIds is list && request.resource.data.memberIds.size() <= 200 &&
+        request.resource.data.discountPercent is number &&
+        request.resource.data.discountPercent >= 0 && request.resource.data.discountPercent <= 100 &&
+        request.resource.data.creditEnabled is bool &&
+        request.resource.data.creditLimit is number && request.resource.data.creditLimit >= 0 &&
+        request.resource.data.paymentTermsDays is int &&
+        request.resource.data.updatedBy == request.auth.uid;
+      allow delete: if isAdminOrDeveloper();
+
+      match /Programs/{programId} {
+        // Uniform programs: pre-approved branded items for the company's buyers.
+        allow read: if isManagerOrAdmin() ||
+          (isAuthenticated() &&
+            request.auth.uid in get(/databases/$(database)/documents/Companies/$(companyId)).data.memberIds);
+        allow write: if isManagerOrAdmin() &&
+          (request.resource == null || (
+            request.resource.data.keys().hasOnly(['name', 'description', 'active', 'items', 'updatedAt', 'updatedBy']) &&
+            request.resource.data.name is string && request.resource.data.name.size() >= 2 &&
+            request.resource.data.items is list && request.resource.data.items.size() <= 30 &&
+            request.resource.data.active is bool));
+      }
+    }
+
+    match /LoyaltyAccounts/{uid} {
+      allow read: if isOwner(uid) || isAdminOrDeveloper();
+      allow write: if false;
+    }
+
+    match /LoyaltyLedger/{entryId} {
+      allow read: if (isAuthenticated() && resource.data.uid == request.auth.uid) || isAdminOrDeveloper();
+      allow write: if false;
+    }
+
+    match /Referrals/{uid} {
+      allow read: if isOwner(uid) || isAdminOrDeveloper();
+      allow write: if false;
+    }
+
+    // ReferralCodes and CartReminders are server-only (default deny).
 
     match /PaymentGateways/{gatewayId} {
       // Public status only (enabled/configured/mode/label/public key) —

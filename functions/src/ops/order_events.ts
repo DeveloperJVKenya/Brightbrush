@@ -3,6 +3,9 @@ import { logger } from 'firebase-functions/v2';
 import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
 
 import { DATABASE_ID, db } from '../core/app';
+import { onOrderCompleted, restoreRedeemedPoints } from '../loyalty/loyalty';
+import { notifyStaff, notifyUser } from '../notifications/notify';
+import { customerNoticesFor, staffNoticesFor } from '../notifications/order_notices';
 import { writeAudit } from './audit';
 import { materialNeeds, parseBom } from './materials';
 
@@ -59,6 +62,12 @@ export const onOrderChanged = onDocumentUpdated(
     const actor = String(after.lastUpdatedBy ?? 'system');
 
     if (changes.length > 0) {
+      // Customer + staff notifications (in-app, push, email, WhatsApp).
+      const notices = [
+        ...customerNoticesFor(changes, after, orderId).map((n) => notifyUser(after.customerId, n)),
+        ...staffNoticesFor(changes, after, orderId).map((n) => notifyStaff(n)),
+      ];
+      await Promise.allSettled(notices);
       const batch = db.batch();
       for (const c of changes) {
         batch.create(orderRef.collection('Events').doc(), {
@@ -114,6 +123,12 @@ export const onOrderChanged = onDocumentUpdated(
     }
     if (after.status === 'cancelled' && before.status !== 'cancelled' && after.materialsDeducted === true) {
       await adjustStock(orderId, after, +1);
+    }
+    if (after.status === 'completed' && before.status !== 'completed') {
+      await onOrderCompleted(orderId, after);
+    }
+    if (after.status === 'cancelled' && before.status !== 'cancelled') {
+      await restoreRedeemedPoints(orderId, after);
     }
     if (['completed', 'cancelled'].includes(after.status) && after.status !== before.status) {
       await db.collection('ProductionJobs').doc(orderId).set(

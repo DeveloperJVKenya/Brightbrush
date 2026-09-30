@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://bright-brush.web.app/sitemap.xml

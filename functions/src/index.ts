@@ -51,3 +51,11 @@ export {
   receivePurchaseOrder,
   recordQualityCheck,
 } from './ops/ops_callables';
+export {
+  adminGetNotificationChannels,
+  adminSaveNotificationChannels,
+  adminTestNotification,
+} from './notifications/notify';
+export { onOrderCreated, onQuoteWritten, remindAbandonedCarts } from './notifications/triggers';
+export { onChatMessage, onReviewWritten } from './notifications/social_triggers';
+export { claimReferral, getMyReferralCode } from './loyalty/loyalty';

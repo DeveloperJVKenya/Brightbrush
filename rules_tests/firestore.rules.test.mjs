@@ -497,3 +497,71 @@ describe('Phase 4: operations', () => {
     await assertFails(updateDoc(doc(as('admin'), 'AuditLog/a1'), { summary: 'edited' }));
   });
 });
+
+describe('Phase 5: growth', () => {
+  beforeEach(async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, 'Notifications/n1'), { uid: 'alice', title: 'x', read: false });
+      await setDoc(doc(db, 'Orders/done'), { ...baseOrder, status: 'completed', qcStatus: 'passed' });
+      await setDoc(doc(db, 'Orders/o1/ChatState/state'), { customerId: 'alice', customerUnread: 3, staffUnread: 2 });
+      await setDoc(doc(db, 'Companies/acme'), {
+        name: 'Acme', kraPin: '', discountPercent: 10, creditEnabled: true, creditLimit: 0,
+        paymentTermsDays: 30, memberIds: ['alice'], updatedBy: 'admin', updatedAt: now,
+      });
+      await setDoc(doc(db, 'Companies/acme/Programs/p1'), { name: 'Staff polos', active: true, items: [] });
+      await setDoc(doc(db, 'LoyaltyAccounts/alice'), { points: 500 });
+      await setDoc(doc(db, 'Reviews/approvedOne'), { customerId: 'bob', status: 'approved', rating: 5 });
+    });
+  });
+
+  it('notifications are private and only the read flag can change', async () => {
+    await assertSucceeds(getDoc(doc(as('alice'), 'Notifications/n1')));
+    await assertFails(getDoc(doc(as('bob'), 'Notifications/n1')));
+    await assertSucceeds(updateDoc(doc(as('alice'), 'Notifications/n1'), { read: true }));
+    await assertFails(updateDoc(doc(as('alice'), 'Notifications/n1'), { title: 'spoof' }));
+    await assertFails(setDoc(doc(as('alice'), 'Notifications/n2'), { uid: 'alice', title: 'x', read: false }));
+  });
+
+  it('chat: customer and staff post as themselves only', async () => {
+    const msg = (from, role) => ({ from, fromRole: role, fromName: 'X', text: 'Hello', attachments: [], at: serverTimestamp() });
+    await assertSucceeds(setDoc(doc(as('alice'), 'Orders/o1/Messages/m1'), msg('alice', 'customer')));
+    await assertFails(setDoc(doc(as('alice'), 'Orders/o1/Messages/m2'), msg('alice', 'staff')));
+    await assertFails(setDoc(doc(as('bob'), 'Orders/o1/Messages/m3'), msg('bob', 'customer')));
+    await assertSucceeds(setDoc(doc(as('manager'), 'Orders/o1/Messages/m4'), msg('manager', 'staff')));
+    await assertFails(getDoc(doc(as('bob'), 'Orders/o1/Messages/m1')));
+  });
+
+  it('chat unread counters: each side clears only its own', async () => {
+    await assertSucceeds(updateDoc(doc(as('alice'), 'Orders/o1/ChatState/state'), { customerUnread: 0 }));
+    await assertFails(updateDoc(doc(as('alice'), 'Orders/o1/ChatState/state'), { staffUnread: 0 }));
+  });
+
+  it('reviews only for your own completed orders, and start pending', async () => {
+    const review = { customerId: 'alice', customerName: 'Alice', rating: 5, comment: 'Great', photoUrls: [], itemIds: ['cap1'], createdAt: serverTimestamp() };
+    await assertFails(setDoc(doc(as('alice'), 'Reviews/o1'), { ...review, status: 'pending' }));
+    await assertFails(setDoc(doc(as('alice'), 'Reviews/done'), { ...review, status: 'approved' }));
+    await assertSucceeds(setDoc(doc(as('alice'), 'Reviews/done'), { ...review, status: 'pending' }));
+    await assertSucceeds(getDoc(doc(env.unauthenticatedContext().firestore(), 'Reviews/approvedOne')));
+  });
+
+  it('company members see their company and programs; others cannot', async () => {
+    await assertSucceeds(getDoc(doc(as('alice'), 'Companies/acme')));
+    await assertSucceeds(getDoc(doc(as('alice'), 'Companies/acme/Programs/p1')));
+    await assertFails(getDoc(doc(as('bob'), 'Companies/acme')));
+    await assertFails(getDoc(doc(as('bob'), 'Companies/acme/Programs/p1')));
+    await assertFails(updateDoc(doc(as('alice'), 'Companies/acme'), { discountPercent: 90, updatedBy: 'alice', updatedAt: serverTimestamp() }));
+  });
+
+  it('loyalty balances and referrals cannot be edited by customers', async () => {
+    await assertSucceeds(getDoc(doc(as('alice'), 'LoyaltyAccounts/alice')));
+    await assertFails(getDoc(doc(as('bob'), 'LoyaltyAccounts/alice')));
+    await assertFails(setDoc(doc(as('alice'), 'LoyaltyAccounts/alice'), { points: 99999 }));
+    await assertFails(setDoc(doc(as('alice'), 'Referrals/alice'), { referrerUid: 'bob', status: 'pending' }));
+    await assertFails(getDoc(doc(as('alice'), 'ReferralCodes/ABCD1234')));
+  });
+
+  it('customers cannot redeem points by editing the order', async () => {
+    await assertFails(updateDoc(doc(as('alice'), 'Orders/o1'), { loyaltyDiscount: 5000, lastUpdatedBy: 'alice', updatedAt: serverTimestamp() }));
+  });
+});

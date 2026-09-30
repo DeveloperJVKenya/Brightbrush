@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/widgets/module_spec.dart';
 import '../../../shared/widgets/profile_screen.dart';
+import '../../growth/social_widgets.dart';
 import '../../ops/presentation/production_screen.dart';
 import '../../ops/presentation/supplies_screen.dart';
 import '../../customization/presentation/manager_artwork_screen.dart';
@@ -82,6 +83,15 @@ final List<ModuleSpec> managerModules = [
     description:
         'Customer logos and the digitizing queue — attach DST/EMB/PES files and stitch counts.',
     screenBuilder: (context, state) => const ManagerArtworkScreen(),
+  ),
+  ModuleSpec(
+    path: '/manager/reviews',
+    label: 'Reviews & portfolio',
+    icon: Icons.reviews_outlined,
+    selectedIcon: Icons.reviews,
+    description:
+        'Approve customer reviews, reply publicly, and curate the public gallery of past work.',
+    screenBuilder: (context, state) => const ReviewsPortfolioScreen(),
   ),
   ModuleSpec(
     path: '/manager/history',

@@ -9,6 +9,7 @@ import '../../features/auth/presentation/splash_screen.dart';
 import '../../features/developer/presentation/developer_home_screen.dart';
 import '../../features/guide/presentation/guide_screen.dart';
 import '../../features/legal/presentation/legal_screen.dart';
+import '../../features/notifications/presentation/inbox_screen.dart';
 import '../../features/manager/presentation/manager_modules.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/staff/presentation/staff_modules.dart';
@@ -19,6 +20,7 @@ import '../../shared/widgets/module_spec.dart';
 import '../../shared/widgets/placeholder_screen.dart';
 import '../../shared/widgets/role_nav_item.dart';
 import '../auth/app_role.dart';
+import '../l10n/language.dart';
 import '../auth/auth_providers.dart';
 import '../firebase/firebase_providers.dart';
 import '../logging/app_logger.dart';
@@ -55,6 +57,7 @@ AppRole? _roleFor(String path) {
 bool _isGuestAccessible(String path) {
   return path == '/customer' ||
       path == '/customer/packages' ||
+      path == '/customer/portfolio' ||
       path.startsWith('/customer/catalog/') ||
       path == '/settings' ||
       path.startsWith('/legal/') ||
@@ -120,6 +123,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/help', builder: (context, state) => const GuideScreen()),
       GoRoute(
+        path: '/notifications',
+        builder: (context, state) => const InboxScreen(standalone: true),
+      ),
+      GoRoute(
         path: '/legal/privacy',
         builder: (context, state) =>
             const LegalScreen(document: LegalDocument.privacy),
@@ -182,7 +189,9 @@ ShellRoute _roleShellRoute({
               for (final module in modules)
                 RoleNavItem(
                   path: module.path,
-                  label: module.label,
+                  label:
+                      localizedModuleLabel(context, module.path) ??
+                      module.label,
                   icon: module.icon,
                   selectedIcon: module.selectedIcon,
                   description: module.description,

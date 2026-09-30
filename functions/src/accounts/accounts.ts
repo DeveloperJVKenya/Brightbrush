@@ -9,6 +9,10 @@ import { Coupon, computeDiscount } from '../orders/pricing';
 /// CustomerAccounts/{uid} — set by Admin/CEO for business customers:
 /// company details for invoices, a standing discount, and credit terms.
 export interface CustomerAccount {
+  /// Set when the customer is a buyer under a Companies/{id} account; the
+  /// company's terms (and credit exposure across all its buyers) apply.
+  companyId?: string;
+  memberIds?: string[];
   companyName: string;
   kraPin: string;
   discountPercent: number;
@@ -28,10 +32,24 @@ export const NO_ACCOUNT: CustomerAccount = {
 };
 
 export async function loadCustomerAccount(uid: string): Promise<CustomerAccount> {
-  const d = (await db.collection('CustomerAccounts').doc(uid).get()).data();
-  if (!d) return NO_ACCOUNT;
   const num = (v: unknown, fallback: number, max: number) =>
     typeof v === 'number' && v >= 0 && v <= max ? v : fallback;
+  const company = await db.collection('Companies').where('memberIds', 'array-contains', uid).limit(1).get();
+  if (!company.empty) {
+    const c = company.docs[0].data();
+    return {
+      companyId: company.docs[0].id,
+      memberIds: (c.memberIds as string[]) ?? [uid],
+      companyName: typeof c.name === 'string' ? c.name : '',
+      kraPin: typeof c.kraPin === 'string' ? c.kraPin : '',
+      discountPercent: num(c.discountPercent, 0, 100),
+      creditEnabled: c.creditEnabled === true,
+      creditLimit: num(c.creditLimit, 0, 1e10),
+      paymentTermsDays: num(c.paymentTermsDays, 30, 365),
+    };
+  }
+  const d = (await db.collection('CustomerAccounts').doc(uid).get()).data();
+  if (!d) return NO_ACCOUNT;
   return {
     companyName: typeof d.companyName === 'string' ? d.companyName : '',
     kraPin: typeof d.kraPin === 'string' ? d.kraPin : '',
@@ -44,9 +62,14 @@ export async function loadCustomerAccount(uid: string): Promise<CustomerAccount>
 
 /// Everything the customer still owes across open (non-cancelled) orders —
 /// checked against their credit limit before another credit order.
-export async function outstandingBalance(uid: string): Promise<number> {
-  const snap = await db.collection('Orders').where('customerId', '==', uid).get();
-  return snap.docs.reduce((sum, doc) => {
+export async function outstandingBalance(uid: string, memberIds?: string[]): Promise<number> {
+  const ids = memberIds?.length ? memberIds : [uid];
+  const docs = [];
+  for (let i = 0; i < ids.length; i += 30) {
+    const snap = await db.collection('Orders').where('customerId', 'in', ids.slice(i, i + 30)).get();
+    docs.push(...snap.docs);
+  }
+  return docs.reduce((sum, doc) => {
     const o = doc.data();
     if (o.status === 'cancelled') return sum;
     const net = (o.amountPaid ?? 0) - (o.refundedAmount ?? 0);

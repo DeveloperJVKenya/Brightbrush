@@ -46,6 +46,18 @@ Ordering, production and delivery app for a Kenyan embroidery and branding busin
 - **Route planning.** Stops are ordered nearest-neighbour + 2-opt from the shop address and opened as a single multi-stop Google Maps route.
 - **Audit log.** Triggers record changes to roles, prices, settings, gateways, business accounts, coupons, refunds, manual payments and order moves in `AuditLog`, which is admin-read-only and append-only.
 
+## Growth
+
+- **Notifications (no SMS).** `notifyUser` / `notifyStaff` write to the in-app inbox (`Notifications`, shown behind the bell) and send push (FCM). Email (Resend, SendGrid or Brevo) and WhatsApp (Meta Cloud API template) go out once they're configured under Payments & Settings → Notifications. Web push also needs the VAPID key under Business settings. Customers choose their channels in their inbox. Triggers cover new orders, status moves, proofs, payments, refunds, overdue invoices, quotes, chat messages, reviews and cart reminders (daily 10:00).
+- **Chat.** Each order has a thread in `Orders/{id}/Messages` with photo and PDF attachments and unread counters.
+- **Companies.** Accounts & Receivables → Companies & uniforms. Buyers in the same company share the discount, credit limit and terms (credit exposure counts all members' orders). Uniform programs turn a company's past customised lines into approved items; buyers see them on Home and only pick sizes.
+- **Checkout.** Saved addresses, a map pin for exact drop-off, and loyalty points (Settings/loyalty) redeemed on the server.
+- **Social proof.** Reviews on completed orders are moderated under Manager → Reviews & portfolio; approved ratings roll up onto catalog items. A public "Our work" gallery, plus a wishlist.
+- **Referrals.** Codes are created with `getMyReferralCode`. `claimReferral` works before a customer's first order; both sides get bonus points when that first order completes.
+- **SEO.** `web/services.html` (crawlable landing page), JSON-LD structured data, `robots.txt`, `sitemap.xml`, and a `<noscript>` fallback.
+- **Languages.** English and Kiswahili via `lib/l10n/*.arb` (run `flutter gen-l10n`), switchable in Settings.
+- **Currency.** Customers can see approximate prices in other currencies (admin-set rates in Settings/currency); everything is still charged in KES.
+
 ## Payment gateways
 
 M-Pesa (Daraja STK Push), Stripe Checkout, PayPal and Flutterwave are fully implemented. Each stays hidden from customers until an **Admin** opens **Payments & Settings**, pastes that provider's credentials, passes **Test connection**, and switches it on.

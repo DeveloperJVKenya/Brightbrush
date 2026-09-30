@@ -63,6 +63,9 @@ class OrdersRepository {
     String deliveryMethod = 'delivery',
     String? deliveryZoneId,
     String couponCode = '',
+    double? deliveryLat,
+    double? deliveryLng,
+    int redeemPoints = 0,
   }) async {
     appLogger.i('[orders] placeFromCart(plan=$paymentPlan, $deliveryMethod)');
     try {
@@ -75,6 +78,9 @@ class OrdersRepository {
         'deliveryMethod': deliveryMethod,
         'deliveryZoneId': ?deliveryZoneId,
         if (couponCode.isNotEmpty) 'couponCode': couponCode,
+        'deliveryLat': ?deliveryLat,
+        'deliveryLng': ?deliveryLng,
+        if (redeemPoints > 0) 'redeemPoints': redeemPoints,
       });
       final data = Map<String, dynamic>.from(result.data as Map);
       appLogger.i(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../features/notifications/presentation/inbox_screen.dart';
 import 'brand_mark.dart';
 import 'role_nav_item.dart';
 
@@ -175,6 +176,7 @@ class _WideLayout extends StatelessWidget {
         ),
         bottom: const _GradientHairline(),
         actions: [
+          const NotificationBell(),
           IconButton(
             tooltip: 'Guide',
             onPressed: onOpenHelp,
@@ -432,6 +434,7 @@ class _NarrowLayout extends StatelessWidget {
         ),
         bottom: const _GradientHairline(),
         actions: [
+          const NotificationBell(),
           IconButton(
             tooltip: 'Guide',
             onPressed: onOpenHelp,

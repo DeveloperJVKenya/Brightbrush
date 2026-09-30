@@ -9,6 +9,7 @@ import '../../../../core/logging/app_logger.dart';
 import '../../../orders/domain/order_model.dart';
 import '../../../orders/domain/order_status.dart';
 import '../../application/payments_providers.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../domain/payment_models.dart';
 
 /// Price breakdown for an order: subtotal, delivery, VAT, total, paid and
@@ -291,7 +292,10 @@ class _OrderPaymentPanelState extends ConsumerState<OrderPaymentPanel> {
                       ),
                       const SizedBox(height: 12),
                     ],
-                    Text('Pay with', style: theme.textTheme.labelLarge),
+                    Text(
+                      AppLocalizations.of(context).payWith,
+                      style: theme.textTheme.labelLarge,
+                    ),
                     const SizedBox(height: 6),
                     Wrap(
                       spacing: 8,

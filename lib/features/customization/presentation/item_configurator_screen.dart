@@ -11,6 +11,7 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../catalog/application/catalog_providers.dart';
 import '../../catalog/domain/catalog_item.dart';
 import '../../customer/application/cart_providers.dart';
+import '../../growth/companies.dart';
 import '../application/customization_providers.dart';
 import '../domain/artwork.dart';
 import '../domain/customization_options.dart';
@@ -22,10 +23,19 @@ import 'widgets/mockup_preview.dart';
 /// decorations on a live mockup, optional names, and a live price. With
 /// [lineId] it edits an existing cart line instead of adding a new one.
 class ItemConfiguratorScreen extends ConsumerWidget {
-  const ItemConfiguratorScreen({super.key, required this.itemId, this.lineId});
+  const ItemConfiguratorScreen({
+    super.key,
+    required this.itemId,
+    this.lineId,
+    this.programKey,
+  });
 
   final String itemId;
   final String? lineId;
+
+  /// "companyId/programId/index" — start from a uniform program item
+  /// (approved artwork and placements); the buyer just adds sizes.
+  final String? programKey;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -33,8 +43,11 @@ class ItemConfiguratorScreen extends ConsumerWidget {
     final item = itemsAsync.valueOrNull
         ?.where((i) => i.id == itemId)
         .firstOrNull;
-    final existing = lineId == null
+    final fromProgram = programKey == null
         ? null
+        : ref.watch(programItemProvider(programKey!)).valueOrNull;
+    final existing = lineId == null
+        ? fromProgram
         : ref.watch(cartStateProvider).valueOrNull?.lines[lineId];
     return Scaffold(
       appBar: AppBar(

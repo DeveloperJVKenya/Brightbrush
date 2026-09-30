@@ -7,6 +7,7 @@ import '../../orders/domain/order_model.dart';
 import '../../payments/application/payments_providers.dart';
 import '../../payments/domain/payment_models.dart';
 import '../application/commerce_providers.dart';
+import '../../../l10n/app_localizations.dart';
 import '../data/commerce_repository.dart';
 
 /// Invoice, one receipt per payment, and credit notes for refunds — each a
@@ -57,7 +58,7 @@ class OrderDocumentsPanel extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Documents',
+          AppLocalizations.of(context).documents,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
           ),
