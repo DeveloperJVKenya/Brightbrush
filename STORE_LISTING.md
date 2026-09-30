@@ -4,10 +4,10 @@ Everything needed to publish BrightBrush on Google Play and the App Store. Copy 
 
 ## Before the first upload
 
-1. **Change the app ID.** Android still uses `com.example.brightbrush`, and Google Play rejects any `com.example.*` ID. Pick a permanent ID such as `ke.co.brightbrush.app`. Changing it later means publishing a new app.
-   - Set it as `namespace` and `applicationId` in `android/app/build.gradle.kts`, and as the iOS bundle identifier in Xcode.
-   - Register the new IDs in Firebase Console → Project settings → Add app. Then run `flutterfire configure` to regenerate `lib/firebase_options.dart`, `google-services.json` and `GoogleService-Info.plist`.
-   - Register the Android app in App Check (Play Integrity) and the iOS app in App Check (App Attest). The callables enforce App Check, so an unregistered app can't place orders.
+1. **App IDs and App Check.** Done. Both apps use `com.luckydev.brightbrush`: Android is Firebase app `1:569026003826:android:7ee3c2acf736292a9c53eb` and iOS is `1:569026003826:ios:cfcbdb1ae3a556019c53eb`. Android is registered for Play Integrity and iOS for App Attest. Still to do:
+   - **Android:** in Play Console → App integrity → Play Integrity API, link the Google Cloud project `bright-brush`. After the first upload, copy the **App signing key** SHA-256 from Play Console → App integrity and add it in Firebase → Project settings → Android app → Add fingerprint.
+   - **iOS:** enter your Apple **Team ID** in Firebase → Project settings → iOS app. In Xcode, set the team and add the **App Attest** capability to the Runner target.
+   - **Debug builds** use the App Check debug provider. The first run prints a debug token in the log; add it under Firebase → App Check → Apps → ⋮ → Manage debug tokens, or the debug build can't call the backend.
 2. **Release signing.** Create an upload keystore, reference it from `android/key.properties`, and enrol in Play App Signing.
 3. **Replace the icon.** `assets/branding/*.png` holds a placeholder "BB" mark in the brand colours. Put the real logo there, then run:
    ```bash

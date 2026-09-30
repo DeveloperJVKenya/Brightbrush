@@ -52,7 +52,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyD3zA-TXn-R1JbzTTwUcJasb1btFOoB7Uk',
-    appId: '1:569026003826:android:2c01f0f3cd7ff3909c53eb',
+    appId: '1:569026003826:android:7ee3c2acf736292a9c53eb',
     messagingSenderId: '569026003826',
     projectId: 'bright-brush',
     storageBucket: 'bright-brush.firebasestorage.app',
@@ -60,11 +60,11 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyA9rKstZHSfJfK8Osyhk7tjvcBHFaJcBpY',
-    appId: '1:569026003826:ios:71ec2097c78324459c53eb',
+    appId: '1:569026003826:ios:cfcbdb1ae3a556019c53eb',
     messagingSenderId: '569026003826',
     projectId: 'bright-brush',
     storageBucket: 'bright-brush.firebasestorage.app',
-    iosBundleId: 'com.example.brightbrush',
+    iosBundleId: 'com.luckydev.brightbrush',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(

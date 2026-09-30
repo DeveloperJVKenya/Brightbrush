@@ -1,4 +1,4 @@
-package com.example.brightbrush
+package com.luckydev.brightbrush
 
 import io.flutter.embedding.android.FlutterActivity
 

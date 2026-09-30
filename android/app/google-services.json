@@ -12,7 +12,12 @@
           "package_name": "com.example.brightbrush"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "569026003826-23us4figov3bv3vkm2vrakjgu740cbt4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyD3zA-TXn-R1JbzTTwUcJasb1btFOoB7Uk"
@@ -20,7 +25,63 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "569026003826-23us4figov3bv3vkm2vrakjgu740cbt4.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "569026003826-i24sundnbe73d5t4vba5vdneg8h9335n.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.luckydev.brightbrush"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:569026003826:android:7ee3c2acf736292a9c53eb",
+        "android_client_info": {
+          "package_name": "com.luckydev.brightbrush"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "569026003826-o4u9fqq70t66pvpgtnuco8afv42jk1b7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.luckydev.brightbrush",
+            "certificate_hash": "eedbae90025c7ba0ad4cdaf6effdc9f08d61c296"
+          }
+        },
+        {
+          "client_id": "569026003826-23us4figov3bv3vkm2vrakjgu740cbt4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3zA-TXn-R1JbzTTwUcJasb1btFOoB7Uk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "569026003826-23us4figov3bv3vkm2vrakjgu740cbt4.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "569026003826-i24sundnbe73d5t4vba5vdneg8h9335n.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.luckydev.brightbrush"
+              }
+            }
+          ]
         }
       }
     }
