@@ -1,16 +1,19 @@
-# Runs on every push and pull request: static analysis, every test suite
-# (Flutter, Cloud Functions, Firestore security rules on the emulator) and a
-# web build. A red run blocks the deploy workflow.
+# Static analysis, every test suite (Flutter, Cloud Functions, Firestore
+# security rules on the emulator) and a web build. Runs on pull requests and
+# on pushes to other branches; pushes to main run it once, inside the
+# Deploy workflow, where a red run blocks the deploy.
 name: CI
 
 on:
   push:
-    branches: [main]
+    branches-ignore: [main]
   pull_request:
   workflow_call:
 
 concurrency:
-  group: ci-${{ github.ref }}
+  # github.workflow is "Deploy" when called from there, so the two never
+  # cancel each other.
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
