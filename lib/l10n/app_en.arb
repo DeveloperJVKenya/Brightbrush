@@ -89,5 +89,158 @@
     }
   },
   "waSupportMessage": "Hello BrightBrush, I need help with: ",
-  "workingHours": "Working hours"
+  "workingHours": "Working hours",
+  "homeSearchHint": "Search caps, hoodies, bottles…",
+  "shopByCategory": "Shop by category",
+  "seeAll": "See all",
+  "sectionFeatured": "Featured",
+  "sectionBulkDeals": "Bulk deals",
+  "sectionTopRated": "Top rated",
+  "sectionNewArrivals": "New arrivals",
+  "sectionRecentlyViewed": "Recently viewed",
+  "sectionBundles": "Bundles & packages",
+  "sectionAllProducts": "All products",
+  "sortLabel": "Sort",
+  "filterLabel": "Filter",
+  "sortRecommended": "Recommended",
+  "sortPriceLow": "Price: low to high",
+  "sortPriceHigh": "Price: high to low",
+  "sortNewest": "Newest",
+  "sortTopRated": "Top rated",
+  "sortBulkSaving": "Biggest bulk saving",
+  "itemsCount": "{count, plural, =1{1 item} other{{count} items}}",
+  "@itemsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clearAll": "Clear all",
+  "saveUpTo": "Save up to {percent}%",
+  "@saveUpTo": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "badgeNew": "New",
+  "badgeFeatured": "Featured",
+  "badgeCustomisable": "Add your logo",
+  "endsIn": "Ends in {time}",
+  "@endsIn": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "recentSearches": "Recent searches",
+  "searchFor": "Search for \"{query}\"",
+  "@searchFor": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "backToTop": "Back to top",
+  "customiseCtaTitle": "Put your logo on anything",
+  "customiseCtaBody": "Upload your artwork, preview it live and approve a proof before we stitch.",
+  "customiseCtaAction": "Start designing",
+  "bulkQuoteTitle": "Ordering 100+ pieces?",
+  "bulkQuoteBody": "Get a tailored quote for schools, teams, events and companies.",
+  "bulkQuoteAction": "Request a quote",
+  "trackOrderTitle": "Track your order",
+  "trackOrderBody": "See every step from proof to delivery.",
+  "trustFreeDelivery": "Free delivery over {amount}",
+  "@trustFreeDelivery": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "trustPayments": "Pay with M-Pesa or card",
+  "trustProof": "Approve a proof first",
+  "trustBulk": "Cheaper in bulk",
+  "filterPrice": "Price (KES)",
+  "filterCustomisable": "Can add my logo",
+  "filterRating": "Rated 4★ and up",
+  "filterLeadTime": "Ready within",
+  "filterCategory": "Category",
+  "daysCount": "{count, plural, =1{1 day} other{{count} days}}",
+  "@daysCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "anyTime": "Any time",
+  "allCategories": "All",
+  "showResults": "{count, plural, =0{No items} =1{Show 1 item} other{Show {count} items}}",
+  "@showResults": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noMatchesTitle": "No matching items",
+  "noMatchesBody": "Try another word or clear the filters.",
+  "askAi": "Ask AI",
+  "minOrderShort": "Min {moq} · {days}d",
+  "@minOrderShort": {
+    "placeholders": {
+      "moq": {
+        "type": "int"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "fromPrice": "From {price}",
+  "@fromPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "gridView": "Grid view",
+  "listView": "List view",
+  "catalogEmptyTitle": "No items in the catalog yet",
+  "catalogEmptyBody": "New branding items will appear here as soon as they are added.",
+  "couldNotLoadCatalog": "Couldn't load the catalog",
+  "retry": "Retry",
+  "addedToCart": "{item} added to cart ({qty})",
+  "@addedToCart": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      },
+      "qty": {
+        "type": "int"
+      }
+    }
+  },
+  "cartCount": "Cart · {count}",
+  "@cartCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ratingCount": "({count})",
+  "@ratingCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

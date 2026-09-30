@@ -38,6 +38,8 @@ class CatalogItem {
     this.decorationMethods = const [],
     this.placements = const [],
     this.materials = const [],
+    this.ratingAvg = 0,
+    this.ratingCount = 0,
   });
 
   final String id;
@@ -71,6 +73,20 @@ class CatalogItem {
 
   /// Deducted from stock by the server when an order goes into production.
   final List<MaterialUse> materials;
+
+  /// Average of approved reviews, kept by the onReviewWritten function
+  /// (read-only here; never written by the app).
+  final double ratingAvg;
+  final int ratingCount;
+
+  /// Percentage off the base price at the best volume tier (0 when there
+  /// are no tiers) — the "Save up to x%" badge.
+  int get bulkSavingPercent => basePrice <= 0
+      ? 0
+      : (((basePrice - fromPrice) / basePrice) * 100).floor().clamp(0, 99);
+
+  /// Added in the last 30 days.
+  bool isNewAt(DateTime now) => now.difference(createdAt).inDays < 30;
 
   bool get isCustomizable =>
       decorationMethods.isNotEmpty && placements.isNotEmpty;
@@ -107,6 +123,8 @@ class CatalogItem {
     decorationMethods: decorationMethods,
     placements: placements,
     materials: materials,
+    ratingAvg: ratingAvg,
+    ratingCount: ratingCount,
   );
 
   /// Fields checked by search — spans name, category label, description and
@@ -165,6 +183,8 @@ class CatalogItem {
               perUnit: m['perUnit'] as num? ?? 0,
             ),
       ],
+      ratingAvg: (d['ratingAvg'] as num?)?.toDouble() ?? 0,
+      ratingCount: (d['ratingCount'] as num?)?.toInt() ?? 0,
     );
   }
 

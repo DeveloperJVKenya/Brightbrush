@@ -195,4 +195,240 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get workingHours => 'Saa za kazi';
+
+  @override
+  String get homeSearchHint => 'Tafuta kofia, hoodie, chupa…';
+
+  @override
+  String get shopByCategory => 'Nunua kwa aina';
+
+  @override
+  String get seeAll => 'Ona zote';
+
+  @override
+  String get sectionFeatured => 'Zilizoangaziwa';
+
+  @override
+  String get sectionBulkDeals => 'Ofa za jumla';
+
+  @override
+  String get sectionTopRated => 'Zilizopendwa zaidi';
+
+  @override
+  String get sectionNewArrivals => 'Mpya';
+
+  @override
+  String get sectionRecentlyViewed => 'Ulizotazama karibuni';
+
+  @override
+  String get sectionBundles => 'Vifurushi';
+
+  @override
+  String get sectionAllProducts => 'Bidhaa zote';
+
+  @override
+  String get sortLabel => 'Panga';
+
+  @override
+  String get filterLabel => 'Chuja';
+
+  @override
+  String get sortRecommended => 'Zinazopendekezwa';
+
+  @override
+  String get sortPriceLow => 'Bei: chini kwenda juu';
+
+  @override
+  String get sortPriceHigh => 'Bei: juu kwenda chini';
+
+  @override
+  String get sortNewest => 'Mpya zaidi';
+
+  @override
+  String get sortTopRated => 'Zilizopendwa zaidi';
+
+  @override
+  String get sortBulkSaving => 'Punguzo kubwa la jumla';
+
+  @override
+  String itemsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Bidhaa $count',
+      one: 'Bidhaa 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get clearAll => 'Futa zote';
+
+  @override
+  String saveUpTo(int percent) {
+    return 'Okoa hadi $percent%';
+  }
+
+  @override
+  String get badgeNew => 'Mpya';
+
+  @override
+  String get badgeFeatured => 'Maalum';
+
+  @override
+  String get badgeCustomisable => 'Weka nembo yako';
+
+  @override
+  String endsIn(String time) {
+    return 'Inaisha baada ya $time';
+  }
+
+  @override
+  String get recentSearches => 'Ulichotafuta karibuni';
+
+  @override
+  String searchFor(String query) {
+    return 'Tafuta \"$query\"';
+  }
+
+  @override
+  String get backToTop => 'Rudi juu';
+
+  @override
+  String get customiseCtaTitle => 'Weka nembo yako kwenye chochote';
+
+  @override
+  String get customiseCtaBody =>
+      'Pakia nembo yako, ione moja kwa moja na uidhinishe sampuli kabla hatujashona.';
+
+  @override
+  String get customiseCtaAction => 'Anza kubuni';
+
+  @override
+  String get bulkQuoteTitle => 'Unaagiza vipande 100+?';
+
+  @override
+  String get bulkQuoteBody =>
+      'Pata bei maalum kwa shule, timu, hafla na makampuni.';
+
+  @override
+  String get bulkQuoteAction => 'Omba bei';
+
+  @override
+  String get trackOrderTitle => 'Fuatilia oda yako';
+
+  @override
+  String get trackOrderBody =>
+      'Ona kila hatua kuanzia sampuli hadi kufikishwa.';
+
+  @override
+  String trustFreeDelivery(String amount) {
+    return 'Usafirishaji bure zaidi ya $amount';
+  }
+
+  @override
+  String get trustPayments => 'Lipa kwa M-Pesa au kadi';
+
+  @override
+  String get trustProof => 'Idhinisha sampuli kwanza';
+
+  @override
+  String get trustBulk => 'Bei nafuu kwa jumla';
+
+  @override
+  String get filterPrice => 'Bei (KES)';
+
+  @override
+  String get filterCustomisable => 'Naweza kuweka nembo';
+
+  @override
+  String get filterRating => 'Nyota 4 na zaidi';
+
+  @override
+  String get filterLeadTime => 'Tayari ndani ya';
+
+  @override
+  String get filterCategory => 'Aina';
+
+  @override
+  String daysCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Siku $count',
+      one: 'Siku 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get anyTime => 'Wakati wowote';
+
+  @override
+  String get allCategories => 'Zote';
+
+  @override
+  String showResults(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Onyesha bidhaa $count',
+      one: 'Onyesha bidhaa 1',
+      zero: 'Hakuna bidhaa',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get noMatchesTitle => 'Hakuna bidhaa zinazolingana';
+
+  @override
+  String get noMatchesBody => 'Jaribu neno lingine au futa vichujio.';
+
+  @override
+  String get askAi => 'Uliza AI';
+
+  @override
+  String minOrderShort(int moq, int days) {
+    return 'Kiwango $moq · siku $days';
+  }
+
+  @override
+  String fromPrice(String price) {
+    return 'Kuanzia $price';
+  }
+
+  @override
+  String get gridView => 'Mwonekano wa gridi';
+
+  @override
+  String get listView => 'Mwonekano wa orodha';
+
+  @override
+  String get catalogEmptyTitle => 'Bado hakuna bidhaa';
+
+  @override
+  String get catalogEmptyBody =>
+      'Bidhaa mpya zitaonekana hapa mara tu zitakapoongezwa.';
+
+  @override
+  String get couldNotLoadCatalog => 'Imeshindwa kupakia bidhaa';
+
+  @override
+  String get retry => 'Jaribu tena';
+
+  @override
+  String addedToCart(String item, int qty) {
+    return '$item imeongezwa kwenye kikapu ($qty)';
+  }
+
+  @override
+  String cartCount(int count) {
+    return 'Kikapu · $count';
+  }
+
+  @override
+  String ratingCount(int count) {
+    return '($count)';
+  }
 }

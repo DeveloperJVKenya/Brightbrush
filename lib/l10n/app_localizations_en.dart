@@ -193,4 +193,239 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get workingHours => 'Working hours';
+
+  @override
+  String get homeSearchHint => 'Search caps, hoodies, bottles…';
+
+  @override
+  String get shopByCategory => 'Shop by category';
+
+  @override
+  String get seeAll => 'See all';
+
+  @override
+  String get sectionFeatured => 'Featured';
+
+  @override
+  String get sectionBulkDeals => 'Bulk deals';
+
+  @override
+  String get sectionTopRated => 'Top rated';
+
+  @override
+  String get sectionNewArrivals => 'New arrivals';
+
+  @override
+  String get sectionRecentlyViewed => 'Recently viewed';
+
+  @override
+  String get sectionBundles => 'Bundles & packages';
+
+  @override
+  String get sectionAllProducts => 'All products';
+
+  @override
+  String get sortLabel => 'Sort';
+
+  @override
+  String get filterLabel => 'Filter';
+
+  @override
+  String get sortRecommended => 'Recommended';
+
+  @override
+  String get sortPriceLow => 'Price: low to high';
+
+  @override
+  String get sortPriceHigh => 'Price: high to low';
+
+  @override
+  String get sortNewest => 'Newest';
+
+  @override
+  String get sortTopRated => 'Top rated';
+
+  @override
+  String get sortBulkSaving => 'Biggest bulk saving';
+
+  @override
+  String itemsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get clearAll => 'Clear all';
+
+  @override
+  String saveUpTo(int percent) {
+    return 'Save up to $percent%';
+  }
+
+  @override
+  String get badgeNew => 'New';
+
+  @override
+  String get badgeFeatured => 'Featured';
+
+  @override
+  String get badgeCustomisable => 'Add your logo';
+
+  @override
+  String endsIn(String time) {
+    return 'Ends in $time';
+  }
+
+  @override
+  String get recentSearches => 'Recent searches';
+
+  @override
+  String searchFor(String query) {
+    return 'Search for \"$query\"';
+  }
+
+  @override
+  String get backToTop => 'Back to top';
+
+  @override
+  String get customiseCtaTitle => 'Put your logo on anything';
+
+  @override
+  String get customiseCtaBody =>
+      'Upload your artwork, preview it live and approve a proof before we stitch.';
+
+  @override
+  String get customiseCtaAction => 'Start designing';
+
+  @override
+  String get bulkQuoteTitle => 'Ordering 100+ pieces?';
+
+  @override
+  String get bulkQuoteBody =>
+      'Get a tailored quote for schools, teams, events and companies.';
+
+  @override
+  String get bulkQuoteAction => 'Request a quote';
+
+  @override
+  String get trackOrderTitle => 'Track your order';
+
+  @override
+  String get trackOrderBody => 'See every step from proof to delivery.';
+
+  @override
+  String trustFreeDelivery(String amount) {
+    return 'Free delivery over $amount';
+  }
+
+  @override
+  String get trustPayments => 'Pay with M-Pesa or card';
+
+  @override
+  String get trustProof => 'Approve a proof first';
+
+  @override
+  String get trustBulk => 'Cheaper in bulk';
+
+  @override
+  String get filterPrice => 'Price (KES)';
+
+  @override
+  String get filterCustomisable => 'Can add my logo';
+
+  @override
+  String get filterRating => 'Rated 4★ and up';
+
+  @override
+  String get filterLeadTime => 'Ready within';
+
+  @override
+  String get filterCategory => 'Category';
+
+  @override
+  String daysCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days',
+      one: '1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get anyTime => 'Any time';
+
+  @override
+  String get allCategories => 'All';
+
+  @override
+  String showResults(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Show $count items',
+      one: 'Show 1 item',
+      zero: 'No items',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get noMatchesTitle => 'No matching items';
+
+  @override
+  String get noMatchesBody => 'Try another word or clear the filters.';
+
+  @override
+  String get askAi => 'Ask AI';
+
+  @override
+  String minOrderShort(int moq, int days) {
+    return 'Min $moq · ${days}d';
+  }
+
+  @override
+  String fromPrice(String price) {
+    return 'From $price';
+  }
+
+  @override
+  String get gridView => 'Grid view';
+
+  @override
+  String get listView => 'List view';
+
+  @override
+  String get catalogEmptyTitle => 'No items in the catalog yet';
+
+  @override
+  String get catalogEmptyBody =>
+      'New branding items will appear here as soon as they are added.';
+
+  @override
+  String get couldNotLoadCatalog => 'Couldn\'t load the catalog';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
+  String addedToCart(String item, int qty) {
+    return '$item added to cart ($qty)';
+  }
+
+  @override
+  String cartCount(int count) {
+    return 'Cart · $count';
+  }
+
+  @override
+  String ratingCount(int count) {
+    return '($count)';
+  }
 }

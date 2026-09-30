@@ -451,6 +451,384 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Working hours'**
   String get workingHours;
+
+  /// No description provided for @homeSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search caps, hoodies, bottles…'**
+  String get homeSearchHint;
+
+  /// No description provided for @shopByCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop by category'**
+  String get shopByCategory;
+
+  /// No description provided for @seeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'See all'**
+  String get seeAll;
+
+  /// No description provided for @sectionFeatured.
+  ///
+  /// In en, this message translates to:
+  /// **'Featured'**
+  String get sectionFeatured;
+
+  /// No description provided for @sectionBulkDeals.
+  ///
+  /// In en, this message translates to:
+  /// **'Bulk deals'**
+  String get sectionBulkDeals;
+
+  /// No description provided for @sectionTopRated.
+  ///
+  /// In en, this message translates to:
+  /// **'Top rated'**
+  String get sectionTopRated;
+
+  /// No description provided for @sectionNewArrivals.
+  ///
+  /// In en, this message translates to:
+  /// **'New arrivals'**
+  String get sectionNewArrivals;
+
+  /// No description provided for @sectionRecentlyViewed.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently viewed'**
+  String get sectionRecentlyViewed;
+
+  /// No description provided for @sectionBundles.
+  ///
+  /// In en, this message translates to:
+  /// **'Bundles & packages'**
+  String get sectionBundles;
+
+  /// No description provided for @sectionAllProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'All products'**
+  String get sectionAllProducts;
+
+  /// No description provided for @sortLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort'**
+  String get sortLabel;
+
+  /// No description provided for @filterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter'**
+  String get filterLabel;
+
+  /// No description provided for @sortRecommended.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended'**
+  String get sortRecommended;
+
+  /// No description provided for @sortPriceLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Price: low to high'**
+  String get sortPriceLow;
+
+  /// No description provided for @sortPriceHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'Price: high to low'**
+  String get sortPriceHigh;
+
+  /// No description provided for @sortNewest.
+  ///
+  /// In en, this message translates to:
+  /// **'Newest'**
+  String get sortNewest;
+
+  /// No description provided for @sortTopRated.
+  ///
+  /// In en, this message translates to:
+  /// **'Top rated'**
+  String get sortTopRated;
+
+  /// No description provided for @sortBulkSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Biggest bulk saving'**
+  String get sortBulkSaving;
+
+  /// No description provided for @itemsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item} other{{count} items}}'**
+  String itemsCount(int count);
+
+  /// No description provided for @clearAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get clearAll;
+
+  /// No description provided for @saveUpTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Save up to {percent}%'**
+  String saveUpTo(int percent);
+
+  /// No description provided for @badgeNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get badgeNew;
+
+  /// No description provided for @badgeFeatured.
+  ///
+  /// In en, this message translates to:
+  /// **'Featured'**
+  String get badgeFeatured;
+
+  /// No description provided for @badgeCustomisable.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your logo'**
+  String get badgeCustomisable;
+
+  /// No description provided for @endsIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends in {time}'**
+  String endsIn(String time);
+
+  /// No description provided for @recentSearches.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent searches'**
+  String get recentSearches;
+
+  /// No description provided for @searchFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for \"{query}\"'**
+  String searchFor(String query);
+
+  /// No description provided for @backToTop.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to top'**
+  String get backToTop;
+
+  /// No description provided for @customiseCtaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Put your logo on anything'**
+  String get customiseCtaTitle;
+
+  /// No description provided for @customiseCtaBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload your artwork, preview it live and approve a proof before we stitch.'**
+  String get customiseCtaBody;
+
+  /// No description provided for @customiseCtaAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Start designing'**
+  String get customiseCtaAction;
+
+  /// No description provided for @bulkQuoteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ordering 100+ pieces?'**
+  String get bulkQuoteTitle;
+
+  /// No description provided for @bulkQuoteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Get a tailored quote for schools, teams, events and companies.'**
+  String get bulkQuoteBody;
+
+  /// No description provided for @bulkQuoteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Request a quote'**
+  String get bulkQuoteAction;
+
+  /// No description provided for @trackOrderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Track your order'**
+  String get trackOrderTitle;
+
+  /// No description provided for @trackOrderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'See every step from proof to delivery.'**
+  String get trackOrderBody;
+
+  /// No description provided for @trustFreeDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Free delivery over {amount}'**
+  String trustFreeDelivery(String amount);
+
+  /// No description provided for @trustPayments.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay with M-Pesa or card'**
+  String get trustPayments;
+
+  /// No description provided for @trustProof.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve a proof first'**
+  String get trustProof;
+
+  /// No description provided for @trustBulk.
+  ///
+  /// In en, this message translates to:
+  /// **'Cheaper in bulk'**
+  String get trustBulk;
+
+  /// No description provided for @filterPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Price (KES)'**
+  String get filterPrice;
+
+  /// No description provided for @filterCustomisable.
+  ///
+  /// In en, this message translates to:
+  /// **'Can add my logo'**
+  String get filterCustomisable;
+
+  /// No description provided for @filterRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Rated 4★ and up'**
+  String get filterRating;
+
+  /// No description provided for @filterLeadTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready within'**
+  String get filterLeadTime;
+
+  /// No description provided for @filterCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get filterCategory;
+
+  /// No description provided for @daysCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day} other{{count} days}}'**
+  String daysCount(int count);
+
+  /// No description provided for @anyTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Any time'**
+  String get anyTime;
+
+  /// No description provided for @allCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get allCategories;
+
+  /// No description provided for @showResults.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No items} =1{Show 1 item} other{Show {count} items}}'**
+  String showResults(int count);
+
+  /// No description provided for @noMatchesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching items'**
+  String get noMatchesTitle;
+
+  /// No description provided for @noMatchesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another word or clear the filters.'**
+  String get noMatchesBody;
+
+  /// No description provided for @askAi.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask AI'**
+  String get askAi;
+
+  /// No description provided for @minOrderShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Min {moq} · {days}d'**
+  String minOrderShort(int moq, int days);
+
+  /// No description provided for @fromPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'From {price}'**
+  String fromPrice(String price);
+
+  /// No description provided for @gridView.
+  ///
+  /// In en, this message translates to:
+  /// **'Grid view'**
+  String get gridView;
+
+  /// No description provided for @listView.
+  ///
+  /// In en, this message translates to:
+  /// **'List view'**
+  String get listView;
+
+  /// No description provided for @catalogEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No items in the catalog yet'**
+  String get catalogEmptyTitle;
+
+  /// No description provided for @catalogEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'New branding items will appear here as soon as they are added.'**
+  String get catalogEmptyBody;
+
+  /// No description provided for @couldNotLoadCatalog.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the catalog'**
+  String get couldNotLoadCatalog;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
+  /// No description provided for @addedToCart.
+  ///
+  /// In en, this message translates to:
+  /// **'{item} added to cart ({qty})'**
+  String addedToCart(String item, int qty);
+
+  /// No description provided for @cartCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Cart · {count}'**
+  String cartCount(int count);
+
+  /// No description provided for @ratingCount.
+  ///
+  /// In en, this message translates to:
+  /// **'({count})'**
+  String ratingCount(int count);
 }
 
 class _AppLocalizationsDelegate

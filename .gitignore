@@ -49,3 +49,6 @@ app.*.map.json
 
 # Local App Check debug token (registered in Firebase App Check; never commit)
 app_check_debug.json
+
+# Screenshots written by CATALOG_SHOTS=1 flutter test --update-goldens
+test/goldens/

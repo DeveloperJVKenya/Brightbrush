@@ -88,11 +88,41 @@ class CatalogItemDetailScreen extends ConsumerWidget {
               message: 'It may have been removed or is no longer active.',
             );
           }
-          return _DetailBody(item: item);
+          return _RecordView(
+            item: item,
+            child: _DetailBody(item: item),
+          );
         },
       ),
     );
   }
+}
+
+/// Remembers the item for "Recently viewed" on Home and logs the view.
+class _RecordView extends ConsumerStatefulWidget {
+  const _RecordView({required this.item, required this.child});
+
+  final CatalogItem item;
+  final Widget child;
+
+  @override
+  ConsumerState<_RecordView> createState() => _RecordViewState();
+}
+
+class _RecordViewState extends ConsumerState<_RecordView> {
+  @override
+  void initState() {
+    super.initState();
+    final item = widget.item;
+    Future.microtask(() {
+      if (!mounted) return;
+      ref.read(recentlyViewedProvider.notifier).add(item.id);
+      Monitoring.viewItem(id: item.id, name: item.name, price: item.fromPrice);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 class _DetailBody extends ConsumerWidget {
