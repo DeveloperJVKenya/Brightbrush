@@ -8,6 +8,7 @@ import '../../../core/errors/user_facing_error.dart';
 import '../../../core/firebase/firebase_providers.dart';
 import '../../../shared/widgets/auth_required_sheet.dart';
 import '../application/quotes_providers.dart';
+import '../../../core/l10n/l10n_ext.dart';
 
 /// Ask BrightBrush for a custom price — for a package, a catalog item in an
 /// unusual quantity/finish, or a fully custom job ([title] editable). The
@@ -24,7 +25,7 @@ Future<void> showRequestQuoteSheet(
   if (container.read(currentUidProvider) == null) {
     showAuthRequiredSheet(
       context,
-      message: 'Sign in or create an account to request a quote.',
+      message: context.l10n.signInOrCreateAnAccount4,
     );
     return;
   }
@@ -106,12 +107,10 @@ class _RequestQuoteFormState extends ConsumerState<_RequestQuoteForm> {
       Navigator.of(context).pop();
       messenger.showSnackBar(
         SnackBar(
-          content: const Text(
-            'Quote request sent — we\'ll price it and notify you under My Quotes.',
-          ),
+          content: Text(context.l10n.quoteRequestSentWellPriceIt),
           behavior: SnackBarBehavior.floating,
           action: SnackBarAction(
-            label: 'View',
+            label: context.l10n.view,
             onPressed: () => router.push('/customer/quotes'),
           ),
         ),
@@ -120,7 +119,9 @@ class _RequestQuoteFormState extends ConsumerState<_RequestQuoteForm> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Couldn\'t send request: ${friendlyError(error)}'),
+            content: Text(
+              context.l10n.couldntSendRequest(friendlyError(error)),
+            ),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -148,14 +149,14 @@ class _RequestQuoteFormState extends ConsumerState<_RequestQuoteForm> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Request a quote',
+                context.l10n.bulkQuoteAction,
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
-                'Tell us what you need and we\'ll send you a price.',
+                context.l10n.tellUsWhatYouNeedAnd,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -163,19 +164,20 @@ class _RequestQuoteFormState extends ConsumerState<_RequestQuoteForm> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _title,
-                decoration: const InputDecoration(
-                  labelText: 'What do you need?',
-                  hintText: 'e.g. 200 embroidered polo shirts',
+                decoration: InputDecoration(
+                  labelText: context.l10n.whatDoYouNeed,
+                  hintText: context.l10n.eG200EmbroideredPoloShirts,
                 ),
                 maxLength: 120,
-                validator: (v) =>
-                    (v ?? '').trim().length < 2 ? 'Describe the item' : null,
+                validator: (v) => (v ?? '').trim().length < 2
+                    ? context.l10n.describeTheItem
+                    : null,
               ),
               TextFormField(
                 controller: _quantity,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(labelText: 'Quantity'),
+                decoration: InputDecoration(labelText: context.l10n.quantity),
                 validator: (v) {
                   final n = int.tryParse(v ?? '');
                   return n == null || n < 1 || n > 100000
@@ -186,10 +188,10 @@ class _RequestQuoteFormState extends ConsumerState<_RequestQuoteForm> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _details,
-                decoration: const InputDecoration(
-                  labelText: 'Details',
+                decoration: InputDecoration(
+                  labelText: context.l10n.details,
                   hintText:
-                      'Logo placement, colours, sizes, deadline, delivery location…',
+                      context.l10n.logoPlacementColoursSizesDeadlineDelivery,
                   alignLabelWithHint: true,
                 ),
                 maxLines: 5,
@@ -208,7 +210,7 @@ class _RequestQuoteFormState extends ConsumerState<_RequestQuoteForm> {
                         ),
                       )
                     : const Icon(Icons.send_rounded),
-                label: const Text('Send request'),
+                label: Text(context.l10n.sendRequest),
               ),
             ],
           ),

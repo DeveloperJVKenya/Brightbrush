@@ -1,36 +1,59 @@
 import 'package:cloud_functions/cloud_functions.dart';
 
+import '../l10n/current_l10n.dart';
+import 'server_messages.dart';
+
 /// Turns a raw exception (Firestore, Storage, network, Firebase AI/Gemini,
-/// etc.) into a short, plain-language message safe to show to end users.
+/// etc.) into a short, plain-language message safe to show to end users,
+/// in the language the app is showing.
 ///
 /// Technical detail — error codes, SDK/class names, stack frames — should
 /// stay in `appLogger` calls at the call site (most already log the raw
 /// `error`/`stackTrace`); this is the only thing that should ever reach a
 /// [SnackBar] or [EmptyState] message.
 String friendlyError(Object error) {
+  final l = l10nNow;
+  final raw = error.toString().toLowerCase();
+  bool has(String needle) => raw.contains(needle);
+  final looksNetwork =
+      has('socketexception') ||
+      has('failed host lookup') ||
+      has('clientexception') ||
+      has('network') ||
+      has('failed to fetch') ||
+      has('timeoutexception') ||
+      has('connection') ||
+      has('unavailable') ||
+      has('deadline');
+
+  // While the connection monitor says we're offline, anything that looks
+  // like a network failure gets the clear "you're offline" message.
+  if (appIsOffline && (looksNetwork || has('internal'))) {
+    return l.netActionNeedsInternet;
+  }
+
   // Our Cloud Functions write these messages for end users (e.g. "Caps has
-  // a minimum order of 50"), so they're shown as-is rather than being
-  // collapsed into a generic sentence.
+  // a minimum order of 50"), so they're shown as-is (translated when the
+  // app is in Kiswahili) rather than collapsed into a generic sentence.
   if (error is FirebaseFunctionsException &&
       _userFacingFunctionCodes.contains(error.code) &&
       (error.message ?? '').isNotEmpty) {
-    return error.message!;
+    return translateServerMessage(error.message!);
   }
-  final raw = error.toString().toLowerCase();
-  bool has(String needle) => raw.contains(needle);
 
   if (has('socketexception') ||
       has('failed host lookup') ||
       has('clientexception') ||
       has('network') ||
+      has('failed to fetch') ||
       has('timeoutexception') ||
       has('connection')) {
-    return 'Please check your internet connection and try again.';
+    return l.errNetwork;
   }
   if (has('permission-denied') ||
       has('permission_denied') ||
       has('permission denied')) {
-    return 'You don\'t have permission to do this. Contact an admin if you think this is a mistake.';
+    return l.errPermission;
   }
   if (has('vertexai') ||
       has('generativelanguage') ||
@@ -40,15 +63,15 @@ String friendlyError(Object error) {
       has('quota') ||
       has('resource_exhausted') ||
       has(' 429')) {
-    return 'The assistant is temporarily unavailable right now. Please try again shortly.';
+    return l.errAssistant;
   }
   if (has('unavailable') || has('deadline')) {
-    return 'That\'s taking longer than expected. Please try again.';
+    return l.errSlow;
   }
   if (has('not-found') || has('not_found')) {
-    return 'That couldn\'t be found — it may have been removed.';
+    return l.errNotFound;
   }
-  return 'Something went wrong. Please try again.';
+  return l.errGeneric;
 }
 
 const _userFacingFunctionCodes = {

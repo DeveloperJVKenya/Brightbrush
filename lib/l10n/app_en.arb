@@ -242,5 +242,1130 @@
         "type": "int"
       }
     }
+  },
+  "netOfflineTitle": "You're offline",
+  "netOfflineBody": "Showing what was saved on this device. Turn on Wi-Fi or mobile data to see updates and place orders.",
+  "netOfflineNoInternetBody": "Connected, but the internet isn't reachable. Check your data bundle or switch to a better Wi-Fi. Showing saved data.",
+  "netWeakTitle": "Weak connection",
+  "netWeakBody": "Things may load slowly. Move to a stronger signal or connect to Wi-Fi.",
+  "netBackOnline": "Back online",
+  "netOpenSettings": "Open settings",
+  "netDismiss": "Dismiss",
+  "netActionNeedsInternet": "You're offline. Connect to the internet and try again.",
+  "netSavedCopyTag": "Saved copy",
+  "errNetwork": "Please check your internet connection and try again.",
+  "errPermission": "You don't have permission to do this. Contact an admin if you think this is a mistake.",
+  "errAssistant": "The assistant is temporarily unavailable right now. Please try again shortly.",
+  "errSlow": "That's taking longer than expected. Please try again.",
+  "errNotFound": "That couldn't be found — it may have been removed.",
+  "errGeneric": "Something went wrong. Please try again.",
+  "couldntLoadYourCart": "Couldn't load your cart",
+  "loading": "Loading",
+  "addItemsOrSeasonalPackagesFrom": "Add items or seasonal packages from the catalog to start an order.",
+  "packageNoLongerAvailable": "Package no longer available",
+  "itemNoLongerAvailable": "Item no longer available",
+  "removeTheItemsThatAreNo": "Remove the items that are no longer available to continue.",
+  "tapEditToFixIt": "\"{invalid}\": {problem} Tap edit to fix it.",
+  "@tapEditToFixIt": {
+    "placeholders": {
+      "invalid": {},
+      "problem": {}
+    }
+  },
+  "hasAMinimumOrderOf": "\"{below}\" has a minimum order of {minQuantity}.",
+  "@hasAMinimumOrderOf": {
+    "placeholders": {
+      "below": {},
+      "minQuantity": {}
+    }
+  },
+  "orderPlacedYouCanPayFor": "Order placed — you can pay for it right here.",
+  "couldntPlaceOrder": "Couldn't place order: {error}",
+  "@couldntPlaceOrder": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "chooseYourDeliveryArea": "Choose your delivery area.",
+  "pcs": "{quantity} pcs · {amount}",
+  "@pcs": {
+    "placeholders": {
+      "quantity": {},
+      "amount": {}
+    }
+  },
+  "package": "Package",
+  "min": "min {minQuantity}",
+  "@min": {
+    "placeholders": {
+      "minQuantity": {}
+    }
+  },
+  "removeThisToContinue": "Remove this to continue",
+  "edit": "Edit",
+  "remove": "Remove",
+  "deliverToMe": "Deliver to me",
+  "illPickUp": "I'll pick up",
+  "pickUpAt": "Pick up at: {pickupAddress}",
+  "@pickUpAt": {
+    "placeholders": {
+      "pickupAddress": {}
+    }
+  },
+  "deliveryArea": "Delivery area",
+  "enterYourName": "Enter your name",
+  "enterAPhoneNumber": "Enter a phone number",
+  "dropAPinForTheDriver": "Drop a pin for the driver (optional)",
+  "pinSetTapToAdjust": "Pin set — tap to adjust",
+  "save": "Save",
+  "enterADeliveryAddress": "Enter a delivery address",
+  "notesArtworkDetailsColoursSizes": "Notes (artwork details, colours, sizes...)",
+  "cartChangedApplyAgain": "Cart changed — apply again",
+  "codeApplied": "Code applied",
+  "accountDiscount": "Account discount ({discountPercent}%)",
+  "@accountDiscount": {
+    "placeholders": {
+      "discountPercent": {}
+    }
+  },
+  "useMyPointsAvailable": "Use my points ({myPoints} available)",
+  "@useMyPointsAvailable": {
+    "placeholders": {
+      "myPoints": {}
+    }
+  },
+  "upToOfTheOrder": "Up to {maxRedeemPercent}% of the order",
+  "@upToOfTheOrder": {
+    "placeholders": {
+      "maxRedeemPercent": {}
+    }
+  },
+  "points": "Points ({points})",
+  "@points": {
+    "placeholders": {
+      "points": {}
+    }
+  },
+  "promo": "Promo {text}",
+  "@promo": {
+    "placeholders": {
+      "text": {}
+    }
+  },
+  "delivery": "Delivery",
+  "deliveryFree": "Delivery (free)",
+  "includesVat": "Includes VAT ({taxRate}%)",
+  "@includesVat": {
+    "placeholders": {
+      "taxRate": {}
+    }
+  },
+  "vat": "VAT ({taxRate}%)",
+  "@vat": {
+    "placeholders": {
+      "taxRate": {}
+    }
+  },
+  "deposit": "{depositPercent}% deposit",
+  "@deposit": {
+    "placeholders": {
+      "depositPercent": {}
+    }
+  },
+  "onAccountD": "On account ({paymentTermsDays}d)",
+  "@onAccountD": {
+    "placeholders": {
+      "paymentTermsDays": {}
+    }
+  },
+  "payNowToStartProductionAnd": "Pay {amount} now to start production, and {amount2} before delivery.",
+  "@payNowToStartProductionAnd": {
+    "placeholders": {
+      "amount": {},
+      "amount2": {}
+    }
+  },
+  "youllChooseHowToPayM": "You'll choose how to pay (M-Pesa, card and more) on the next screen. Final prices are confirmed when the order is placed.",
+  "decreaseQuantity": "Decrease quantity",
+  "increaseQuantity": "Increase quantity",
+  "quantity": "Quantity",
+  "minimum": "Minimum {minQuantity}",
+  "@minimum": {
+    "placeholders": {
+      "minQuantity": {}
+    }
+  },
+  "cancel": "Cancel",
+  "set": "Set",
+  "back": "Back",
+  "itemDetails": "Item details",
+  "failedToLoad": "Failed to load",
+  "itemNotFound": "Item not found",
+  "itMayHaveBeenRemovedOr": "It may have been removed or is no longer active.",
+  "from": "From {amount}",
+  "@from": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "moq": "MOQ {moq}",
+  "@moq": {
+    "placeholders": {
+      "moq": {}
+    }
+  },
+  "dayLeadTime": "{leadTimeDays} day lead time",
+  "@dayLeadTime": {
+    "placeholders": {
+      "leadTimeDays": {}
+    }
+  },
+  "noDescriptionProvidedYet": "No description provided yet.",
+  "signInOrCreateAnAccount": "Sign in or create an account to add \"{item}\" to your cart.",
+  "@signInOrCreateAnAccount": {
+    "placeholders": {
+      "item": {}
+    }
+  },
+  "addedMinimumOrder": "{item} added (minimum order {moq})",
+  "@addedMinimumOrder": {
+    "placeholders": {
+      "item": {},
+      "moq": {}
+    }
+  },
+  "couldntAddToCart": "Couldn't add to cart: {error}",
+  "@couldntAddToCart": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "ticketSentWellGetBackTo": "Ticket sent — we'll get back to you here.",
+  "couldntSend": "Couldn't send: {error}",
+  "@couldntSend": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "tellUsAboutAnOrderA": "Tell us about an order, a design, or a complaint.",
+  "subject": "Subject",
+  "enterASubject": "Enter a subject",
+  "message": "Message",
+  "enterAMessage": "Enter a message",
+  "send": "Send",
+  "yourTickets": "Your tickets",
+  "couldntLoadTickets": "Couldn't load tickets",
+  "noTicketsYet": "No tickets yet",
+  "anythingYouSendAboveWillShow": "Anything you send above will show up here with our reply.",
+  "couldntLoadYourOrders": "Couldn't load your orders",
+  "nothingOutForDelivery": "Nothing out for delivery",
+  "onceAnOrderIsOutFor": "Once an order is out for delivery, track it live here.",
+  "myOrders": "My orders",
+  "myQuotes": "My quotes",
+  "everyOrderYouvePlacedWithLive": "Every order you've placed, with live status as it moves through production.",
+  "searchYourOrders": "Search your orders",
+  "couldntLoadOrders": "Couldn't load orders",
+  "noOrdersYet": "No orders yet",
+  "noMatches": "No matches",
+  "ordersYouPlaceFromTheCatalog": "Orders you place from the catalog will show up here with live status.",
+  "tryADifferentSearchTerm": "Try a different search term.",
+  "orderDetails": "Order details",
+  "orderNotFound": "Order not found",
+  "itMayHaveBeenRemoved": "It may have been removed.",
+  "paymentReceivedThankYou": "Payment received — thank you!",
+  "confirmingYourPaymentWithTheProvider": "Confirming your payment with the provider… this page updates automatically.",
+  "paymentCancelledYouCanTryAgain": "Payment cancelled. You can try again below.",
+  "thePaymentDidntGoThroughYou": "The payment didn't go through. You can try again below.",
+  "nothingToReorderQuotedItemsNeed": "Nothing to reorder — quoted items need a new quote.",
+  "addedItemSToYourCart": "Added {added} item(s) to your cart. Prices are updated at checkout.",
+  "@addedItemSToYourCart": {
+    "placeholders": {
+      "added": {}
+    }
+  },
+  "cancelThisOrder": "Cancel this order?",
+  "thisCantBeUndone": "This can't be undone.",
+  "keepOrder": "Keep order",
+  "couldntCancel": "Couldn't cancel: {error}",
+  "@couldntCancel": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "thisPackageDoesntListSpecificCatalog": "This package doesn't list specific catalog items yet.",
+  "includesCatalogItemS": "Includes {count} catalog item(s).",
+  "@includesCatalogItemS": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "signInOrCreateAnAccount2": "Sign in or create an account to order \"{package}\".",
+  "@signInOrCreateAnAccount2": {
+    "placeholders": {
+      "package": {}
+    }
+  },
+  "addedToCart2": "\"{package}\" added to cart",
+  "@addedToCart2": {
+    "placeholders": {
+      "package": {}
+    }
+  },
+  "customiseItRequestAQuote": "Customise it — request a quote",
+  "seasonalPackages": "Seasonal packages",
+  "curatedBundlesForCampaignsAndSeasons": "Curated bundles for campaigns and seasons — Valentine's, elections, and more.",
+  "searchPackagesEGValentines": "Search packages, e.g. \"valentines\"",
+  "couldntLoadPackages": "Couldn't load packages",
+  "noPackagesYet": "No packages yet",
+  "seasonalPackagesSetUpByThe": "Seasonal packages set up by the System Manager will appear here live.",
+  "filtersUpdated": "Filters updated.",
+  "couldntReachTheAiAssistant": "Couldn't reach the AI assistant: {error}",
+  "@couldntReachTheAiAssistant": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "askWhatYouNeed": "Ask what you need",
+  "describeTheOccasionOrItemIn": "Describe the occasion or item in your own words — e.g. \"something for a corporate summer picnic, 60 people\" — and we'll set the right filters.",
+  "whatAreYouBrandingAndFor": "What are you branding, and for what?",
+  "ask": "Ask",
+  "order": "Order {displayNumber}",
+  "@order": {
+    "placeholders": {
+      "displayNumber": {}
+    }
+  },
+  "itemS": "{itemCount} item(s) · {amount}",
+  "@itemS": {
+    "placeholders": {
+      "itemCount": {},
+      "amount": {}
+    }
+  },
+  "backToHome": "Back to home",
+  "starsFromReviews": "{avg} stars from {count} reviews",
+  "@starsFromReviews": {
+    "placeholders": {
+      "avg": {},
+      "count": {}
+    }
+  },
+  "removeFromWishlist": "Remove from wishlist",
+  "saveToWishlist": "Save to wishlist",
+  "signInToSaveToYour": "Sign in to save \"{itemName}\" to your wishlist.",
+  "@signInToSaveToYour": {
+    "placeholders": {
+      "itemName": {}
+    }
+  },
+  "clearSearch": "Clear search",
+  "items2": "{category}, {count} items",
+  "@items2": {
+    "placeholders": {
+      "category": {},
+      "count": {}
+    }
+  },
+  "items3": "{count} items · {amount}",
+  "@items3": {
+    "placeholders": {
+      "count": {},
+      "amount": {}
+    }
+  },
+  "oneSystemForOrdersProductionDelivery": "One system for orders, production, delivery and the numbers behind every cap, hoodie and campaign package.",
+  "somethingWentWrong": "Something went wrong ({code}).",
+  "@somethingWentWrong": {
+    "placeholders": {
+      "code": {}
+    }
+  },
+  "enterYourEmailAboveFirstThen": "Enter your email above first, then tap \"Forgot password?\".",
+  "ifAnAccountExistsForA": "If an account exists for {email}, a reset link is on its way. Check your inbox and spam folder.",
+  "@ifAnAccountExistsForA": {
+    "placeholders": {
+      "email": {}
+    }
+  },
+  "pleaseAcceptTheTermsAndPrivacy": "Please accept the Terms and Privacy Policy to continue.",
+  "createYourAccount": "Create your account",
+  "signIn": "Sign in",
+  "accessYourBrightbrushCreationsWorkspace": "Access your BrightBrush Creations workspace.",
+  "fullName": "Full name",
+  "email": "Email",
+  "enterAValidEmail": "Enter a valid email",
+  "password": "Password",
+  "atLeast6Characters": "At least 6 characters",
+  "forgotPassword": "Forgot password?",
+  "iAgreeToThe": "I agree to the ",
+  "terms": "Terms",
+  "and": " and ",
+  "privacyPolicy": "Privacy Policy",
+  "createAccount": "Create account",
+  "alreadyHaveAnAccountSignIn": "Already have an account? Sign in",
+  "dontHaveAnAccountSignUp": "Don't have an account? Sign up",
+  "signingUpHereAlwaysCreatesA": "Signing up here always creates a plain User account. Every other role is assigned afterward by an Admin/CEO or Developer.",
+  "verificationEmailSentTo": "Verification email sent to {email}.",
+  "@verificationEmailSentTo": {
+    "placeholders": {
+      "email": {}
+    }
+  },
+  "emailVerifiedThankYou": "Email verified — thank you!",
+  "notVerifiedYetCheckYourInbox": "Not verified yet. Check your inbox (and spam folder).",
+  "verifyYourEmailSoWeCan": "Verify your email ({email}) so we can send receipts and order updates.",
+  "@verifyYourEmailSoWeCan": {
+    "placeholders": {
+      "email": {}
+    }
+  },
+  "sendLink": "Send link",
+  "iveVerified": "I've verified",
+  "privacyPolicy2": "Privacy policy",
+  "termsOfService": "Terms of service",
+  "deleteMyAccount": "Delete my account",
+  "permanentlyRemovesYourProfileCartAnd": "Permanently removes your profile, cart and quotes.",
+  "thatPasswordIsIncorrect": "That password is incorrect.",
+  "couldntConfirmYourIdentity": "Couldn't confirm your identity.",
+  "deleteYourAccount": "Delete your account?",
+  "thisPermanentlyDeletesYourLoginProfile": "This permanently deletes your login, profile, cart and quote requests. Past orders are kept anonymised for our tax records. You can't delete your account while an order is still in progress.",
+  "yourPassword": "Your password",
+  "typeDeleteToConfirm": "Type DELETE to confirm",
+  "keepMyAccount": "Keep my account",
+  "deleteForever": "Delete forever",
+  "chatWithCustomer": "Chat with customer",
+  "filesMustBeUnder10Mb": "Files must be under 10 MB.",
+  "messages": "Messages · {orderLabel}",
+  "@messages": {
+    "placeholders": {
+      "orderLabel": {}
+    }
+  },
+  "noMessagesYet": "No messages yet.",
+  "questionsAboutSizesPlacementOrDelivery": "Questions about sizes, placement or delivery? Send us a message.",
+  "attachPhotoOrPdf": "Attach photo or PDF",
+  "writeAMessage": "Write a message",
+  "customise": "Customise",
+  "customise2": "Customise {item}",
+  "@customise2": {
+    "placeholders": {
+      "item": {}
+    }
+  },
+  "itemNotAvailable": "Item not available",
+  "itMayHaveBeenRemovedFrom": "It may have been removed from the catalog.",
+  "notCustomisable": "Not customisable",
+  "thisItemIsSoldAsIs": "This item is sold as-is. Add it from its page.",
+  "signInToUploadYourLogo": "Sign in to upload your logo and save it to your library.",
+  "signInOrCreateAnAccount3": "Sign in or create an account to add this to your cart.",
+  "cartUpdated": "Cart updated",
+  "addedToYourCart": "{item} added to your cart",
+  "@addedToYourCart": {
+    "placeholders": {
+      "item": {}
+    }
+  },
+  "colour": "Colour",
+  "pieces": "Pieces",
+  "branding": "Branding",
+  "addALogoOrTextAt": "Add a logo or text at each placement",
+  "addAnotherPlacement": "Add another placement",
+  "namesOptional": "Names (optional)",
+  "onePerLineEGStaff": "One per line, e.g. staff names — {amount} per piece",
+  "@onePerLineEGStaff": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "pcsEach": "{quantity} pcs · {amount} each",
+  "@pcsEach": {
+    "placeholders": {
+      "quantity": {},
+      "amount": {}
+    }
+  },
+  "updateCart": "Update cart",
+  "removePlacement": "Remove placement",
+  "uploadChooseLogo": "Upload / choose logo",
+  "removeLogo": "Remove logo",
+  "alreadyDigitizedNoDigitizingFee": "Already digitized — no digitizing fee.",
+  "orTextToPrintStitch": "Or text to print/stitch",
+  "extraTextOptional": "Extra text (optional)",
+  "threadColoursCommaSeparated": "Thread colours (comma separated)",
+  "eGWhiteGold": "e.g. White, Gold",
+  "brandingPerPiece": "Branding ({amount} per piece)",
+  "@brandingPerPiece": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "oneOffSetupDigitizing": "One-off setup / digitizing",
+  "names": "Names",
+  "itemTotal": "Item total",
+  "deliveryAndVatAreAddedAt": "Delivery and VAT are added at checkout. You'll approve a digital proof before we produce anything.",
+  "addedToYourLibrary": "\"{art}\" added to your library",
+  "@addedToYourLibrary": {
+    "placeholders": {
+      "art": {}
+    }
+  },
+  "uploadFailed": "Upload failed: {error}",
+  "@uploadFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "notDigitizedYet": "Not digitized yet",
+  "rename": "Rename",
+  "deleteFromLibrary": "Delete from library",
+  "pastOrdersKeepTheirCopy": "Past orders keep their copy.",
+  "renameArtwork": "Rename artwork",
+  "deleted": "Deleted",
+  "myArtwork": "My artwork",
+  "uploadLogo": "Upload logo",
+  "couldntLoadYourArtwork": "Couldn't load your artwork",
+  "noArtworkYet": "No artwork yet",
+  "uploadYourLogoOnceAndReuse": "Upload your logo once and reuse it on caps, shirts, bottles and more.",
+  "thatFileIsOver25Mb": "That file is over 25 MB. Please upload a smaller one.",
+  "chooseYourArtwork": "Choose your artwork",
+  "pngWithATransparentBackgroundGives": "PNG with a transparent background gives the best mockup. Vector files (SVG, AI, EPS, PDF) are welcome for production.",
+  "uploadNewArtwork": "Upload new artwork",
+  "yourLibrary": "Your library",
+  "digitizedNoSetupFeeForEmbroidery": "Digitized — no setup fee for embroidery",
+  "pcs2": "{e} pcs",
+  "@pcs2": {
+    "placeholders": {
+      "e": {}
+    }
+  },
+  "dragADesignToAdjustIts": "Drag a design to adjust its position. Final placement is confirmed on your proof.",
+  "logo": "Logo",
+  "yourDesign": "Your design",
+  "tellUsWhatYoudLikeChanged": "Tell us what you'd like changed.",
+  "approvedProductionCanBegin": "Approved — production can begin.",
+  "thanksWellSendARevisedProof": "Thanks — we'll send a revised proof.",
+  "designProof": "Design proof",
+  "ourDesignersArePreparingADigital": "Our designers are preparing a digital proof of your branding. You'll approve it here before anything is produced.",
+  "version": "Version {version} · {proofStatus}",
+  "@version": {
+    "placeholders": {
+      "version": {},
+      "proofStatus": {}
+    }
+  },
+  "stitches": "{amount} stitches",
+  "@stitches": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "commentsRequiredToRequestChanges": "Comments (required to request changes)",
+  "approveProof": "Approve proof",
+  "requestChanges": "Request changes",
+  "yourComment": "Your comment: {customerComment}",
+  "@yourComment": {
+    "placeholders": {
+      "customerComment": {}
+    }
+  },
+  "earlierVersions": "Earlier versions ({length})",
+  "@earlierVersions": {
+    "placeholders": {
+      "length": {}
+    }
+  },
+  "version2": "Version {version} · {status}",
+  "@version2": {
+    "placeholders": {
+      "version": {},
+      "status": {}
+    }
+  },
+  "proofSentToTheCustomer": "Proof sent to the customer",
+  "proof": "Proof · {displayNumber}",
+  "@proof": {
+    "placeholders": {
+      "displayNumber": {}
+    }
+  },
+  "status": "Status: {proofStatus}",
+  "@status": {
+    "placeholders": {
+      "proofStatus": {}
+    }
+  },
+  "customer": "Customer: {customerComment}",
+  "@customer": {
+    "placeholders": {
+      "customerComment": {}
+    }
+  },
+  "sendANewVersion": "Send a new version",
+  "addMockupStitchOutPhotos": "Add mockup / stitch-out photos",
+  "stitchCountEmbroideryOptional": "Stitch count (embroidery, optional)",
+  "noteToCustomerSizesThreadColours": "Note to customer (sizes, thread colours, placement)",
+  "close": "Close",
+  "sendProof": "Send proof",
+  "newRequest": "New request",
+  "couldntLoadYourQuotes": "Couldn't load your quotes",
+  "noQuoteRequestsYet": "No quote requests yet",
+  "needACustomJobABig": "Need a custom job, a big quantity or a package tailored to you? Request a quote.",
+  "turnDownThisPrice": "Turn down this price?",
+  "withdrawThisRequest": "Withdraw this request?",
+  "keep": "Keep",
+  "turnDown": "Turn down",
+  "withdraw": "Withdraw",
+  "expired": "Expired",
+  "pcsRequested": "{quantity} pcs · requested {amount}",
+  "@pcsRequested": {
+    "placeholders": {
+      "quantity": {},
+      "amount": {}
+    }
+  },
+  "quotedPrice": "Quoted price",
+  "validUntilIncludesDelivery": "Valid until {amount} · includes delivery",
+  "@validUntilIncludesDelivery": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "acceptOrder": "Accept & order",
+  "quotePdf": "Quote PDF",
+  "viewOrder": "View order",
+  "acceptQuote": "Accept quote",
+  "enterAName": "Enter a name",
+  "enterAnAddress": "Enter an address",
+  "notesOptional": "Notes (optional)",
+  "totalPayNow": "Total {amount} · pay {amount2} now",
+  "@totalPayNow": {
+    "placeholders": {
+      "amount": {},
+      "amount2": {}
+    }
+  },
+  "total2": "Total {amount}",
+  "@total2": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "signInOrCreateAnAccount4": "Sign in or create an account to request a quote.",
+  "quoteRequestSentWellPriceIt": "Quote request sent — we'll price it and notify you under My Quotes.",
+  "view": "View",
+  "couldntSendRequest": "Couldn't send request: {error}",
+  "@couldntSendRequest": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "tellUsWhatYouNeedAnd": "Tell us what you need and we'll send you a price.",
+  "whatDoYouNeed": "What do you need?",
+  "eG200EmbroideredPoloShirts": "e.g. 200 embroidered polo shirts",
+  "describeTheItem": "Describe the item",
+  "details": "Details",
+  "logoPlacementColoursSizesDeadlineDelivery": "Logo placement, colours, sizes, deadline, delivery location…",
+  "sendRequest": "Send request",
+  "accountDiscount2": "Account discount",
+  "delivery2": "Delivery ({deliveryZoneName})",
+  "@delivery2": {
+    "placeholders": {
+      "deliveryZoneName": {}
+    }
+  },
+  "storePickup": "Store pickup",
+  "includesVat2": "Includes VAT ({vatPercent}%)",
+  "@includesVat2": {
+    "placeholders": {
+      "vatPercent": {}
+    }
+  },
+  "vat2": "VAT ({vatPercent}%)",
+  "@vat2": {
+    "placeholders": {
+      "vatPercent": {}
+    }
+  },
+  "paid": "Paid",
+  "refunded": "Refunded",
+  "cancellationFeeKept": "Cancellation fee kept",
+  "balanceDue": "Balance due",
+  "depositReceivedProductionCanStart": "Deposit received — production can start.",
+  "depositOfDueBeforeProductionStarts": "Deposit of {amount} due before production starts.",
+  "@depositOfDueBeforeProductionStarts": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "couldntOpenThePaymentPage": "Couldn't open the payment page.",
+  "onlinePaymentIsntAvailableYetWell": "Online payment isn't available yet. We'll send you an invoice with payment details.",
+  "deposit2": "Deposit {amount}",
+  "@deposit2": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "full": "Full {amount}",
+  "@full": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "mPesaPhoneNumber": "M-Pesa phone number",
+  "testModeNoRealMoneyWill": "Test mode — no real money will be charged.",
+  "ref": "Ref: {receipt}",
+  "@ref": {
+    "placeholders": {
+      "receipt": {}
+    }
+  },
+  "charged": "Charged {chargedCurrency} {chargedAmount}",
+  "@charged": {
+    "placeholders": {
+      "chargedCurrency": {},
+      "chargedAmount": {}
+    }
+  },
+  "checkStatus": "Check status",
+  "checkYourPhone": "Check your phone",
+  "paymentReceived": "Payment received",
+  "paymentFailed": "Payment failed",
+  "paymentCancelled": "Payment cancelled",
+  "amount": "{message}\n\nAmount: {amount}",
+  "@amount": {
+    "placeholders": {
+      "message": {},
+      "amount": {}
+    }
+  },
+  "thePaymentDidNotGoThrough": "The payment did not go through.",
+  "ivePaidCheck": "I've paid — check",
+  "done": "Done",
+  "getYourCustomBrandingFromUse": "Get your custom branding from {context}! Use my code {code} when you sign up and we both get {referralBonusPoints} points after your first order. {base}",
+  "@getYourCustomBrandingFromUse": {
+    "placeholders": {
+      "context": {},
+      "code": {},
+      "referralBonusPoints": {},
+      "base": {}
+    }
+  },
+  "enterAFriendsCode": "Enter a friend's code",
+  "onlyBeforeYourFirstOrder": "Only before your first order.",
+  "codeAppliedYoullBothGetBonus": "Code applied — you'll both get bonus points after your first order.",
+  "pts": "{points} pts",
+  "@pts": {
+    "placeholders": {
+      "points": {}
+    }
+  },
+  "worthOffYouEarnPointS": "Worth {amount} off. You earn {pointsPerHundred} point(s) for every KES 100 you spend.",
+  "@worthOffYouEarnPointS": {
+    "placeholders": {
+      "amount": {},
+      "pointsPerHundred": {}
+    }
+  },
+  "referAFriendPtsEach": "Refer a friend (+{referralBonusPoints} pts each)",
+  "@referAFriendPtsEach": {
+    "placeholders": {
+      "referralBonusPoints": {}
+    }
+  },
+  "iHaveACode": "I have a code",
+  "copy": "Copy",
+  "copied": "Copied",
+  "share": "Share",
+  "thanksForYourReview": "Thanks for your review",
+  "rateYourOrder": "Rate your order",
+  "qualityFitDeliveryAnythingToShare": "Quality, fit, delivery… anything to share?",
+  "photos4": "Photos ({count}/4)",
+  "@photos4": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "reviewsAppearPubliclyAfterAQuick": "Reviews appear publicly after a quick check.",
+  "submit": "Submit",
+  "reviews": "Reviews",
+  "nothingSavedYet": "Nothing saved yet",
+  "tapTheHeartOnAnyItem": "Tap the heart on any item to save it for later.",
+  "brandingWeveProducedForSchoolsCompanies": "Branding we've produced for schools, companies, events and teams.",
+  "comingSoon": "Coming soon",
+  "ourGalleryOfRecentJobsWill": "Our gallery of recent jobs will appear here.",
+  "portfolio": "Portfolio",
+  "noReviewsYet": "No reviews yet",
+  "customersAreAskedToReviewEach": "Customers are asked to review each completed order.",
+  "reply": "Reply: {reply}",
+  "@reply": {
+    "placeholders": {
+      "reply": {}
+    }
+  },
+  "publicReply": "Public reply",
+  "approvePublish": "Approve (publish)",
+  "hide": "Hide",
+  "replyPublicly": "Reply publicly",
+  "newPortfolioEntryPhotoS": "New portfolio entry ({count} photo(s))",
+  "@newPortfolioEntryPhotoS": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "title": "Title",
+  "description": "Description",
+  "tagsCommaSeparated": "Tags (comma separated)",
+  "publish": "Publish",
+  "addWork": "Add work",
+  "unfeature": "Unfeature",
+  "feature": "Feature",
+  "delete": "Delete",
+  "dropAPinOnYourDelivery": "Drop a pin on your delivery point",
+  "useThisSpot": "Use this spot",
+  "uniforms": "{company} uniforms",
+  "@uniforms": {
+    "placeholders": {
+      "company": {}
+    }
+  },
+  "approvedBrandedItemsForYourTeam": "Approved branded items for your team — just choose sizes.",
+  "newCompany": "New company",
+  "couldntLoadCompanies": "Couldn't load companies",
+  "noCompaniesYet": "No companies yet",
+  "groupBuyersFromTheSameOrganisation": "Group buyers from the same organisation: shared discount, credit and uniform programs.",
+  "buyerS": "{count} buyer(s)",
+  "@buyerS": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "off": "{discountPercent}% off",
+  "@off": {
+    "placeholders": {
+      "discountPercent": {}
+    }
+  },
+  "editCompanyBuyers": "Edit company & buyers",
+  "newUniformProgram": "New uniform program",
+  "edit2": "Edit {existing}",
+  "@edit2": {
+    "placeholders": {
+      "existing": {}
+    }
+  },
+  "companyName": "Company name",
+  "kraPinForInvoicesEtims": "KRA PIN (for invoices / eTIMS)",
+  "discountForAllBuyers": "Discount for all buyers (%)",
+  "creditTerms": "Credit terms",
+  "paymentTermsDays": "Payment terms (days)",
+  "companyCreditLimitKes0None": "Company credit limit (KES, 0 = none)",
+  "buyers": "Buyers ({count})",
+  "@buyers": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "findCustomersByNameOrEmail": "Find customers by name or email",
+  "editProgram": "Edit program",
+  "programName": "Program name",
+  "eG2027StaffUniforms": "e.g. 2027 staff uniforms",
+  "notesForBuyers": "Notes for buyers",
+  "active": "Active",
+  "itemsComeFromCustomisedOrdersThis": "Items come from customised orders this company has placed. Once a buyer orders a branded item, it can be added here.",
+  "from2": "{c} (from {order})",
+  "@from2": {
+    "placeholders": {
+      "c": {},
+      "order": {}
+    }
+  },
+  "addFromAPastOrder": "Add from a past order",
+  "saved": "Saved",
+  "loyaltyReferrals": "Loyalty & referrals",
+  "loyaltyProgrammeOn": "Loyalty programme on",
+  "pointsPerKes100Spent": "Points per KES 100 spent",
+  "kesValueOf1Point": "KES value of 1 point",
+  "referralBonusPointsEach": "Referral bonus (points each)",
+  "maxOfAnOrderPaidWith": "Max % of an order paid with points",
+  "displayCurrencies": "Display currencies",
+  "kesPer1UnitCustomersCan": "KES per 1 unit. Customers can see approximate prices in these; everything is still charged in KES.",
+  "kesPer1": "KES per 1 {c}",
+  "@kesPer1": {
+    "placeholders": {
+      "c": {}
+    }
+  },
+  "saveLoyaltyCurrencies": "Save loyalty & currencies",
+  "alsoShowPricesIn": "Also show prices in",
+  "approximateOnlyYouPayInKes": "Approximate only — you pay in KES.",
+  "kesOnly": "KES only",
+  "couldntLoadNotifications": "Couldn't load notifications",
+  "unread": "{count} unread",
+  "@unread": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "notificationSettings": "Notification settings",
+  "orderUpdatesProofsPaymentsAndMessages": "Order updates, proofs, payments and messages will appear here.",
+  "getAlertsOnThisDevice": "Get alerts on this device",
+  "orderUpdatesAndMessagesEvenWhen": "Order updates and messages, even when the app is closed.",
+  "alertsSwitchedOnForThisDevice": "Alerts switched on for this device",
+  "couldntSwitchOnAlertsCheckYour": "Couldn't switch on alerts — check your browser/phone notification permission.",
+  "turnOn": "Turn on",
+  "howShouldWeReachYou": "How should we reach you?",
+  "theInAppInboxAlwaysGets": "The in-app inbox always gets everything.",
+  "pushNotifications": "Push notifications",
+  "usesThePhoneNumberOnYour": "Uses the phone number on your profile",
+  "remindersOffers": "Reminders & offers",
+  "cartRemindersAndPromotions": "Cart reminders and promotions",
+  "notificationChannelsSaved": "Notification channels saved",
+  "testSentCheckYourInboxEmail": "Test sent — check your inbox, email and WhatsApp.",
+  "couldntLoadNotificationSettings": "Couldn't load notification settings: {error}",
+  "@couldntLoadNotificationSettings": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "inAppAndPushNotificationsWork": "In-app and push notifications work out of the box. Add email and WhatsApp below; customers choose their channels in their inbox.",
+  "emailProvider": "Email provider",
+  "fromAddress": "From address",
+  "mustBeASenderDomainVerified": "Must be a sender/domain verified with the provider.",
+  "apiKey": "API key",
+  "whatsappMetaCloudApi": "WhatsApp (Meta Cloud API)",
+  "phoneNumberId": "Phone number ID",
+  "metaForDevelopersWhatsappApiSetup": "Meta for Developers → WhatsApp → API Setup",
+  "permanentAccessToken": "Permanent access token",
+  "createASystemUserTokenWith": "Create a System User token with whatsapp_business_messaging.",
+  "templateName": "Template name",
+  "templateLanguageCode": "Template language code",
+  "sendMeATest": "Send me a test",
+  "settings": "Settings",
+  "appearance": "Appearance",
+  "theme": "Theme",
+  "followYourDeviceOrLockIt": "Follow your device, or lock it to light or dark.",
+  "system": "System",
+  "light": "Light",
+  "dark": "Dark",
+  "font": "Font",
+  "pickWhicheverReadsBestToYou": "Pick whichever reads best to you — applies everywhere, instantly.",
+  "accessibility": "Accessibility",
+  "textSize": "Text size",
+  "appliesAcrossTheWholeAppIndependent": "Applies across the whole app, independent of your device's own text size.",
+  "reduceMotion": "Reduce motion",
+  "skipEntranceStaggerAnimationsOnLists": "Skip entrance/stagger animations on lists and grids.",
+  "inAppNotifications": "In-app notifications",
+  "showTheAnnouncementBannerOnHome": "Show the announcement banner on Home. This doesn't send push alerts.",
+  "languageCurrency": "Language & currency",
+  "aboutSupport": "About & support",
+  "contactSupport": "Contact support",
+  "getHelpWithAnOrderA": "Get help with an order, a design, or anything else.",
+  "loadingVersion": "Loading version…",
+  "version3": "Version {version} ({buildNumber})",
+  "@version3": {
+    "placeholders": {
+      "version": {},
+      "buildNumber": {}
+    }
+  },
+  "answer": "Answer",
+  "savedAnswerShownWhileOffline": "Saved answer — shown while offline",
+  "gotIt": "Got it",
+  "nothingHereYet": "Nothing here yet",
+  "askAQuestionBelowAndThe": "Ask a question below and the assistant will help.",
+  "tryADifferentSearchOrAsk": "Try a different search, or ask below.",
+  "guide": "Guide",
+  "answersForWhatYouCanDo": "Answers for what you can do here — search below, or ask your own question.",
+  "searchQuestionsEGAssignOrder": "Search questions, e.g. \"assign order\"",
+  "couldntLoadTheGuide": "Couldn't load the guide",
+  "youreOfflineShowingSavedAnswersAsking": "You're offline — showing saved answers. Asking something new needs a connection.",
+  "askSomethingElseNeedsInternet": "Ask something else — needs internet",
+  "typeYourQuestion": "Type your question…",
+  "switchViewDeveloper": "Switch view (Developer)",
+  "signOut": "Sign out",
+  "createAnAccountToContinue": "Create an account to continue",
+  "signInOrCreateAccount": "Sign in or create account",
+  "orderStatusCancelled": "Order status: cancelled",
+  "orderStatusStepOf": "Order status: {context}, step {currentIndex} of {count}",
+  "@orderStatusStepOf": {
+    "placeholders": {
+      "context": {},
+      "currentIndex": {},
+      "count": {}
+    }
+  },
+  "couldntUploadPhoto": "Couldn't upload photo: {error}",
+  "@couldntUploadPhoto": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "profileUpdated": "Profile updated",
+  "couldntSave": "Couldn't save: {error}",
+  "@couldntSave": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "couldntLoadYourProfile": "Couldn't load your profile",
+  "noProfileFound": "No profile found",
+  "signInAgainToLoadYour": "Sign in again to load your account details.",
+  "yourAccountDetails": "Your account details.",
+  "displayName": "Display name",
+  "required": "Required",
+  "phoneOptional": "Phone (optional)",
+  "vehiclePlateOptional": "Vehicle plate (optional)",
+  "availableForDeliveries": "Available for deliveries",
+  "dailyWageDaySetByAdmin": "Daily wage: {amount}/day (set by Admin)",
+  "@dailyWageDaySetByAdmin": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "saveChanges": "Save changes",
+  "security": "Security",
+  "changePassword": "Change password",
+  "yourSavedLogosForBrandingOrders": "Your saved logos for branding orders",
+  "passwordChanged": "Password changed",
+  "couldntChangePassword": "Couldn't change password",
+  "currentPassword": "Current password",
+  "newPassword": "New password",
+  "locatingMoreStopS": "Locating {count} more stop(s)…",
+  "@locatingMoreStopS": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "stops": "Stops ({count})",
+  "@stops": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "pageNotFound": "Page not found",
+  "thatLinkDoesntLeadAnywhereIn": "That link doesn't lead anywhere in BrightBrush.",
+  "goHome": "Go home",
+  "noValidWhatsappNumberForThis": "No valid WhatsApp number for this contact.",
+  "couldntOpenWhatsappOnThisDevice": "Couldn't open WhatsApp on this device.",
+  "auto": "Auto",
+  "browsingAsGuest": "Browsing as guest",
+  "developerView": "{role} · Developer view",
+  "@developerView": {
+    "placeholders": {
+      "role": {}
+    }
+  },
+  "invoiceNothingNow": "Nothing to pay now — we'll invoice {account}, due in {days} days.",
+  "@invoiceNothingNow": {
+    "placeholders": {
+      "account": {},
+      "days": {}
+    }
+  },
+  "yourAccount": "your account",
+  "volumePricing": "Volume pricing: {tiers}",
+  "@volumePricing": {
+    "placeholders": {
+      "tiers": {}
+    }
+  },
+  "tierPcs": "{minQty}+ pcs {price}",
+  "@tierPcs": {
+    "placeholders": {
+      "minQty": {},
+      "price": {}
+    }
+  },
+  "piecesCount": "{quantity} pcs",
+  "@piecesCount": {
+    "placeholders": {
+      "quantity": {}
+    }
+  },
+  "inclSetup": " · incl. {amount} setup",
+  "@inclSetup": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "minimumPcs": "Minimum {moq} pcs",
+  "@minimumPcs": {
+    "placeholders": {
+      "moq": {}
+    }
+  },
+  "tierAt": "{minQty}+ @ {price}",
+  "@tierAt": {
+    "placeholders": {
+      "minQty": {},
+      "price": {}
+    }
+  },
+  "blanksLine": "Blanks ({quantity} × {price}{surcharges})",
+  "@blanksLine": {
+    "placeholders": {
+      "quantity": {},
+      "price": {},
+      "surcharges": {}
+    }
+  },
+  "plusSizeSurcharges": " + size surcharges",
+  "digitized": "Digitized",
+  "stitchesSuffix": " · {count} stitches",
+  "@stitchesSuffix": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "threadsList": "threads {colours}",
+  "@threadsList": {
+    "placeholders": {
+      "colours": {}
+    }
+  },
+  "namesList": "Names ({count}): {names}",
+  "@namesList": {
+    "placeholders": {
+      "count": {},
+      "names": {}
+    }
+  },
+  "overdueWasDue": "Overdue — was due {date}",
+  "@overdueWasDue": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "onAccountDue": "On account · due {date}",
+  "@onAccountDue": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "thankYouReceived": "Thank you! {amount} received{reference}.",
+  "@thankYouReceived": {
+    "placeholders": {
+      "amount": {},
+      "reference": {}
+    }
+  },
+  "mpesaRefSuffix": " (M-Pesa ref {receipt})",
+  "@mpesaRefSuffix": {
+    "placeholders": {
+      "receipt": {}
+    }
+  },
+  "photosCount": "{count} photo(s)",
+  "@photosCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "featuredSuffix": " · featured",
+  "memberSince": "Member since {date}",
+  "@memberSince": {
+    "placeholders": {
+      "date": {}
+    }
   }
 }

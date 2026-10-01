@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../features/orders/domain/order_status.dart';
 import '../../core/l10n/language.dart';
+import '../../core/l10n/l10n_ext.dart';
 
 /// Horizontal progress timeline through [OrderStatus.pipeline], with a
 /// separate "cancelled" treatment when that's the terminal state. Each
@@ -33,7 +34,7 @@ class OrderStatusTimeline extends StatelessWidget {
 
     if (status == OrderStatus.cancelled) {
       return Semantics(
-        label: 'Order status: cancelled',
+        label: context.l10n.orderStatusCancelled,
         child: Row(
           children: [
             Icon(
@@ -43,7 +44,7 @@ class OrderStatusTimeline extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              'Cancelled',
+              context.l10n.statusCancelled,
               style: TextStyle(
                 color: theme.colorScheme.error,
                 fontWeight: FontWeight.w600,
@@ -58,9 +59,11 @@ class OrderStatusTimeline extends StatelessWidget {
     final currentIndex = steps.indexOf(status);
 
     return Semantics(
-      label:
-          'Order status: ${steps[currentIndex].localized(context)}, '
-          'step ${currentIndex + 1} of ${steps.length}',
+      label: context.l10n.orderStatusStepOf(
+        steps[currentIndex].localized(context),
+        currentIndex + 1,
+        steps.length,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

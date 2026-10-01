@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../features/payments/application/payments_providers.dart';
 import '../features/payments/domain/business_settings.dart';
+import '../core/l10n/l10n_ext.dart';
 
 /// Normalises a Kenyan (or already international) number for wa.me:
 /// 0712…/+254712…/254712… → 254712…; other international numbers pass
@@ -29,8 +30,8 @@ Future<bool> openWhatsApp(
   final number = whatsappNumber(phone);
   if (number == null) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('No valid WhatsApp number for this contact.'),
+      SnackBar(
+        content: Text(context.l10n.noValidWhatsappNumberForThis),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -40,8 +41,8 @@ Future<bool> openWhatsApp(
   final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
   if (!ok && context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Couldn\'t open WhatsApp on this device.'),
+      SnackBar(
+        content: Text(context.l10n.couldntOpenWhatsappOnThisDevice),
         behavior: SnackBarBehavior.floating,
       ),
     );

@@ -10,6 +10,7 @@ import '../../../core/settings/app_font.dart';
 import '../../growth/growth_settings.dart';
 import '../../../core/l10n/language.dart';
 import '../../../core/settings/settings_providers.dart';
+import '../../../core/l10n/l10n_ext.dart';
 
 /// Personal display preferences, reachable from every role via the shell's
 /// app bar — not role-gated, since appearance is a per-device/per-user
@@ -28,11 +29,14 @@ class SettingsScreen extends ConsumerWidget {
     final role = ref.watch(resolvedRoleProvider).valueOrNull;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: Text(context.l10n.settings)),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          _SectionHeader(title: 'Appearance', icon: Icons.palette_outlined),
+          _SectionHeader(
+            title: context.l10n.appearance,
+            icon: Icons.palette_outlined,
+          ),
           const SizedBox(height: 12),
           Card(
             margin: EdgeInsets.zero,
@@ -42,35 +46,35 @@ class SettingsScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Theme',
+                    context.l10n.theme,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Follow your device, or lock it to light or dark.',
+                    context.l10n.followYourDeviceOrLockIt,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 14),
                   SegmentedButton<ThemeMode>(
-                    segments: const [
+                    segments: [
                       ButtonSegment(
                         value: ThemeMode.system,
                         icon: Icon(Icons.brightness_auto_outlined),
-                        label: Text('System'),
+                        label: Text(context.l10n.system),
                       ),
                       ButtonSegment(
                         value: ThemeMode.light,
                         icon: Icon(Icons.light_mode_outlined),
-                        label: Text('Light'),
+                        label: Text(context.l10n.light),
                       ),
                       ButtonSegment(
                         value: ThemeMode.dark,
                         icon: Icon(Icons.dark_mode_outlined),
-                        label: Text('Dark'),
+                        label: Text(context.l10n.dark),
                       ),
                     ],
                     selected: {themeMode},
@@ -91,14 +95,14 @@ class SettingsScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Font',
+                    context.l10n.font,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Pick whichever reads best to you — applies everywhere, instantly.',
+                    context.l10n.pickWhicheverReadsBestToYou,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -119,7 +123,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 20),
           _SectionHeader(
-            title: 'Accessibility',
+            title: context.l10n.accessibility,
             icon: Icons.accessibility_new_outlined,
           ),
           const SizedBox(height: 12),
@@ -131,14 +135,14 @@ class SettingsScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Text size',
+                    context.l10n.textSize,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Applies across the whole app, independent of your device\'s own text size.',
+                    context.l10n.appliesAcrossTheWholeAppIndependent,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -163,9 +167,9 @@ class SettingsScreen extends ConsumerWidget {
                   const Divider(height: 24),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Reduce motion'),
-                    subtitle: const Text(
-                      'Skip entrance/stagger animations on lists and grids.',
+                    title: Text(context.l10n.reduceMotion),
+                    subtitle: Text(
+                      context.l10n.skipEntranceStaggerAnimationsOnLists,
                     ),
                     value: reduceMotion,
                     onChanged: (v) =>
@@ -177,17 +181,15 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 20),
           _SectionHeader(
-            title: 'Notifications',
+            title: context.l10n.notificationsTitle,
             icon: Icons.notifications_outlined,
           ),
           const SizedBox(height: 12),
           Card(
             margin: EdgeInsets.zero,
             child: SwitchListTile(
-              title: const Text('In-app notifications'),
-              subtitle: const Text(
-                'Show the announcement banner on Home. This doesn\'t send push alerts.',
-              ),
+              title: Text(context.l10n.inAppNotifications),
+              subtitle: Text(context.l10n.showTheAnnouncementBannerOnHome),
               value: inAppNotifications,
               onChanged: (v) =>
                   ref.read(inAppNotificationsEnabledProvider.notifier).set(v),
@@ -195,7 +197,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 20),
           _SectionHeader(
-            title: 'Language & currency',
+            title: context.l10n.languageCurrency,
             icon: Icons.translate_rounded,
           ),
           const SizedBox(height: 12),
@@ -204,7 +206,10 @@ class SettingsScreen extends ConsumerWidget {
             child: Column(children: [LanguageTile(), DisplayCurrencyTile()]),
           ),
           const SizedBox(height: 20),
-          _SectionHeader(title: 'About & support', icon: Icons.info_outline),
+          _SectionHeader(
+            title: context.l10n.aboutSupport,
+            icon: Icons.info_outline,
+          ),
           const SizedBox(height: 12),
           Card(
             margin: EdgeInsets.zero,
@@ -214,10 +219,8 @@ class SettingsScreen extends ConsumerWidget {
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.support_agent_outlined),
-                  title: const Text('Contact support'),
-                  subtitle: const Text(
-                    'Get help with an order, a design, or anything else.',
-                  ),
+                  title: Text(context.l10n.contactSupport),
+                  subtitle: Text(context.l10n.getHelpWithAnOrderA),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _openSupport(context, role),
                 ),
@@ -254,8 +257,8 @@ class _AppVersionTile extends StatelessWidget {
           title: const Text('BrightBrush Creations'),
           subtitle: Text(
             info == null
-                ? 'Loading version…'
-                : 'Version ${info.version} (${info.buildNumber})',
+                ? context.l10n.loadingVersion
+                : context.l10n.version3(info.version, info.buildNumber),
           ),
         );
       },

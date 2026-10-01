@@ -55,14 +55,27 @@ Ordering, production and delivery app for a Kenyan embroidery and branding busin
 - **Social proof.** Reviews on completed orders are moderated under Manager → Reviews & portfolio; approved ratings roll up onto catalog items. A public "Our work" gallery, plus a wishlist.
 - **Referrals.** Codes are created with `getMyReferralCode`. `claimReferral` works before a customer's first order; both sides get bonus points when that first order completes.
 - **SEO.** `web/services.html` (crawlable landing page), JSON-LD structured data, `robots.txt`, `sitemap.xml`, and a `<noscript>` fallback.
-- **Languages.** English and Kiswahili via `lib/l10n/*.arb` (run `flutter gen-l10n`), switchable in Settings.
+- **Languages.** English and Kiswahili for everything customers see, switchable in Settings (Auto follows the device).
+  - Screen text lives in `lib/l10n/*.arb` (run `flutter gen-l10n`) and is used as `context.l10n.someText`.
+  - Fixed choices (categories, statuses, decoration methods, placements, roles) are translated in `lib/core/l10n/enum_l10n.dart` (`.tr(context)`).
+  - Server error messages are translated on the device in `lib/core/errors/server_messages.dart`. A new message shows in English until it's added there.
+  - Notifications (inbox, push, email, WhatsApp) are sent in the customer's language. The app saves it to `Users/{uid}/Settings/preferences.language`, and `functions/src/notifications/notice_i18n.ts` translates. Its test fails if a customer notice has no Kiswahili.
+  - The Terms and Privacy pages have a full Kiswahili version; the English text prevails if they differ.
+  - Dates follow the app language.
+  - Staff and admin screens are largely English.
 - **Currency.** Customers can see approximate prices in other currencies (admin-set rates in Settings/currency); everything is still charged in KES.
 
 ## Platform
 
 - **Scales with history.** Staff screens stream a working set: open orders of any age, completed orders still owing money, and the last 120 days. All-time and last-30-day numbers come from counters kept by `aggregateOrderStats` (`Stats/totals`, `Stats/daily-YYYY-MM-DD`). Admin → Dashboard → **Recount** (`rebuildOrderStats`) rebuilds them from every order; run it once after the first deploy. Older orders are found in Manager → History → **Search the full archive**, which is paged and searches `searchKeywords` (order/invoice number, name, company, phone, email) kept by `indexOrderSearch`.
 - **Abuse protection.** Every callable requires App Check (`enforceAppCheck`), and the sensitive ones are rate-limited per user (`RateLimits`, auto-deleted by TTL).
-- **Offline.** Firestore caches data on the device (web included), so screens open without a signal. Drivers who confirm a handover with the customer's code while offline have it saved on the phone and sent when the connection returns; the server still checks the code then.
+- **Offline and weak connections.**
+  - A connection monitor (`lib/core/connectivity/`) combines the device's network state with a timed request to `version.json`. It can tell "offline" and "connected but no internet" from "slow".
+  - A slim bar at the top of every page (never an overlay) says what's wrong: offline (with **Retry**, and **Open settings** on phones, which opens Android's Internet panel), weak (dismissable), and "Back online".
+  - Everything already loaded stays visible: Firestore keeps an offline copy (web: every tab), and photos are cached.
+  - On the web, `web/sw.js` keeps the app itself, the Firebase SDK, CanvasKit, fonts and product photos. With no internet the site still opens with its saved data.
+  - Actions that need the server say "You're offline. Connect to the internet and try again." Cart, chat, support tickets, wishlist and addresses save on the device and sync when the connection returns.
+  - Drivers who confirm a handover with the customer's code while offline have it saved on the phone and sent when the connection returns; the server still checks the code then.
 - **Monitoring.** Crashlytics on Android and iOS. Web errors go to `ClientErrors` via `logClientError` (throttled, kept 30 days). Analytics records screen views and the sales funnel (view item, add to cart, begin checkout, purchase, payment, sign-up, login). Firebase Performance collects start-up and network traces.
 - **Backups.** `backupFirestore` exports the whole database every night at 02:00 Nairobi time to `gs://bright-brush-firestore-backups`, which keeps 30 days. To restore, run `gcloud firestore import gs://bright-brush-firestore-backups/<date> --database=brightbrush-main`.
 - **Branding.** App icons and the launch screen are generated from `assets/branding/` (see `STORE_LISTING.md`). That file also holds the store texts, the data-safety answers and the pre-launch checklist.

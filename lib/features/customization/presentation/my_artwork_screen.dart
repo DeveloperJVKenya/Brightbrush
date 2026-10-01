@@ -7,6 +7,7 @@ import '../../../shared/widgets/empty_state.dart';
 import '../application/customization_providers.dart';
 import '../domain/artwork.dart';
 import 'widgets/artwork_picker.dart';
+import '../../../core/l10n/l10n_ext.dart';
 
 /// The customer's logo library: upload once, reuse on every order. Logos
 /// staff have digitized show a badge — embroidering them again carries no
@@ -29,9 +30,11 @@ class _MyArtworkScreenState extends ConsumerState<MyArtworkScreen> {
     setState(() => _uploading = true);
     try {
       final art = await uploadArtworkFromDevice(context, ref);
-      if (art != null) _snack('"${art.name}" added to your library');
+      if (art != null && mounted) {
+        _snack(context.l10n.addedToYourLibrary(art.name));
+      }
     } catch (error) {
-      _snack('Upload failed: ${friendlyError(error)}');
+      if (mounted) _snack(context.l10n.uploadFailed(friendlyError(error)));
     } finally {
       if (mounted) setState(() => _uploading = false);
     }
@@ -49,19 +52,22 @@ class _MyArtworkScreenState extends ConsumerState<MyArtworkScreen> {
               title: Text(art.name),
               subtitle: Text(
                 art.digitized
-                    ? 'Digitized${art.stitchCount != null ? ' · ${art.stitchCount} stitches' : ''}'
-                    : 'Not digitized yet',
+                    ? context.l10n.digitized +
+                          (art.stitchCount != null
+                              ? context.l10n.stitchesSuffix(art.stitchCount!)
+                              : '')
+                    : context.l10n.notDigitizedYet,
               ),
             ),
             ListTile(
               leading: const Icon(Icons.edit_outlined),
-              title: const Text('Rename'),
+              title: Text(context.l10n.rename),
               onTap: () => Navigator.pop(context, 'rename'),
             ),
             ListTile(
               leading: const Icon(Icons.delete_outline_rounded),
-              title: const Text('Delete from library'),
-              subtitle: const Text('Past orders keep their copy.'),
+              title: Text(context.l10n.deleteFromLibrary),
+              subtitle: Text(context.l10n.pastOrdersKeepTheirCopy),
               onTap: () => Navigator.pop(context, 'delete'),
             ),
           ],
@@ -76,7 +82,7 @@ class _MyArtworkScreenState extends ConsumerState<MyArtworkScreen> {
         final name = await showDialog<String>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Rename artwork'),
+            title: Text(context.l10n.renameArtwork),
             content: TextField(
               controller: controller,
               maxLength: 80,
@@ -85,11 +91,11 @@ class _MyArtworkScreenState extends ConsumerState<MyArtworkScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
+                child: Text(context.l10n.cancel),
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(context, controller.text.trim()),
-                child: const Text('Save'),
+                child: Text(context.l10n.save),
               ),
             ],
           ),
@@ -99,7 +105,7 @@ class _MyArtworkScreenState extends ConsumerState<MyArtworkScreen> {
         }
       } else if (action == 'delete') {
         await repo.deleteArtwork(art);
-        _snack('Deleted');
+        if (mounted) _snack(context.l10n.deleted);
       }
     } catch (error) {
       _snack(friendlyError(error));
@@ -112,13 +118,13 @@ class _MyArtworkScreenState extends ConsumerState<MyArtworkScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          tooltip: 'Back',
+          tooltip: context.l10n.back,
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.canPop()
               ? context.pop()
               : context.go('/customer/profile'),
         ),
-        title: const Text('My artwork'),
+        title: Text(context.l10n.myArtwork),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _uploading ? null : _upload,
@@ -129,21 +135,20 @@ class _MyArtworkScreenState extends ConsumerState<MyArtworkScreen> {
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
             : const Icon(Icons.upload_file_rounded),
-        label: const Text('Upload logo'),
+        label: Text(context.l10n.uploadLogo),
       ),
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => EmptyState(
           icon: Icons.cloud_off_rounded,
-          title: 'Couldn\'t load your artwork',
+          title: context.l10n.couldntLoadYourArtwork,
           message: friendlyError(error),
         ),
         data: (artworks) => artworks.isEmpty
-            ? const EmptyState(
+            ? EmptyState(
                 icon: Icons.palette_outlined,
-                title: 'No artwork yet',
-                message:
-                    'Upload your logo once and reuse it on caps, shirts, bottles and more.',
+                title: context.l10n.noArtworkYet,
+                message: context.l10n.uploadYourLogoOnceAndReuse,
               )
             : GridView.extent(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 96),

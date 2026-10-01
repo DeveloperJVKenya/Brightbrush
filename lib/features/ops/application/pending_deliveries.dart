@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/connectivity/connection_status.dart';
 import '../../../core/errors/user_facing_error.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../core/settings/shared_preferences_provider.dart';
@@ -75,15 +75,19 @@ bool isOfflineError(Object error) {
 
 class PendingDeliveriesNotifier extends Notifier<List<PendingDelivery>> {
   static const _key = 'pendingDeliveries.v1';
-  StreamSubscription<List<ConnectivityResult>>? _sub;
   bool _flushing = false;
 
   @override
   List<PendingDelivery> build() {
-    _sub = Connectivity().onConnectivityChanged.listen((results) {
-      if (results.any((r) => r != ConnectivityResult.none)) unawaited(flush());
+    // Send what's waiting as soon as the connection monitor says we're back.
+    ref.listen<NetQuality>(connectionStatusProvider.select((s) => s.quality), (
+      prev,
+      next,
+    ) {
+      if (next != NetQuality.offline && prev == NetQuality.offline) {
+        unawaited(flush());
+      }
     });
-    ref.onDispose(() => _sub?.cancel());
     final saved = _read();
     if (saved.isNotEmpty) Future.microtask(flush);
     return saved;

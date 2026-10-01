@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/l10n/l10n_ext.dart';
 
 /// A reusable live-search field used across the system (catalog, packages,
 /// order lists, etc). Updates on every keystroke — no submit button, no
@@ -83,7 +84,7 @@ class _LiveSearchFieldState extends State<LiveSearchField> {
               child: _hasText
                   ? IconButton(
                       key: const ValueKey('clear'),
-                      tooltip: 'Clear search',
+                      tooltip: context.l10n.clearSearch,
                       icon: const Icon(Icons.close_rounded),
                       onPressed: () => _controller.clear(),
                     )

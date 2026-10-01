@@ -11,6 +11,8 @@ import '../../../orders/domain/order_status.dart';
 import '../../application/payments_providers.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../domain/payment_models.dart';
+import '../../../../core/l10n/l10n_ext.dart';
+import '../../../../core/l10n/enum_l10n.dart';
 
 /// Price breakdown for an order: subtotal, delivery, VAT, total, paid and
 /// balance. Shared by the customer order page and staff views.
@@ -51,44 +53,59 @@ class OrderMoneyBreakdown extends StatelessWidget {
 
     return Column(
       children: [
-        row('Subtotal', order.subtotal),
+        row(context.l10n.subtotal, order.subtotal),
         if (order.corporateDiscount > 0)
-          row('Account discount', -order.corporateDiscount),
+          row(context.l10n.accountDiscount2, -order.corporateDiscount),
         if (order.couponDiscount > 0)
-          row('Promo ${order.couponCode ?? ''}', -order.couponDiscount),
+          row(
+            context.l10n.promo(order.couponCode ?? ''),
+            -order.couponDiscount,
+          ),
         if (order.deliveryFee > 0)
           row(
             order.deliveryZoneName == null
-                ? 'Delivery'
-                : 'Delivery (${order.deliveryZoneName})',
+                ? context.l10n.delivery
+                : context.l10n.delivery2(order.deliveryZoneName!),
             order.deliveryFee,
           ),
-        if (order.isPickup) row('Store pickup', 0),
+        if (order.isPickup) row(context.l10n.storePickup, 0),
         if (order.taxAmount > 0)
           row(
-            vatInclusive ? 'Includes VAT ($vatPercent%)' : 'VAT ($vatPercent%)',
+            vatInclusive
+                ? context.l10n.includesVat2(vatPercent)
+                : context.l10n.vat2(vatPercent),
             order.taxAmount,
           ),
         const Divider(),
-        row('Total', order.total, bold: true, color: theme.colorScheme.primary),
-        if (order.amountPaid > 0) row('Paid', order.amountPaid),
-        if (order.refundedAmount > 0) row('Refunded', -order.refundedAmount),
+        row(
+          context.l10n.total,
+          order.total,
+          bold: true,
+          color: theme.colorScheme.primary,
+        ),
+        if (order.amountPaid > 0) row(context.l10n.paid, order.amountPaid),
+        if (order.refundedAmount > 0)
+          row(context.l10n.refunded, -order.refundedAmount),
         if (order.cancellationFee > 0)
-          row('Cancellation fee kept', order.cancellationFee),
+          row(context.l10n.cancellationFeeKept, order.cancellationFee),
         if (order.isCredit && order.dueDate != null)
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
               order.overdue
-                  ? 'Overdue — was due ${DateFormat('d MMM y').format(order.dueDate!)}'
-                  : 'On account · due ${DateFormat('d MMM y').format(order.dueDate!)}',
+                  ? context.l10n.overdueWasDue(
+                      DateFormat('d MMM y').format(order.dueDate!),
+                    )
+                  : context.l10n.onAccountDue(
+                      DateFormat('d MMM y').format(order.dueDate!),
+                    ),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: order.overdue ? theme.colorScheme.error : null,
               ),
             ),
           ),
         if (order.amountPaid > 0 || order.isDepositPlan)
-          row('Balance due', order.balanceDue, bold: true),
+          row(context.l10n.balanceDue, order.balanceDue, bold: true),
         if (order.isDepositPlan)
           Padding(
             padding: const EdgeInsets.only(top: 6),
@@ -107,8 +124,10 @@ class OrderMoneyBreakdown extends StatelessWidget {
                 Expanded(
                   child: Text(
                     order.depositCovered
-                        ? 'Deposit received — production can start.'
-                        : 'Deposit of ${currencyFormat.format(order.depositAmount)} due before production starts.',
+                        ? context.l10n.depositReceivedProductionCanStart
+                        : context.l10n.depositOfDueBeforeProductionStarts(
+                            currencyFormat.format(order.depositAmount),
+                          ),
                     style: theme.textTheme.bodySmall,
                   ),
                 ),
@@ -194,8 +213,8 @@ class _OrderPaymentPanelState extends ConsumerState<OrderPaymentPanel> {
         );
         if (!launched && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Couldn\'t open the payment page.'),
+            SnackBar(
+              content: Text(context.l10n.couldntOpenThePaymentPage),
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -231,7 +250,7 @@ class _OrderPaymentPanelState extends ConsumerState<OrderPaymentPanel> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Payment',
+          context.l10n.payment,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
           ),
@@ -248,7 +267,7 @@ class _OrderPaymentPanelState extends ConsumerState<OrderPaymentPanel> {
                   children: [
                     Chip(
                       avatar: const Icon(Icons.payments_outlined, size: 16),
-                      label: Text(order.paymentStatus.label),
+                      label: Text(order.paymentStatus.tr(context)),
                       visualDensity: VisualDensity.compact,
                     ),
                     const Spacer(),
@@ -264,7 +283,7 @@ class _OrderPaymentPanelState extends ConsumerState<OrderPaymentPanel> {
                   const SizedBox(height: 16),
                   if (gateways.isEmpty)
                     Text(
-                      'Online payment isn\'t available yet. We\'ll send you an invoice with payment details.',
+                      context.l10n.onlinePaymentIsntAvailableYetWell,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -276,13 +295,19 @@ class _OrderPaymentPanelState extends ConsumerState<OrderPaymentPanel> {
                           ButtonSegment(
                             value: 'deposit',
                             label: Text(
-                              'Deposit ${currencyFormat.format(order.depositAmount - order.amountPaid)}',
+                              context.l10n.deposit2(
+                                currencyFormat.format(
+                                  order.depositAmount - order.amountPaid,
+                                ),
+                              ),
                             ),
                           ),
                           ButtonSegment(
                             value: 'balance',
                             label: Text(
-                              'Full ${currencyFormat.format(order.balanceDue)}',
+                              context.l10n.full(
+                                currencyFormat.format(order.balanceDue),
+                              ),
                             ),
                           ),
                         ],
@@ -315,8 +340,8 @@ class _OrderPaymentPanelState extends ConsumerState<OrderPaymentPanel> {
                       TextField(
                         controller: _phone,
                         keyboardType: TextInputType.phone,
-                        decoration: const InputDecoration(
-                          labelText: 'M-Pesa phone number',
+                        decoration: InputDecoration(
+                          labelText: context.l10n.mPesaPhoneNumber,
                           hintText: '07XX XXX XXX',
                           prefixIcon: Icon(Icons.phone_android_rounded),
                         ),
@@ -325,7 +350,7 @@ class _OrderPaymentPanelState extends ConsumerState<OrderPaymentPanel> {
                     if (selectedInfo?.isSandbox ?? false) ...[
                       const SizedBox(height: 8),
                       Text(
-                        'Test mode — no real money will be charged.',
+                        context.l10n.testModeNoRealMoneyWill,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.tertiary,
                         ),
@@ -347,7 +372,9 @@ class _OrderPaymentPanelState extends ConsumerState<OrderPaymentPanel> {
                               )
                             : const Icon(Icons.lock_rounded),
                         label: Text(
-                          'Pay ${currencyFormat.format(_amountForChoice)}',
+                          context.l10n.payAmount(
+                            currencyFormat.format(_amountForChoice),
+                          ),
                         ),
                       ),
                     ),
@@ -421,11 +448,14 @@ class PaymentHistoryList extends ConsumerWidget {
               ),
               subtitle: Text(
                 [
-                  '${p.status.label} · ${dateFormat.format(p.createdAt)}',
+                  '${p.status.tr(context)} · ${dateFormat.format(p.createdAt)}',
                   if (p.receipt != null && p.receipt!.isNotEmpty)
-                    'Ref: ${p.receipt}',
+                    context.l10n.ref(p.receipt!),
                   if (p.chargedCurrency != null && p.chargedCurrency != 'KES')
-                    'Charged ${p.chargedCurrency} ${p.chargedAmount}',
+                    context.l10n.charged(
+                      p.chargedCurrency!,
+                      p.chargedAmount ?? '',
+                    ),
                   if (p.message != null &&
                       p.message!.isNotEmpty &&
                       p.status != PaymentState.succeeded)
@@ -436,7 +466,7 @@ class PaymentHistoryList extends ConsumerWidget {
               trailing:
                   p.status == PaymentState.pending && p.gateway != 'manual'
                   ? IconButton(
-                      tooltip: 'Check status',
+                      tooltip: context.l10n.checkStatus,
                       icon: const Icon(Icons.refresh_rounded),
                       onPressed: () async {
                         try {
@@ -522,20 +552,26 @@ class _MpesaWaitingDialogState extends ConsumerState<_MpesaWaitingDialog> {
         color: state == PaymentState.succeeded ? Colors.green : null,
       ),
       title: Text(switch (state) {
-        PaymentState.pending => 'Check your phone',
-        PaymentState.succeeded => 'Payment received',
-        PaymentState.failed => 'Payment failed',
-        PaymentState.cancelled => 'Payment cancelled',
+        PaymentState.pending => context.l10n.checkYourPhone,
+        PaymentState.succeeded => context.l10n.paymentReceived,
+        PaymentState.failed => context.l10n.paymentFailed,
+        PaymentState.cancelled => context.l10n.paymentCancelled,
       }),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(switch (state) {
-            PaymentState.pending =>
-              '${widget.message}\n\nAmount: ${currencyFormat.format(widget.amount)}',
-            PaymentState.succeeded =>
-              'Thank you! ${currencyFormat.format(widget.amount)} received${payment?.receipt != null ? ' (M-Pesa ref ${payment!.receipt})' : ''}.',
-            _ => payment?.message ?? 'The payment did not go through.',
+            PaymentState.pending => context.l10n.amount(
+              widget.message,
+              currencyFormat.format(widget.amount),
+            ),
+            PaymentState.succeeded => context.l10n.thankYouReceived(
+              currencyFormat.format(widget.amount),
+              payment?.receipt != null
+                  ? context.l10n.mpesaRefSuffix(payment!.receipt!)
+                  : '',
+            ),
+            _ => payment?.message ?? context.l10n.thePaymentDidNotGoThrough,
           }, textAlign: TextAlign.center),
           if (state == PaymentState.pending) ...[
             const SizedBox(height: 16),
@@ -547,11 +583,15 @@ class _MpesaWaitingDialogState extends ConsumerState<_MpesaWaitingDialog> {
         if (state == PaymentState.pending)
           TextButton(
             onPressed: _checking ? null : _check,
-            child: const Text('I\'ve paid — check'),
+            child: Text(context.l10n.ivePaidCheck),
           ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(state == PaymentState.pending ? 'Close' : 'Done'),
+          child: Text(
+            state == PaymentState.pending
+                ? context.l10n.close
+                : context.l10n.done,
+          ),
         ),
       ],
     );

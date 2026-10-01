@@ -5,6 +5,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../features/orders/application/orders_providers.dart';
 import '../../features/orders/domain/order_model.dart';
 import 'empty_state.dart';
+import '../../core/l10n/l10n_ext.dart';
 
 /// Real Google Map of delivery stops, shared by the Delivery Staff Route Map
 /// (their own active deliveries) and the Admin Deliveries screen (every
@@ -164,7 +165,9 @@ class _LiveOrdersMapState extends ConsumerState<LiveOrdersMap> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Locating ${orders.length - pinned.length} more stop(s)…',
+                        context.l10n.locatingMoreStopS(
+                          orders.length - pinned.length,
+                        ),
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ),
@@ -222,7 +225,7 @@ class _LiveOrdersMapState extends ConsumerState<LiveOrdersMap> {
                     ),
                   ),
                   icon: const Icon(Icons.list_alt_rounded),
-                  label: Text('Stops (${orders.length})'),
+                  label: Text(context.l10n.stops(orders.length)),
                 ),
               ),
             ],

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/firebase/firebase_providers.dart';
 import '../../core/logging/stream_error_logger.dart';
+import '../../core/connectivity/queued_write.dart';
 
 // ------------------------------------------------------------ Addresses
 
@@ -91,9 +92,9 @@ class AddressActions {
     if (uid == null) return;
     final col = _addresses(_ref, uid);
     if (a.id.isEmpty) {
-      await col.add(a.toMap());
+      await queuedWrite(col.add(a.toMap()));
     } else {
-      await col.doc(a.id).set(a.toMap());
+      await queuedWrite(col.doc(a.id).set(a.toMap()));
     }
   }
 
@@ -206,9 +207,9 @@ Future<void> toggleWishlist(WidgetRef ref, String itemId, bool add) async {
       .collection('Wishlist')
       .doc(itemId);
   if (add) {
-    await doc.set({'addedAt': FieldValue.serverTimestamp()});
+    await queuedWrite(doc.set({'addedAt': FieldValue.serverTimestamp()}));
   } else {
-    await doc.delete();
+    await queuedWrite(doc.delete());
   }
 }
 

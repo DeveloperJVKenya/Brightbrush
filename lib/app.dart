@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+import 'core/connectivity/connection_banner.dart';
+import 'core/l10n/current_l10n.dart';
 import 'core/l10n/language.dart';
+import 'core/l10n/language_sync.dart';
 import 'core/router/app_router.dart';
 import 'l10n/app_localizations.dart';
 import 'core/settings/settings_providers.dart';
@@ -39,7 +42,9 @@ class BrightBrushApp extends ConsumerWidget {
         return MediaQuery.withClampedTextScaling(
           minScaleFactor: textScale,
           maxScaleFactor: textScale,
-          child: child!,
+          child: CurrentL10nScope(
+            child: LanguageSync(child: ConnectionBannerHost(child: child!)),
+          ),
         );
       },
     );

@@ -1,8 +1,11 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../shared/widgets/catalog_image.dart';
 import '../../domain/customization_options.dart';
 import '../../domain/customization_pricing.dart';
+import '../../../../core/l10n/l10n_ext.dart';
+import '../../../../core/l10n/enum_l10n.dart';
 
 /// Live mockup: the product photo with each front-view decoration drawn at
 /// its placement (sized by design size). Designs can be dragged to
@@ -116,7 +119,7 @@ class MockupPreview extends StatelessWidget {
                 Chip(
                   avatar: _Thumb(decoration: d),
                   label: Text(
-                    '${d.placement.label}: ${d.artworkName ?? d.text ?? 'design'}',
+                    '${d.placement.tr(context)}: ${d.artworkName ?? d.text ?? 'design'}',
                   ),
                   visualDensity: VisualDensity.compact,
                 ),
@@ -128,7 +131,7 @@ class MockupPreview extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 6),
             child: Text(
-              'Drag a design to adjust its position. Final placement is confirmed on your proof.',
+              context.l10n.dragADesignToAdjustIts,
               style: theme.textTheme.bodySmall,
               textAlign: TextAlign.center,
             ),
@@ -211,10 +214,11 @@ class _DesignContent extends StatelessWidget {
         ? _namedColour(decoration.threadColours.first)
         : Colors.white;
     if (decoration.artworkUrl != null && _isRaster) {
-      return Image.network(
-        decoration.artworkUrl!,
+      return Image(
+        image: CachedNetworkImageProvider(decoration.artworkUrl!),
         fit: BoxFit.contain,
-        errorBuilder: (context, error, stack) => _label(context, 'Logo'),
+        errorBuilder: (context, error, stack) =>
+            _label(context, context.l10n.logo),
       );
     }
     if ((decoration.text ?? '').trim().isNotEmpty) {
@@ -229,7 +233,7 @@ class _DesignContent extends StatelessWidget {
         ),
       );
     }
-    return _label(context, decoration.artworkName ?? 'Your design');
+    return _label(context, decoration.artworkName ?? context.l10n.yourDesign);
   }
 
   Widget _label(BuildContext context, String text) {
@@ -264,8 +268,8 @@ class _Thumb extends StatelessWidget {
     if (url == null) return Icon(decoration.method.icon, size: 16);
     return ClipRRect(
       borderRadius: BorderRadius.circular(4),
-      child: Image.network(
-        url,
+      child: Image(
+        image: CachedNetworkImageProvider(url),
         width: 20,
         height: 20,
         fit: BoxFit.cover,

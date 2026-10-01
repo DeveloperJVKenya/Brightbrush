@@ -1,4 +1,5 @@
 import 'package:file_picker/file_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,6 +7,7 @@ import '../../../../core/errors/user_facing_error.dart';
 import '../../../../core/firebase/firebase_providers.dart';
 import '../../application/customization_providers.dart';
 import '../../domain/artwork.dart';
+import '../../../../core/l10n/l10n_ext.dart';
 
 const _maxBytes = 25 * 1024 * 1024;
 const allowedArtworkExtensions = [
@@ -35,10 +37,8 @@ Future<Artwork?> uploadArtworkFromDevice(
   if ((await file.length() ?? 0) > _maxBytes) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'That file is over 25 MB. Please upload a smaller one.',
-          ),
+        SnackBar(
+          content: Text(context.l10n.thatFileIsOver25Mb),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -91,7 +91,7 @@ class _ArtworkPickerSheetState extends ConsumerState<_ArtworkPickerSheet> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Upload failed: ${friendlyError(error)}'),
+            content: Text(context.l10n.uploadFailed(friendlyError(error))),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -112,15 +112,14 @@ class _ArtworkPickerSheetState extends ConsumerState<_ArtworkPickerSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Choose your artwork',
+            context.l10n.chooseYourArtwork,
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            'PNG with a transparent background gives the best mockup. '
-            'Vector files (SVG, AI, EPS, PDF) are welcome for production.',
+            context.l10n.pngWithATransparentBackgroundGives,
             style: theme.textTheme.bodySmall,
           ),
           const SizedBox(height: 12),
@@ -136,11 +135,11 @@ class _ArtworkPickerSheetState extends ConsumerState<_ArtworkPickerSheet> {
                     ),
                   )
                 : const Icon(Icons.upload_file_rounded),
-            label: const Text('Upload new artwork'),
+            label: Text(context.l10n.uploadNewArtwork),
           ),
           if (artworks.isNotEmpty) ...[
             const SizedBox(height: 16),
-            Text('Your library', style: theme.textTheme.labelLarge),
+            Text(context.l10n.yourLibrary, style: theme.textTheme.labelLarge),
             const SizedBox(height: 8),
             ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 360),
@@ -188,8 +187,8 @@ class ArtworkTile extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(8),
                 child: artwork.isPreviewable
-                    ? Image.network(
-                        artwork.fileUrl,
+                    ? Image(
+                        image: CachedNetworkImageProvider(artwork.fileUrl),
                         fit: BoxFit.contain,
                         errorBuilder: (context, error, stack) =>
                             const Icon(Icons.image_not_supported_outlined),
@@ -216,10 +215,10 @@ class ArtworkTile extends StatelessWidget {
               child: Row(
                 children: [
                   if (artwork.digitized)
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.only(right: 4),
                       child: Tooltip(
-                        message: 'Digitized — no setup fee for embroidery',
+                        message: context.l10n.digitizedNoSetupFeeForEmbroidery,
                         child: Icon(
                           Icons.verified_rounded,
                           size: 14,

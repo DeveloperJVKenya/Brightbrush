@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:brightbrush/core/firebase/firebase_providers.dart';
 import 'package:brightbrush/features/auth/presentation/login_screen.dart';
+import 'package:brightbrush/l10n/app_localizations.dart';
 
 /// Guests now land on the public catalog (only acting needs an account), so
 /// the login screen is pumped directly rather than via the splash redirect.
@@ -20,7 +21,11 @@ Future<void> _pumpLogin(WidgetTester tester) async {
           MockFirebaseAuth(signedIn: false),
         ),
       ],
-      child: const MaterialApp(home: LoginScreen()),
+      child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: LoginScreen(),
+      ),
     ),
   );
   await tester.pumpAndSettle();

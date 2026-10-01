@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/errors/server_messages.dart';
 import '../../../core/errors/user_facing_error.dart';
 import '../../../core/firebase/firebase_providers.dart';
 import '../../../core/formatting/currency.dart';
@@ -18,6 +19,8 @@ import '../domain/customization_options.dart';
 import '../domain/customization_pricing.dart';
 import 'widgets/artwork_picker.dart';
 import 'widgets/mockup_preview.dart';
+import '../../../core/l10n/l10n_ext.dart';
+import '../../../core/l10n/enum_l10n.dart';
 
 /// Configure a customisable item: colour, quantities per size, logo/text
 /// decorations on a live mockup, optional names, and a live price. With
@@ -52,27 +55,31 @@ class ItemConfiguratorScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          tooltip: 'Back',
+          tooltip: context.l10n.back,
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.canPop()
               ? context.pop()
               : context.go('/customer/catalog/$itemId'),
         ),
-        title: Text(item == null ? 'Customise' : 'Customise ${item.name}'),
+        title: Text(
+          item == null
+              ? context.l10n.customise
+              : context.l10n.customise2(item.name),
+        ),
       ),
       body: itemsAsync.isLoading
           ? const Center(child: CircularProgressIndicator())
           : item == null
-          ? const EmptyState(
+          ? EmptyState(
               icon: Icons.search_off_rounded,
-              title: 'Item not available',
-              message: 'It may have been removed from the catalog.',
+              title: context.l10n.itemNotAvailable,
+              message: context.l10n.itMayHaveBeenRemovedFrom,
             )
           : !item.isCustomizable
-          ? const EmptyState(
+          ? EmptyState(
               icon: Icons.block_rounded,
-              title: 'Not customisable',
-              message: 'This item is sold as-is. Add it from its page.',
+              title: context.l10n.notCustomisable,
+              message: context.l10n.thisItemIsSoldAsIs,
             )
           : _Configurator(
               key: ValueKey('${item.id}-$lineId-${existing != null}'),
@@ -159,9 +166,7 @@ class _ConfiguratorState extends ConsumerState<_Configurator> {
   }
 
   Future<void> _pickArtwork(int i) async {
-    if (_requireSignIn(
-      'Sign in to upload your logo and save it to your library.',
-    )) {
+    if (_requireSignIn(context.l10n.signInToUploadYourLogo)) {
       return;
     }
     final Artwork? art = await showArtworkPicker(context);
@@ -197,9 +202,7 @@ class _ConfiguratorState extends ConsumerState<_Configurator> {
   }
 
   Future<void> _save() async {
-    if (_requireSignIn(
-      'Sign in or create an account to add this to your cart.',
-    )) {
+    if (_requireSignIn(context.l10n.signInOrCreateAnAccount3)) {
       return;
     }
     setState(() => _saving = true);
@@ -219,8 +222,8 @@ class _ConfiguratorState extends ConsumerState<_Configurator> {
         SnackBar(
           content: Text(
             widget.lineId != null
-                ? 'Cart updated'
-                : '${item.name} added to your cart',
+                ? context.l10n.cartUpdated
+                : context.l10n.addedToYourCart(item.name),
           ),
           behavior: SnackBarBehavior.floating,
         ),
@@ -247,7 +250,10 @@ class _ConfiguratorState extends ConsumerState<_Configurator> {
         DecorationPricing.defaults;
     final library = ref.watch(myArtworksProvider).valueOrNull ?? const [];
     final priced = _withArtworkFacts(library);
-    final problem = CustomizationPricing.validate(item, priced, pricing);
+    final problemEn = CustomizationPricing.validate(item, priced, pricing);
+    final problem = problemEn == null
+        ? null
+        : translateServerMessage(problemEn);
     final price = CustomizationPricing.price(item, priced, pricing);
     final colour = item.colours
         .where((c) => c.name == _config.colour)
@@ -270,7 +276,7 @@ class _ConfiguratorState extends ConsumerState<_Configurator> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (item.colours.isNotEmpty) ...[
-          _Heading('Colour', _config.colour),
+          _Heading(context.l10n.colour, _config.colour),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -286,8 +292,11 @@ class _ConfiguratorState extends ConsumerState<_Configurator> {
           ),
         ],
         _Heading(
-          'Quantity',
-          'Minimum ${item.moq} pcs${item.priceTiers.isEmpty ? '' : ' · ${item.priceTiers.map((t) => '${t.minQty}+ @ ${currencyFormat.format(t.unitPrice)}').join(' · ')}'}',
+          context.l10n.quantity,
+          context.l10n.minimumPcs(item.moq) +
+              (item.priceTiers.isEmpty
+                  ? ''
+                  : ' · ${item.priceTiers.map((t) => context.l10n.tierAt(t.minQty, currencyFormat.format(t.unitPrice))).join(' · ')}'),
         ),
         Wrap(
           spacing: 10,
@@ -301,7 +310,7 @@ class _ConfiguratorState extends ConsumerState<_Configurator> {
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   decoration: InputDecoration(
-                    labelText: item.sizes.isEmpty ? 'Pieces' : label,
+                    labelText: item.sizes.isEmpty ? context.l10n.pieces : label,
                     helperText: () {
                       final s = item.sizes
                           .where((s) => s.label == label)
@@ -323,7 +332,7 @@ class _ConfiguratorState extends ConsumerState<_Configurator> {
               ),
           ],
         ),
-        _Heading('Branding', 'Add a logo or text at each placement'),
+        _Heading(context.l10n.branding, context.l10n.addALogoOrTextAt),
         for (final (i, d) in _config.decorations.indexed)
           _DecorationCard(
             key: ValueKey('dec-$i'),
@@ -364,11 +373,13 @@ class _ConfiguratorState extends ConsumerState<_Configurator> {
               );
             },
             icon: const Icon(Icons.add_rounded),
-            label: const Text('Add another placement'),
+            label: Text(context.l10n.addAnotherPlacement),
           ),
         _Heading(
-          'Names (optional)',
-          'One per line, e.g. staff names — ${currencyFormat.format(pricing.personalisationFee)} per piece',
+          context.l10n.namesOptional,
+          context.l10n.onePerLineEGStaff(
+            currencyFormat.format(pricing.personalisationFee),
+          ),
         ),
         TextField(
           controller: _names,
@@ -413,7 +424,10 @@ class _ConfiguratorState extends ConsumerState<_Configurator> {
                     ),
                     Text(
                       problem ??
-                          '${price.quantity} pcs · ${currencyFormat.format(price.unitPrice)} each',
+                          context.l10n.pcsEach(
+                            price.quantity,
+                            currencyFormat.format(price.unitPrice),
+                          ),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: problem == null ? null : theme.colorScheme.error,
                       ),
@@ -427,7 +441,9 @@ class _ConfiguratorState extends ConsumerState<_Configurator> {
                 onPressed: problem != null || _saving ? null : _save,
                 icon: const Icon(Icons.add_shopping_cart_rounded),
                 label: Text(
-                  widget.lineId == null ? 'Add to cart' : 'Update cart',
+                  widget.lineId == null
+                      ? context.l10n.addToCart
+                      : context.l10n.updateCart,
                 ),
               ),
             ],
@@ -563,7 +579,10 @@ class _DecorationCardState extends State<_DecorationCard> {
                       for (final p in widget.item.placements)
                         if (p == d.placement ||
                             !widget.usedPlacements.contains(p))
-                          DropdownMenuItem(value: p, child: Text(p.label)),
+                          DropdownMenuItem(
+                            value: p,
+                            child: Text(p.tr(context)),
+                          ),
                     ],
                     onChanged: (p) => widget.onChanged(
                       DecorationChoice(
@@ -582,7 +601,7 @@ class _DecorationCardState extends State<_DecorationCard> {
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Remove placement',
+                  tooltip: context.l10n.removePlacement,
                   icon: const Icon(Icons.delete_outline_rounded),
                   onPressed: widget.onRemove,
                 ),
@@ -595,8 +614,8 @@ class _DecorationCardState extends State<_DecorationCard> {
                 for (final m in methods)
                   ChoiceChip(
                     avatar: Icon(m.icon, size: 16),
-                    label: Text(m.label),
-                    tooltip: m.description,
+                    label: Text(m.tr(context)),
+                    tooltip: m.trDescription(context),
                     selected: d.method == m,
                     onSelected: (_) => widget.onChanged(d.copyWith(method: m)),
                   ),
@@ -608,7 +627,7 @@ class _DecorationCardState extends State<_DecorationCard> {
               children: [
                 for (final s in SizeClass.values)
                   ChoiceChip(
-                    label: Text('${s.label} (${s.hint})'),
+                    label: Text('${s.tr(context)} (${s.trHint(context)})'),
                     selected: d.sizeClass == s,
                     onSelected: (_) =>
                         widget.onChanged(d.copyWith(sizeClass: s)),
@@ -627,14 +646,14 @@ class _DecorationCardState extends State<_DecorationCard> {
                           : Icons.image_outlined,
                     ),
                     label: Text(
-                      d.artworkName ?? 'Upload / choose logo',
+                      d.artworkName ?? context.l10n.uploadChooseLogo,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ),
                 if (d.artworkId != null)
                   IconButton(
-                    tooltip: 'Remove logo',
+                    tooltip: context.l10n.removeLogo,
                     icon: const Icon(Icons.close_rounded),
                     onPressed: () =>
                         widget.onChanged(d.copyWith(clearArtwork: true)),
@@ -645,7 +664,7 @@ class _DecorationCardState extends State<_DecorationCard> {
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
-                  'Already digitized — no digitizing fee.',
+                  context.l10n.alreadyDigitizedNoDigitizingFee,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: Colors.green,
                   ),
@@ -657,8 +676,8 @@ class _DecorationCardState extends State<_DecorationCard> {
               maxLength: 60,
               decoration: InputDecoration(
                 labelText: d.artworkId == null
-                    ? 'Or text to print/stitch'
-                    : 'Extra text (optional)',
+                    ? context.l10n.orTextToPrintStitch
+                    : context.l10n.extraTextOptional,
                 isDense: true,
               ),
               onChanged: (v) => widget.onChanged(d.copyWith(text: v)),
@@ -666,9 +685,9 @@ class _DecorationCardState extends State<_DecorationCard> {
             if (d.method.usesThreadColours)
               TextField(
                 controller: _threads,
-                decoration: const InputDecoration(
-                  labelText: 'Thread colours (comma separated)',
-                  hintText: 'e.g. White, Gold',
+                decoration: InputDecoration(
+                  labelText: context.l10n.threadColoursCommaSeparated,
+                  hintText: context.l10n.eGWhiteGold,
                   isDense: true,
                 ),
                 onChanged: (v) => widget.onChanged(
@@ -715,24 +734,32 @@ class _PriceBreakdown extends StatelessWidget {
         child: Column(
           children: [
             row(
-              'Blanks (${price.quantity} × ${currencyFormat.format(price.tierUnitPrice)}${price.blankTotal != price.quantity * price.tierUnitPrice ? ' + size surcharges' : ''})',
+              context.l10n.blanksLine(
+                price.quantity,
+                currencyFormat.format(price.tierUnitPrice),
+                price.blankTotal != price.quantity * price.tierUnitPrice
+                    ? context.l10n.plusSizeSurcharges
+                    : '',
+              ),
               price.blankTotal,
             ),
             if (price.decorationTotal > 0)
               row(
-                'Branding (${currencyFormat.format(price.decorationPerUnit)} per piece)',
+                context.l10n.brandingPerPiece(
+                  currencyFormat.format(price.decorationPerUnit),
+                ),
                 price.decorationTotal,
               ),
             if (price.setupFees > 0)
-              row('One-off setup / digitizing', price.setupFees),
+              row(context.l10n.oneOffSetupDigitizing, price.setupFees),
             if (price.personalisationTotal > 0)
-              row('Names', price.personalisationTotal),
+              row(context.l10n.names, price.personalisationTotal),
             const Divider(),
             Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Item total',
+                    context.l10n.itemTotal,
                     style: TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
@@ -744,7 +771,7 @@ class _PriceBreakdown extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'Delivery and VAT are added at checkout. You\'ll approve a digital proof before we produce anything.',
+              context.l10n.deliveryAndVatAreAddedAt,
               style: theme.textTheme.bodySmall,
             ),
           ],

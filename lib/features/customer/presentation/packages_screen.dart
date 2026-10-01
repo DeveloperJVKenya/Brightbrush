@@ -14,6 +14,7 @@ import '../../catalog/domain/package_model.dart';
 import '../../quotes/presentation/request_quote_sheet.dart';
 import '../application/cart_providers.dart';
 import 'widgets/package_card.dart';
+import '../../../core/l10n/l10n_ext.dart';
 
 void _showPackageSheet(BuildContext context, PackageModel package) {
   final theme = Theme.of(context);
@@ -43,15 +44,15 @@ void _showPackageSheet(BuildContext context, PackageModel package) {
             const SizedBox(height: 12),
             Text(
               package.description.isEmpty
-                  ? 'No description provided yet.'
+                  ? context.l10n.noDescriptionProvidedYet
                   : package.description,
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
             Text(
               package.itemIds.isEmpty
-                  ? 'This package doesn\'t list specific catalog items yet.'
-                  : 'Includes ${package.itemIds.length} catalog item(s).',
+                  ? context.l10n.thisPackageDoesntListSpecificCatalog
+                  : context.l10n.includesCatalogItemS(package.itemIds.length),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -73,13 +74,15 @@ void _showPackageSheet(BuildContext context, PackageModel package) {
                     // The sheet is popped before the snackbar shows, so the
                     // follow-ups use the screen's context, not the sheet's.
                     final messenger = ScaffoldMessenger.of(context);
+                    final l10n = context.l10n;
                     final navigator = Navigator.of(sheetContext);
                     if (ref.read(currentUidProvider) == null) {
                       navigator.pop();
                       showAuthRequiredSheet(
                         context,
-                        message:
-                            'Sign in or create an account to order "${package.name}".',
+                        message: context.l10n.signInOrCreateAnAccount2(
+                          package.name,
+                        ),
                       );
                       return;
                     }
@@ -88,7 +91,7 @@ void _showPackageSheet(BuildContext context, PackageModel package) {
                       navigator.pop();
                       messenger.showSnackBar(
                         SnackBar(
-                          content: Text('"${package.name}" added to cart'),
+                          content: Text(l10n.addedToCart2(package.name)),
                           behavior: SnackBarBehavior.floating,
                         ),
                       );
@@ -102,7 +105,7 @@ void _showPackageSheet(BuildContext context, PackageModel package) {
                     }
                   },
                   icon: const Icon(Icons.add_shopping_cart_rounded),
-                  label: const Text('Add to cart'),
+                  label: Text(context.l10n.addToCart),
                 ),
               ),
             ),
@@ -119,7 +122,7 @@ void _showPackageSheet(BuildContext context, PackageModel package) {
                   );
                 },
                 icon: const Icon(Icons.request_quote_outlined),
-                label: const Text('Customise it — request a quote'),
+                label: Text(context.l10n.customiseItRequestAQuote),
               ),
             ),
           ],
@@ -144,29 +147,31 @@ class PackagesScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Seasonal packages',
+              context.l10n.seasonalPackages,
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 4),
             Text(
-              'Curated bundles for campaigns and seasons — Valentine\'s, elections, and more.',
+              context.l10n.curatedBundlesForCampaignsAndSeasons,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 16),
             LiveSearchField(
-              hintText: 'Search packages, e.g. "valentines"',
+              hintText: context.l10n.searchPackagesEGValentines,
               onChanged: (value) =>
                   ref.read(packagesSearchQueryProvider.notifier).state = value,
             ),
             const SizedBox(height: 16),
             Expanded(
               child: filtered.when(
-                loading: () => const Center(
-                  child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+                loading: () => Center(
+                  child: CircularProgressIndicator(
+                    semanticsLabel: context.l10n.loading,
+                  ),
                 ),
                 error: (error, stack) {
                   appLogger.e(
@@ -176,12 +181,12 @@ class PackagesScreen extends ConsumerWidget {
                   );
                   return EmptyState(
                     icon: Icons.cloud_off_rounded,
-                    title: 'Couldn\'t load packages',
+                    title: context.l10n.couldntLoadPackages,
                     message: friendlyError(error),
                     action: TextButton.icon(
                       onPressed: () => ref.invalidate(filteredPackagesProvider),
                       icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('Retry'),
+                      label: Text(context.l10n.retry),
                     ),
                   );
                 },
@@ -190,11 +195,11 @@ class PackagesScreen extends ConsumerWidget {
                     return EmptyState(
                       icon: Icons.card_giftcard_outlined,
                       title: ref.read(packagesSearchQueryProvider).isEmpty
-                          ? 'No packages yet'
-                          : 'No matches',
+                          ? context.l10n.noPackagesYet
+                          : context.l10n.noMatches,
                       message: ref.read(packagesSearchQueryProvider).isEmpty
-                          ? 'Seasonal packages set up by the System Manager will appear here live.'
-                          : 'Try a different search term.',
+                          ? context.l10n.seasonalPackagesSetUpByThe
+                          : context.l10n.tryADifferentSearchTerm,
                     );
                   }
                   return GridView.builder(

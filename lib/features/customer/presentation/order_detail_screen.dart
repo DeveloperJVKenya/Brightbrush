@@ -21,6 +21,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../shared/whatsapp.dart';
 import '../../../core/l10n/language.dart';
 import '../application/cart_providers.dart';
+import '../../../core/l10n/l10n_ext.dart';
 
 class OrderDetailScreen extends ConsumerWidget {
   const OrderDetailScreen({
@@ -42,15 +43,17 @@ class OrderDetailScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          tooltip: 'Back',
+          tooltip: context.l10n.back,
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Order details'),
+        title: Text(context.l10n.orderDetails),
       ),
       body: ordersAsync.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+        loading: () => Center(
+          child: CircularProgressIndicator(
+            semanticsLabel: context.l10n.loading,
+          ),
         ),
         error: (error, stack) {
           appLogger.e(
@@ -60,12 +63,12 @@ class OrderDetailScreen extends ConsumerWidget {
           );
           return EmptyState(
             icon: Icons.cloud_off_rounded,
-            title: 'Failed to load',
+            title: context.l10n.failedToLoad,
             message: friendlyError(error),
             action: TextButton.icon(
               onPressed: () => ref.invalidate(myOrdersProvider),
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Retry'),
+              label: Text(context.l10n.retry),
             ),
           );
         },
@@ -73,10 +76,10 @@ class OrderDetailScreen extends ConsumerWidget {
           final matches = orders.where((o) => o.id == orderId);
           final order = matches.isEmpty ? null : matches.first;
           if (order == null) {
-            return const EmptyState(
+            return EmptyState(
               icon: Icons.search_off_rounded,
-              title: 'Order not found',
-              message: 'It may have been removed.',
+              title: context.l10n.orderNotFound,
+              message: context.l10n.itMayHaveBeenRemoved,
             );
           }
           return _OrderDetailBody(order: order, paymentOutcome: paymentOutcome);
@@ -217,22 +220,22 @@ extension on _OrderDetailBody {
       'success' when order.amountPaid > 0 => (
         Icons.check_circle_rounded,
         Colors.green,
-        'Payment received — thank you!',
+        context.l10n.paymentReceivedThankYou,
       ),
       'success' => (
         Icons.hourglass_top_rounded,
         scheme.primary,
-        'Confirming your payment with the provider… this page updates automatically.',
+        context.l10n.confirmingYourPaymentWithTheProvider,
       ),
       'cancelled' => (
         Icons.info_outline_rounded,
         scheme.onSurfaceVariant,
-        'Payment cancelled. You can try again below.',
+        context.l10n.paymentCancelledYouCanTryAgain,
       ),
       _ => (
         Icons.error_outline_rounded,
         scheme.error,
-        'The payment didn\'t go through. You can try again below.',
+        context.l10n.thePaymentDidntGoThroughYou,
       ),
     };
     return Padding(
@@ -278,14 +281,15 @@ class _ItemsSection extends ConsumerWidget {
   Future<void> _reorder(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
     final router = GoRouter.of(context);
+    final l10n = context.l10n;
     try {
       final added = await ref.read(cartActionsProvider).reorder(order);
       messenger.showSnackBar(
         SnackBar(
           content: Text(
             added == 0
-                ? 'Nothing to reorder — quoted items need a new quote.'
-                : 'Added $added item(s) to your cart. Prices are updated at checkout.',
+                ? l10n.nothingToReorderQuotedItemsNeed
+                : l10n.addedItemSToYourCart(added),
           ),
           behavior: SnackBarBehavior.floating,
         ),
@@ -311,7 +315,7 @@ class _ItemsSection extends ConsumerWidget {
           children: [
             Expanded(
               child: Text(
-                'Items',
+                context.l10n.items,
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
@@ -341,8 +345,14 @@ class _ItemsSection extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '${item.quantity} pcs'
-                              '${(item.pricing['setupFees'] ?? 0) > 0 ? ' · incl. ${currencyFormat.format(item.pricing['setupFees'])} setup' : ''}',
+                              context.l10n.piecesCount(item.quantity) +
+                                  ((item.pricing['setupFees'] ?? 0) > 0
+                                      ? context.l10n.inclSetup(
+                                          currencyFormat.format(
+                                            item.pricing['setupFees'],
+                                          ),
+                                        )
+                                      : ''),
                             ),
                             CustomizationSummary(config: item.customization!),
                           ],
@@ -380,16 +390,16 @@ class _DeliverySectionState extends ConsumerState<_DeliverySection> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Cancel this order?'),
-        content: const Text('This can\'t be undone.'),
+        title: Text(context.l10n.cancelThisOrder),
+        content: Text(context.l10n.thisCantBeUndone),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Keep order'),
+            child: Text(context.l10n.keepOrder),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Cancel order'),
+            child: Text(context.l10n.cancelOrder),
           ),
         ],
       ),
@@ -407,7 +417,7 @@ class _DeliverySectionState extends ConsumerState<_DeliverySection> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Couldn\'t cancel: ${friendlyError(error)}'),
+            content: Text(context.l10n.couldntCancel(friendlyError(error))),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -424,7 +434,7 @@ class _DeliverySectionState extends ConsumerState<_DeliverySection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Delivery',
+          context.l10n.delivery,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
           ),

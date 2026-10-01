@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/l10n/l10n_ext.dart';
 
 /// Shown when a signed-out visitor taps an action that needs an account
 /// (add to cart, place an order, contact support, ...) — browsing itself
@@ -29,7 +30,7 @@ Future<void> showAuthRequiredSheet(
               ),
               const SizedBox(height: 12),
               Text(
-                'Create an account to continue',
+                context.l10n.createAnAccountToContinue,
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
@@ -49,7 +50,7 @@ Future<void> showAuthRequiredSheet(
                     Navigator.of(context).pop();
                     context.go('/login');
                   },
-                  child: const Text('Sign in or create account'),
+                  child: Text(context.l10n.signInOrCreateAccount),
                 ),
               ),
             ],

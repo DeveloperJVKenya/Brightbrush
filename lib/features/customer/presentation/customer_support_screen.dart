@@ -12,6 +12,8 @@ import '../../../shared/whatsapp.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../payments/application/payments_providers.dart';
 import '../../support/domain/support_ticket.dart';
+import '../../../core/l10n/l10n_ext.dart';
+import '../../../core/l10n/enum_l10n.dart';
 
 class CustomerSupportScreen extends ConsumerStatefulWidget {
   const CustomerSupportScreen({super.key});
@@ -67,8 +69,8 @@ class _CustomerSupportScreenState extends ConsumerState<CustomerSupportScreen> {
       _message.clear();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Ticket sent — we\'ll get back to you here.'),
+          SnackBar(
+            content: Text(context.l10n.ticketSentWellGetBackTo),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -78,7 +80,7 @@ class _CustomerSupportScreenState extends ConsumerState<CustomerSupportScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Couldn\'t send: ${friendlyError(error)}'),
+            content: Text(context.l10n.couldntSend(friendlyError(error))),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -100,14 +102,14 @@ class _CustomerSupportScreenState extends ConsumerState<CustomerSupportScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Support',
+              context.l10n.navSupport,
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 4),
             Text(
-              'Tell us about an order, a design, or a complaint.',
+              context.l10n.tellUsAboutAnOrderA,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -133,18 +135,22 @@ class _CustomerSupportScreenState extends ConsumerState<CustomerSupportScreen> {
                   children: [
                     TextFormField(
                       controller: _subject,
-                      decoration: const InputDecoration(labelText: 'Subject'),
+                      decoration: InputDecoration(
+                        labelText: context.l10n.subject,
+                      ),
                       validator: (v) => (v == null || v.trim().length < 2)
-                          ? 'Enter a subject'
+                          ? context.l10n.enterASubject
                           : null,
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _message,
-                      decoration: const InputDecoration(labelText: 'Message'),
+                      decoration: InputDecoration(
+                        labelText: context.l10n.message,
+                      ),
                       maxLines: 4,
                       validator: (v) => (v == null || v.trim().length < 2)
-                          ? 'Enter a message'
+                          ? context.l10n.enterAMessage
                           : null,
                     ),
                     const SizedBox(height: 12),
@@ -161,7 +167,7 @@ class _CustomerSupportScreenState extends ConsumerState<CustomerSupportScreen> {
                                   color: Colors.white,
                                 ),
                               )
-                            : const Text('Send'),
+                            : Text(context.l10n.send),
                       ),
                     ),
                   ],
@@ -170,15 +176,17 @@ class _CustomerSupportScreenState extends ConsumerState<CustomerSupportScreen> {
             ),
             const SizedBox(height: 28),
             Text(
-              'Your tickets',
+              context.l10n.yourTickets,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 12),
             ticketsAsync.when(
-              loading: () => const Center(
-                child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+              loading: () => Center(
+                child: CircularProgressIndicator(
+                  semanticsLabel: context.l10n.loading,
+                ),
               ),
               error: (error, stack) {
                 appLogger.e(
@@ -188,22 +196,21 @@ class _CustomerSupportScreenState extends ConsumerState<CustomerSupportScreen> {
                 );
                 return EmptyState(
                   icon: Icons.cloud_off_rounded,
-                  title: 'Couldn\'t load tickets',
+                  title: context.l10n.couldntLoadTickets,
                   message: friendlyError(error),
                   action: TextButton.icon(
                     onPressed: () => ref.invalidate(myTicketsProvider),
                     icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('Retry'),
+                    label: Text(context.l10n.retry),
                   ),
                 );
               },
               data: (tickets) {
                 if (tickets.isEmpty) {
-                  return const EmptyState(
+                  return EmptyState(
                     icon: Icons.support_agent_outlined,
-                    title: 'No tickets yet',
-                    message:
-                        'Anything you send above will show up here with our reply.',
+                    title: context.l10n.noTicketsYet,
+                    message: context.l10n.anythingYouSendAboveWillShow,
                   );
                 }
                 return Column(
@@ -260,7 +267,7 @@ class _TicketCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    ticket.status.label,
+                    ticket.status.tr(context),
                     style: TextStyle(
                       color: statusColor,
                       fontWeight: FontWeight.w600,

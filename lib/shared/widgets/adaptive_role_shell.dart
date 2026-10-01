@@ -4,6 +4,7 @@ import '../../core/theme/app_theme.dart';
 import '../../features/notifications/presentation/inbox_screen.dart';
 import 'brand_mark.dart';
 import 'role_nav_item.dart';
+import '../../core/l10n/l10n_ext.dart';
 
 /// Responsive navigation frame shared by all four role sections.
 ///
@@ -178,18 +179,18 @@ class _WideLayout extends StatelessWidget {
         actions: [
           const NotificationBell(),
           IconButton(
-            tooltip: 'Guide',
+            tooltip: context.l10n.guide,
             onPressed: onOpenHelp,
             icon: const Icon(Icons.help_outline_rounded),
           ),
           IconButton(
-            tooltip: 'Settings',
+            tooltip: context.l10n.settings,
             onPressed: onOpenSettings,
             icon: const Icon(Icons.settings_outlined),
           ),
           if (onSwitchView != null)
             IconButton(
-              tooltip: 'Switch view (Developer)',
+              tooltip: context.l10n.switchViewDeveloper,
               onPressed: onSwitchView,
               icon: const Icon(Icons.swap_horiz_rounded),
             ),
@@ -199,12 +200,12 @@ class _WideLayout extends StatelessWidget {
               child: FilledButton.tonalIcon(
                 onPressed: onSignIn,
                 icon: const Icon(Icons.login_rounded, size: 18),
-                label: const Text('Sign in'),
+                label: Text(context.l10n.signIn),
               ),
             )
           else
             IconButton(
-              tooltip: 'Sign out',
+              tooltip: context.l10n.signOut,
               onPressed: onSignOut,
               icon: const Icon(Icons.logout_rounded),
             ),
@@ -436,18 +437,18 @@ class _NarrowLayout extends StatelessWidget {
         actions: [
           const NotificationBell(),
           IconButton(
-            tooltip: 'Guide',
+            tooltip: context.l10n.guide,
             onPressed: onOpenHelp,
             icon: const Icon(Icons.help_outline_rounded),
           ),
           IconButton(
-            tooltip: 'Settings',
+            tooltip: context.l10n.settings,
             onPressed: onOpenSettings,
             icon: const Icon(Icons.settings_outlined),
           ),
           if (onSwitchView != null)
             IconButton(
-              tooltip: 'Switch view (Developer)',
+              tooltip: context.l10n.switchViewDeveloper,
               onPressed: onSwitchView,
               icon: const Icon(Icons.swap_horiz_rounded),
             ),
@@ -457,12 +458,12 @@ class _NarrowLayout extends StatelessWidget {
               child: FilledButton.tonalIcon(
                 onPressed: onSignIn,
                 icon: const Icon(Icons.login_rounded, size: 18),
-                label: const Text('Sign in'),
+                label: Text(context.l10n.signIn),
               ),
             )
           else
             IconButton(
-              tooltip: 'Sign out',
+              tooltip: context.l10n.signOut,
               onPressed: onSignOut,
               icon: const Icon(Icons.logout_rounded),
             ),

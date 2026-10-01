@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,6 +18,7 @@ import '../catalog/application/catalog_providers.dart';
 import '../orders/domain/order_model.dart';
 import '../../l10n/app_localizations.dart';
 import 'growth_providers.dart';
+import '../../core/l10n/l10n_ext.dart';
 
 class Review {
   const Review({
@@ -123,7 +125,7 @@ class OrderReviewCard extends ConsumerWidget {
       child: review != null
           ? ListTile(
               leading: const Icon(Icons.rate_review_outlined),
-              title: const Text('Thanks for your review'),
+              title: Text(context.l10n.thanksForYourReview),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -143,9 +145,7 @@ class OrderReviewCard extends ConsumerWidget {
                 color: Colors.amber,
               ),
               title: Text(AppLocalizations.of(context).rateOrderTitle),
-              subtitle: const Text(
-                'Rate your order — it helps other customers.',
-              ),
+              subtitle: Text(context.l10n.rateOrderSubtitle),
               trailing: FilledButton(
                 onPressed: () => showDialog<void>(
                   context: context,
@@ -231,7 +231,7 @@ class _ReviewDialogState extends ConsumerState<_ReviewDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Rate your order'),
+      title: Text(context.l10n.rateYourOrder),
       content: SizedBox(
         width: 420,
         child: Column(
@@ -247,8 +247,8 @@ class _ReviewDialogState extends ConsumerState<_ReviewDialog> {
               controller: _comment,
               maxLines: 3,
               maxLength: 1000,
-              decoration: const InputDecoration(
-                hintText: 'Quality, fit, delivery… anything to share?',
+              decoration: InputDecoration(
+                hintText: context.l10n.qualityFitDeliveryAnythingToShare,
               ),
             ),
             Row(
@@ -268,12 +268,12 @@ class _ReviewDialogState extends ConsumerState<_ReviewDialog> {
                           }
                         },
                   icon: const Icon(Icons.add_a_photo_outlined),
-                  label: Text('Photos (${_photos.length}/4)'),
+                  label: Text(context.l10n.photos4(_photos.length)),
                 ),
               ],
             ),
-            const Text(
-              'Reviews appear publicly after a quick check.',
+            Text(
+              context.l10n.reviewsAppearPubliclyAfterAQuick,
               style: TextStyle(fontSize: 12),
             ),
           ],
@@ -282,11 +282,11 @@ class _ReviewDialogState extends ConsumerState<_ReviewDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(context.l10n.cancel),
         ),
         FilledButton(
           onPressed: _saving ? null : _submit,
-          child: const Text('Submit'),
+          child: Text(context.l10n.submit),
         ),
       ],
     );
@@ -313,7 +313,7 @@ class ItemReviewsSection extends ConsumerWidget {
         Row(
           children: [
             Text(
-              'Reviews',
+              context.l10n.reviews,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
@@ -357,7 +357,9 @@ class WishlistButton extends ConsumerWidget {
     final saved =
         ref.watch(wishlistProvider).valueOrNull?.contains(itemId) ?? false;
     return IconButton(
-      tooltip: saved ? 'Remove from wishlist' : 'Save to wishlist',
+      tooltip: saved
+          ? context.l10n.removeFromWishlist
+          : context.l10n.saveToWishlist,
       icon: Icon(
         saved ? Icons.favorite_rounded : Icons.favorite_border_rounded,
         color: saved ? Colors.pink : null,
@@ -384,13 +386,13 @@ class WishlistScreen extends ConsumerWidget {
           onPressed: () =>
               context.canPop() ? context.pop() : context.go('/customer'),
         ),
-        title: const Text('Wishlist'),
+        title: Text(context.l10n.wishlist),
       ),
       body: items.isEmpty
-          ? const EmptyState(
+          ? EmptyState(
               icon: Icons.favorite_border_rounded,
-              title: 'Nothing saved yet',
-              message: 'Tap the heart on any item to save it for later.',
+              title: context.l10n.nothingSavedYet,
+              message: context.l10n.tapTheHeartOnAnyItem,
             )
           : GridView.extent(
               padding: const EdgeInsets.all(16),
@@ -490,21 +492,21 @@ class PortfolioScreen extends ConsumerWidget {
       padding: const EdgeInsets.all(20),
       children: [
         Text(
-          'Our work',
+          context.l10n.navPortfolio,
           style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.w700,
           ),
         ),
         Text(
-          'Branding we\'ve produced for schools, companies, events and teams.',
+          context.l10n.brandingWeveProducedForSchoolsCompanies,
           style: theme.textTheme.bodyMedium,
         ),
         const SizedBox(height: 16),
         if (works.isEmpty)
-          const EmptyState(
+          EmptyState(
             icon: Icons.photo_library_outlined,
-            title: 'Coming soon',
-            message: 'Our gallery of recent jobs will appear here.',
+            title: context.l10n.comingSoon,
+            message: context.l10n.ourGalleryOfRecentJobsWill,
           ),
         Wrap(
           spacing: 12,
@@ -530,7 +532,9 @@ class PortfolioScreen extends ConsumerWidget {
                               for (final u in w.imageUrls)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 8),
-                                  child: Image.network(u),
+                                  child: Image(
+                                    image: CachedNetworkImageProvider(u),
+                                  ),
                                 ),
                             ],
                           ),
@@ -572,14 +576,14 @@ class ReviewsPortfolioScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const DefaultTabController(
+    return DefaultTabController(
       length: 2,
       child: Column(
         children: [
           TabBar(
             tabs: [
-              Tab(text: 'Reviews'),
-              Tab(text: 'Portfolio'),
+              Tab(text: context.l10n.reviews),
+              Tab(text: context.l10n.portfolio),
             ],
           ),
           Expanded(
@@ -621,10 +625,10 @@ class _ModerationTab extends ConsumerWidget {
           'reply': ?reply,
         });
     if (reviews.isEmpty) {
-      return const EmptyState(
+      return EmptyState(
         icon: Icons.reviews_outlined,
-        title: 'No reviews yet',
-        message: 'Customers are asked to review each completed order.',
+        title: context.l10n.noReviewsYet,
+        message: context.l10n.customersAreAskedToReviewEach,
       );
     }
     return ListView(
@@ -640,7 +644,7 @@ class _ModerationTab extends ConsumerWidget {
               subtitle: Text(
                 [
                   r.comment,
-                  if (r.reply != null) 'Reply: ${r.reply}',
+                  if (r.reply != null) context.l10n.reply(r.reply!),
                 ].where((s) => s.isNotEmpty).join('\n'),
               ),
               trailing: PopupMenuButton<String>(
@@ -650,7 +654,7 @@ class _ModerationTab extends ConsumerWidget {
                     final text = await showDialog<String>(
                       context: context,
                       builder: (context) => AlertDialog(
-                        title: const Text('Public reply'),
+                        title: Text(context.l10n.publicReply),
                         content: TextField(
                           controller: c,
                           maxLines: 3,
@@ -660,7 +664,7 @@ class _ModerationTab extends ConsumerWidget {
                           FilledButton(
                             onPressed: () =>
                                 Navigator.pop(context, c.text.trim()),
-                            child: const Text('Save'),
+                            child: Text(context.l10n.save),
                           ),
                         ],
                       ),
@@ -670,13 +674,19 @@ class _ModerationTab extends ConsumerWidget {
                     await setStatus(r, v);
                   }
                 },
-                itemBuilder: (_) => const [
+                itemBuilder: (_) => [
                   PopupMenuItem(
                     value: 'approved',
-                    child: Text('Approve (publish)'),
+                    child: Text(context.l10n.approvePublish),
                   ),
-                  PopupMenuItem(value: 'hidden', child: Text('Hide')),
-                  PopupMenuItem(value: 'reply', child: Text('Reply publicly')),
+                  PopupMenuItem(
+                    value: 'hidden',
+                    child: Text(context.l10n.hide),
+                  ),
+                  PopupMenuItem(
+                    value: 'reply',
+                    child: Text(context.l10n.replyPublicly),
+                  ),
                 ],
               ),
             ),
@@ -702,22 +712,22 @@ class _PortfolioAdminTab extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('New portfolio entry (${files.length} photo(s))'),
+        title: Text(context.l10n.newPortfolioEntryPhotoS(files.length)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: title,
-              decoration: const InputDecoration(labelText: 'Title'),
+              decoration: InputDecoration(labelText: context.l10n.title),
             ),
             TextField(
               controller: description,
-              decoration: const InputDecoration(labelText: 'Description'),
+              decoration: InputDecoration(labelText: context.l10n.description),
             ),
             TextField(
               controller: tags,
-              decoration: const InputDecoration(
-                labelText: 'Tags (comma separated)',
+              decoration: InputDecoration(
+                labelText: context.l10n.tagsCommaSeparated,
               ),
             ),
           ],
@@ -725,11 +735,11 @@ class _PortfolioAdminTab extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Publish'),
+            child: Text(context.l10n.publish),
           ),
         ],
       ),
@@ -784,7 +794,7 @@ class _PortfolioAdminTab extends ConsumerWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _add(context, ref),
         icon: const Icon(Icons.add_photo_alternate_outlined),
-        label: const Text('Add work'),
+        label: Text(context.l10n.addWork),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
@@ -803,13 +813,16 @@ class _PortfolioAdminTab extends ConsumerWidget {
                 ),
                 title: Text(w.title),
                 subtitle: Text(
-                  '${w.imageUrls.length} photo(s)${w.featured ? ' · featured' : ''}',
+                  context.l10n.photosCount(w.imageUrls.length) +
+                      (w.featured ? context.l10n.featuredSuffix : ''),
                 ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
-                      tooltip: w.featured ? 'Unfeature' : 'Feature',
+                      tooltip: w.featured
+                          ? context.l10n.unfeature
+                          : context.l10n.feature,
                       icon: Icon(
                         w.featured
                             ? Icons.star_rounded
@@ -825,7 +838,7 @@ class _PortfolioAdminTab extends ConsumerWidget {
                           }),
                     ),
                     IconButton(
-                      tooltip: 'Delete',
+                      tooltip: context.l10n.delete,
                       icon: const Icon(Icons.delete_outline_rounded),
                       onPressed: () => ref
                           .read(firestoreProvider)

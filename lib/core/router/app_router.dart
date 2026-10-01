@@ -23,6 +23,8 @@ import '../../shared/widgets/placeholder_screen.dart';
 import '../../shared/widgets/role_nav_item.dart';
 import '../auth/app_role.dart';
 import '../l10n/language.dart';
+import '../l10n/l10n_ext.dart';
+import '../l10n/enum_l10n.dart';
 import '../auth/auth_providers.dart';
 import '../firebase/firebase_providers.dart';
 import '../logging/app_logger.dart';
@@ -196,10 +198,10 @@ ShellRoute _roleShellRoute({
 
           return AdaptiveRoleShell(
             roleLabel: isGuest
-                ? 'Browsing as guest'
+                ? context.l10n.browsingAsGuest
                 : isDeveloperViewing
-                ? '${role.label} · Developer view'
-                : role.label,
+                ? context.l10n.developerView(role.tr(context))
+                : role.tr(context),
             isGuest: isGuest,
             onSignIn: () => context.go('/login'),
             items: [
@@ -211,7 +213,9 @@ ShellRoute _roleShellRoute({
                       module.label,
                   icon: module.icon,
                   selectedIcon: module.selectedIcon,
-                  description: module.description,
+                  description:
+                      localizedModuleDescription(context, module.path) ??
+                      module.description,
                 ),
             ],
             currentPath: state.matchedLocation,

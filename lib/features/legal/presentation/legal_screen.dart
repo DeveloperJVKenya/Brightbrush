@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/l10n/l10n_ext.dart';
 import '../../payments/application/payments_providers.dart';
 import '../../payments/domain/business_settings.dart';
 
@@ -20,6 +21,7 @@ class LegalScreen extends ConsumerWidget {
   final LegalDocument document;
 
   static const _lastUpdated = '29 September 2026';
+  static const _lastUpdatedSw = '29 Septemba 2026';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,25 +33,33 @@ class LegalScreen extends ConsumerWidget {
       if (s.supportEmail.isNotEmpty) s.supportEmail,
       if (s.supportPhone.isNotEmpty) s.supportPhone,
     ].join(' · ');
-    final contactLine = contact.isEmpty
-        ? 'through the Support section of the app'
-        : 'at $contact or through the Support section of the app';
-    final sections = document == LegalDocument.privacy
-        ? _privacy(s.businessName, contactLine)
-        : _terms(s.businessName, contactLine);
+    final sw = Localizations.localeOf(context).languageCode == 'sw';
+    final contactLine = sw
+        ? (contact.isEmpty
+              ? 'kupitia sehemu ya Msaada ndani ya programu'
+              : 'kupitia $contact au sehemu ya Msaada ndani ya programu')
+        : (contact.isEmpty
+              ? 'through the Support section of the app'
+              : 'at $contact or through the Support section of the app');
+    final sections = switch ((document, sw)) {
+      (LegalDocument.privacy, false) => _privacy(s.businessName, contactLine),
+      (LegalDocument.terms, false) => _terms(s.businessName, contactLine),
+      (LegalDocument.privacy, true) => _privacySw(s.businessName, contactLine),
+      (LegalDocument.terms, true) => _termsSw(s.businessName, contactLine),
+    };
 
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          tooltip: 'Back',
+          tooltip: context.l10n.back,
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () =>
               context.canPop() ? context.pop() : context.go('/customer'),
         ),
         title: Text(
           document == LegalDocument.privacy
-              ? 'Privacy policy'
-              : 'Terms of service',
+              ? context.l10n.privacyPolicy
+              : context.l10n.termsOfService,
         ),
       ),
       body: ListView(
@@ -62,9 +72,22 @@ class LegalScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Last updated $_lastUpdated',
+                    sw
+                        ? 'Imesasishwa mwisho: $_lastUpdatedSw'
+                        : 'Last updated $_lastUpdated',
                     style: theme.textTheme.bodySmall,
                   ),
+                  if (sw) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Hii ni tafsiri ya Kiswahili. Iwapo kuna tofauti kati '
+                      'yake na toleo la Kiingereza, toleo la Kiingereza ndilo '
+                      'litakalotumika.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   for (final (heading, body) in sections) ...[
                     Text(
@@ -183,6 +206,108 @@ class LegalScreen extends ConsumerWidget {
       'Governing law',
       'These terms are governed by the laws of Kenya. Contact us $contactLine '
           'with any complaint and we will try to resolve it quickly.',
+    ),
+  ];
+  List<(String, String)> _privacySw(String name, String contactLine) => [
+    (
+      'Sisi ni nani',
+      '$name ("sisi") hutoa huduma ya kuweka nembo na kushona nembo kwenye '
+          'mavazi na bidhaa. Sisi ndio wadhibiti wa data binafsi inayokusanywa '
+          'kupitia programu hii, chini ya Sheria ya Ulinzi wa Data ya Kenya, 2019.',
+    ),
+    (
+      'Tunachokusanya',
+      '• Maelezo ya akaunti: jina, barua pepe, namba ya simu, picha ya wasifu.\n'
+          '• Maelezo ya oda: anwani ya kufikisha, bidhaa, maelezo ya nembo na historia ya oda.\n'
+          '• Maelezo ya malipo: kiasi, njia, na kumbukumbu kutoka kwa mtoa huduma wa malipo '
+          '(mf. namba ya risiti ya M-Pesa). Maelezo ya kadi na pochi huwekwa kwenye ukurasa '
+          'salama wa mtoa huduma mwenyewe (Stripe, PayPal, Flutterwave) na hayatufikii.\n'
+          '• Wafanyakazi wa ufikishaji: maelezo ya gari na maeneo ya ufikishaji wakiwa kazini.\n'
+          '• Data ya kiufundi inayohitajika kuendesha na kulinda programu.',
+    ),
+    (
+      'Kwa nini tunaitumia',
+      'Ili kupokea, kuzalisha, kufikisha na kuhudumia oda zako; kushughulikia malipo '
+          'na kutoa risiti na ankara za kodi; kukutumia taarifa za oda; kuzuia '
+          'udanganyifu; na kutimiza wajibu wetu wa kisheria na wa kodi. Hatuuzi '
+          'data yako binafsi.',
+    ),
+    (
+      'Tunaishiriki na nani',
+      'Ni kwa watoa huduma wanaotusaidia kuendesha biashara pekee: Google Firebase '
+          '(uhifadhi na hifadhidata), watoa huduma wa malipo unaowachagua (Safaricom M-Pesa, '
+          'Stripe, PayPal, Flutterwave), huduma za ramani kwa ufikishaji, na Mamlaka ya '
+          'Mapato ya Kenya (KRA) pale sheria ya kodi inapohitaji. Baadhi ya watoa huduma '
+          'hushughulikia data nje ya Kenya kwa kinga zinazofaa.',
+    ),
+    (
+      'Tunaihifadhi kwa muda gani',
+      'Data ya akaunti huhifadhiwa wakati akaunti yako inatumika. Kumbukumbu za oda '
+          'na malipo huhifadhiwa kwa muda unaohitajika na sheria ya kodi ya Kenya '
+          '(kwa kawaida miaka mitano), bila jina lako ukifuta akaunti yako.',
+    ),
+    (
+      'Haki zako',
+      'Unaweza kuona, kurekebisha au kufuta data yako binafsi, kupinga '
+          'matumizi yake, na kuomba nakala yake. Unaweza kufuta akaunti yako '
+          'wakati wowote kupitia Wasifu → Futa akaunti yangu. Unaweza pia kulalamika '
+          'kwa Ofisi ya Kamishna wa Ulinzi wa Data (odpc.go.ke).',
+    ),
+    (
+      'Mawasiliano',
+      'Una maswali kuhusu data yako? Wasiliana nasi $contactLine.',
+    ),
+  ];
+
+  List<(String, String)> _termsSw(String name, String contactLine) => [
+    (
+      'Kuhusu masharti haya',
+      'Masharti haya yanatumika unapotazama au kuagiza kutoka $name kupitia programu hii. '
+          'Kwa kufungua akaunti au kuweka oda unakubali masharti haya.',
+    ),
+    (
+      'Oda na bei',
+      'Bei zinaonyeshwa kwa Shilingi za Kenya. Oda huthibitishwa baada ya '
+          'kuikagua. Baadhi ya bidhaa zina kiwango cha chini cha oda. Bei '
+          'zilizotolewa ni halali hadi tarehe iliyoonyeshwa kwenye bei hiyo.',
+    ),
+    (
+      'Kazi maalum na nembo',
+      'Unathibitisha kuwa unamiliki au una ruhusa ya kutumia nembo, maandishi au '
+          'muundo wowote unaotuomba tuutengeneze, na unawajibika kwa tahajia na '
+          'maudhui unayoidhinisha. Kwa kuwa bidhaa zenye nembo hutengenezwa kwa oda, '
+          'haziwezi kuuzwa tena, kwa hiyo hatupokei bidhaa zilizorudishwa kwa sababu '
+          'ya kubadili nia. Bidhaa zenye kasoro au zisizolingana na ulichoidhinisha '
+          'zitatengenezwa upya au pesa kurejeshwa.',
+    ),
+    (
+      'Malipo na amana',
+      'Ukichagua kulipa amana, uzalishaji huanza amana inapopokelewa na salio '
+          'hulipwa kabla ya kufikishwa. Malipo hushughulikiwa na mtoa huduma '
+          'unayemchagua; masharti yake pia yanatumika.',
+    ),
+    (
+      'Kughairi',
+      'Unaweza kughairi oda ndani ya programu wakati bado inasubiri kukaguliwa '
+          'na hakuna kilicholipwa. Uzalishaji ukishaanza, huenda isiwezekane '
+          'kughairi, na gharama zilizokwisha tumika zinaweza kukatwa kwenye '
+          'marejesho yoyote.',
+    ),
+    (
+      'Ufikishaji',
+      'Muda wa kufikisha ni makadirio. Tafadhali hakikisha kuna mtu anayepatikana '
+          'kwenye anwani ya kufikisha. Hatari ya bidhaa huhamia kwako zinapofikishwa.',
+    ),
+    (
+      'Dhima',
+      'Hakuna chochote katika masharti haya kinachopunguza haki zako chini ya '
+          'Sheria ya Kulinda Watumiaji, 2012. Vinginevyo, dhima yetu kwa oda yoyote '
+          'ni kiasi ulicholipa kwa oda hiyo.',
+    ),
+    (
+      'Sheria inayotumika',
+      'Masharti haya yanaongozwa na sheria za Kenya. Wasiliana nasi $contactLine '
+          'kwa malalamiko yoyote nasi tutajaribu kuyatatua haraka.',
     ),
   ];
 }

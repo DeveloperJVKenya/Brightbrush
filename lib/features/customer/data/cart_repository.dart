@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../core/logging/stream_error_logger.dart';
 import '../../customization/domain/customization_pricing.dart';
+import '../../../core/connectivity/queued_write.dart';
 
 /// Everything in a customer's cart: simple lines (catalog item id or
 /// `pkg:<id>` -> quantity) and customised lines (lineId -> configuration).
@@ -60,11 +61,13 @@ class CartRepository {
       '[cart] setCart(uid=$uid, ${items.length} simple, ${lines.length} custom)',
     );
     try {
-      await _doc(uid).set({
-        'items': items,
-        'lines': {for (final e in lines.entries) e.key: e.value.toCartMap()},
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      await queuedWrite(
+        _doc(uid).set({
+          'items': items,
+          'lines': {for (final e in lines.entries) e.key: e.value.toCartMap()},
+          'updatedAt': FieldValue.serverTimestamp(),
+        }),
+      );
     } catch (error, stack) {
       appLogger.e(
         '[cart] setCart(uid=$uid) failed',

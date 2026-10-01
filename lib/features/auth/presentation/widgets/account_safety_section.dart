@@ -7,6 +7,7 @@ import '../../../../core/auth/app_role.dart';
 import '../../../../core/errors/user_facing_error.dart';
 import '../../../../core/firebase/firebase_providers.dart';
 import '../../../../core/logging/app_logger.dart';
+import '../../../../core/l10n/l10n_ext.dart';
 
 /// Profile additions for a commercial launch: email verification, links to
 /// the legal pages, and self-service account deletion (required by Google
@@ -34,7 +35,9 @@ class _AccountSafetySectionState extends ConsumerState<AccountSafetySection> {
     setState(() => _sending = true);
     try {
       await user.sendEmailVerification();
-      _snack('Verification email sent to ${user.email}.');
+      if (mounted) {
+        _snack(context.l10n.verificationEmailSentTo(user.email ?? ''));
+      }
     } catch (error, stack) {
       appLogger.e(
         '[auth] sendEmailVerification failed',
@@ -54,9 +57,9 @@ class _AccountSafetySectionState extends ConsumerState<AccountSafetySection> {
       // Force a new ID token so the email_verified claim is current for
       // any server checks.
       await refreshed!.getIdToken(true);
-      _snack('Email verified — thank you!');
+      if (mounted) _snack(context.l10n.emailVerifiedThankYou);
     } else {
-      _snack('Not verified yet. Check your inbox (and spam folder).');
+      if (mounted) _snack(context.l10n.notVerifiedYetCheckYourInbox);
     }
     if (mounted) setState(() {});
   }
@@ -84,7 +87,7 @@ class _AccountSafetySectionState extends ConsumerState<AccountSafetySection> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Verify your email (${user.email}) so we can send receipts and order updates.',
+                          context.l10n.verifyYourEmailSoWeCan(user.email ?? ''),
                         ),
                       ),
                     ],
@@ -96,11 +99,11 @@ class _AccountSafetySectionState extends ConsumerState<AccountSafetySection> {
                         onPressed: _sending
                             ? null
                             : () => _resendVerification(user),
-                        child: const Text('Send link'),
+                        child: Text(context.l10n.sendLink),
                       ),
                       TextButton(
                         onPressed: () => _refreshVerification(user),
-                        child: const Text('I\'ve verified'),
+                        child: Text(context.l10n.iveVerified),
                       ),
                     ],
                   ),
@@ -116,14 +119,14 @@ class _AccountSafetySectionState extends ConsumerState<AccountSafetySection> {
             children: [
               ListTile(
                 leading: const Icon(Icons.privacy_tip_outlined),
-                title: const Text('Privacy policy'),
+                title: Text(context.l10n.privacyPolicy2),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.push('/legal/privacy'),
               ),
               const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.gavel_rounded),
-                title: const Text('Terms of service'),
+                title: Text(context.l10n.termsOfService),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.push('/legal/terms'),
               ),
@@ -135,11 +138,11 @@ class _AccountSafetySectionState extends ConsumerState<AccountSafetySection> {
                     color: theme.colorScheme.error,
                   ),
                   title: Text(
-                    'Delete my account',
+                    context.l10n.deleteMyAccount,
                     style: TextStyle(color: theme.colorScheme.error),
                   ),
-                  subtitle: const Text(
-                    'Permanently removes your profile, cart and quotes.',
+                  subtitle: Text(
+                    context.l10n.permanentlyRemovesYourProfileCartAnd,
                   ),
                   onTap: () => showDialog<void>(
                     context: context,
@@ -204,8 +207,8 @@ class _DeleteAccountDialogState extends ConsumerState<_DeleteAccountDialog> {
       setState(
         () => _error =
             e.code == 'wrong-password' || e.code == 'invalid-credential'
-            ? 'That password is incorrect.'
-            : (e.message ?? 'Couldn\'t confirm your identity.'),
+            ? context.l10n.thatPasswordIsIncorrect
+            : (e.message ?? context.l10n.couldntConfirmYourIdentity),
       );
     } catch (error, stack) {
       appLogger.e(
@@ -226,31 +229,27 @@ class _DeleteAccountDialogState extends ConsumerState<_DeleteAccountDialog> {
         _password.text.isNotEmpty;
     return AlertDialog(
       icon: const Icon(Icons.warning_amber_rounded, size: 40),
-      title: const Text('Delete your account?'),
+      title: Text(context.l10n.deleteYourAccount),
       content: SizedBox(
         width: 420,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'This permanently deletes your login, profile, cart and quote requests. '
-              'Past orders are kept anonymised for our tax records. '
-              'You can\'t delete your account while an order is still in progress.',
-            ),
+            Text(context.l10n.thisPermanentlyDeletesYourLoginProfile),
             const SizedBox(height: 16),
             TextField(
               controller: _password,
               obscureText: true,
               onChanged: (_) => setState(() {}),
-              decoration: const InputDecoration(labelText: 'Your password'),
+              decoration: InputDecoration(labelText: context.l10n.yourPassword),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _confirm,
               onChanged: (_) => setState(() {}),
-              decoration: const InputDecoration(
-                labelText: 'Type DELETE to confirm',
+              decoration: InputDecoration(
+                labelText: context.l10n.typeDeleteToConfirm,
               ),
             ),
             if (_error != null) ...[
@@ -266,7 +265,7 @@ class _DeleteAccountDialogState extends ConsumerState<_DeleteAccountDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Keep my account'),
+          child: Text(context.l10n.keepMyAccount),
         ),
         FilledButton(
           style: FilledButton.styleFrom(
@@ -279,7 +278,7 @@ class _DeleteAccountDialogState extends ConsumerState<_DeleteAccountDialog> {
                   height: 18,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('Delete forever'),
+              : Text(context.l10n.deleteForever),
         ),
       ],
     );

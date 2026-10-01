@@ -17,6 +17,8 @@ import '../domain/quote_request.dart';
 import '../../../shared/whatsapp.dart';
 import '../../../l10n/app_localizations.dart';
 import 'request_quote_sheet.dart';
+import '../../../core/l10n/l10n_ext.dart';
+import '../../../core/l10n/enum_l10n.dart';
 
 /// Customer view of their quote requests: waiting, priced (accept / turn
 /// down), and closed ones. Accepting turns the quote into a real order via
@@ -30,17 +32,17 @@ class MyQuotesScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          tooltip: 'Back',
+          tooltip: context.l10n.back,
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () =>
               context.canPop() ? context.pop() : context.go('/customer/orders'),
         ),
-        title: const Text('My quotes'),
+        title: Text(context.l10n.myQuotes),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => showRequestQuoteSheet(context),
         icon: const Icon(Icons.add_rounded),
-        label: const Text('New request'),
+        label: Text(context.l10n.newRequest),
       ),
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -48,22 +50,21 @@ class MyQuotesScreen extends ConsumerWidget {
           appLogger.e('[quotes] load failed', error: error, stackTrace: stack);
           return EmptyState(
             icon: Icons.cloud_off_rounded,
-            title: 'Couldn\'t load your quotes',
+            title: context.l10n.couldntLoadYourQuotes,
             message: friendlyError(error),
             action: TextButton.icon(
               onPressed: () => ref.invalidate(myQuotesProvider),
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Retry'),
+              label: Text(context.l10n.retry),
             ),
           );
         },
         data: (quotes) {
           if (quotes.isEmpty) {
-            return const EmptyState(
+            return EmptyState(
               icon: Icons.request_quote_outlined,
-              title: 'No quote requests yet',
-              message:
-                  'Need a custom job, a big quantity or a package tailored to you? Request a quote.',
+              title: context.l10n.noQuoteRequestsYet,
+              message: context.l10n.needACustomJobABig,
             );
           }
           return ListView.separated(
@@ -94,16 +95,18 @@ class _QuoteCard extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          priced ? 'Turn down this price?' : 'Withdraw this request?',
+          priced
+              ? context.l10n.turnDownThisPrice
+              : context.l10n.withdrawThisRequest,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Keep'),
+            child: Text(context.l10n.keep),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(priced ? 'Turn down' : 'Withdraw'),
+            child: Text(priced ? context.l10n.turnDown : context.l10n.withdraw),
           ),
         ],
       ),
@@ -153,8 +156,8 @@ class _QuoteCard extends ConsumerWidget {
                 Chip(
                   label: Text(
                     quote.status == QuoteStatus.quoted && quote.isExpired
-                        ? 'Expired'
-                        : quote.status.label,
+                        ? context.l10n.expired
+                        : quote.status.tr(context),
                   ),
                   visualDensity: VisualDensity.compact,
                 ),
@@ -162,7 +165,10 @@ class _QuoteCard extends ConsumerWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              '${quote.quantity} pcs · requested ${date.format(quote.createdAt)}',
+              context.l10n.pcsRequested(
+                quote.quantity,
+                date.format(quote.createdAt),
+              ),
               style: theme.textTheme.bodySmall,
             ),
             if (quote.details.isNotEmpty) ...[
@@ -174,7 +180,7 @@ class _QuoteCard extends ConsumerWidget {
               const Divider(height: 24),
               Row(
                 children: [
-                  const Text('Quoted price'),
+                  Text(context.l10n.quotedPrice),
                   const Spacer(),
                   Text(
                     currencyFormat.format(quote.quotedTotal),
@@ -187,7 +193,9 @@ class _QuoteCard extends ConsumerWidget {
               ),
               if (quote.validUntil != null)
                 Text(
-                  'Valid until ${date.format(quote.validUntil!)} · includes delivery',
+                  context.l10n.validUntilIncludesDelivery(
+                    date.format(quote.validUntil!),
+                  ),
                   style: theme.textTheme.bodySmall,
                 ),
             ],
@@ -216,7 +224,7 @@ class _QuoteCard extends ConsumerWidget {
                         builder: (context) => _AcceptQuoteDialog(quote: quote),
                       ),
                       icon: const Icon(Icons.check_rounded),
-                      label: const Text('Accept & order'),
+                      label: Text(context.l10n.acceptOrder),
                     ),
                   if (quote.quotedTotal != null)
                     TextButton.icon(
@@ -227,7 +235,7 @@ class _QuoteCard extends ConsumerWidget {
                         quote.id,
                       ),
                       icon: const Icon(Icons.picture_as_pdf_outlined),
-                      label: const Text('Quote PDF'),
+                      label: Text(context.l10n.quotePdf),
                     ),
                   WhatsAppUsButton(
                     label: AppLocalizations.of(context).whatsappUs,
@@ -240,15 +248,15 @@ class _QuoteCard extends ConsumerWidget {
                       onPressed: () =>
                           context.push('/customer/orders/${quote.orderId}'),
                       icon: const Icon(Icons.receipt_long_rounded),
-                      label: const Text('View order'),
+                      label: Text(context.l10n.viewOrder),
                     ),
                   if (quote.status.isOpen)
                     TextButton(
                       onPressed: () => _close(context, ref),
                       child: Text(
                         quote.status == QuoteStatus.quoted
-                            ? 'Turn down'
-                            : 'Withdraw',
+                            ? context.l10n.turnDown
+                            : context.l10n.withdraw,
                       ),
                     ),
                 ],
@@ -338,7 +346,7 @@ class _AcceptQuoteDialogState extends ConsumerState<_AcceptQuoteDialog> {
       includeDelivery: false,
     );
     return AlertDialog(
-      title: const Text('Accept quote'),
+      title: Text(context.l10n.acceptQuote),
       content: SizedBox(
         width: 440,
         child: Form(
@@ -349,34 +357,40 @@ class _AcceptQuoteDialogState extends ConsumerState<_AcceptQuoteDialog> {
               children: [
                 TextFormField(
                   controller: _name,
-                  decoration: const InputDecoration(labelText: 'Contact name'),
-                  validator: (v) =>
-                      (v ?? '').trim().length < 2 ? 'Enter a name' : null,
+                  decoration: InputDecoration(
+                    labelText: context.l10n.contactName,
+                  ),
+                  validator: (v) => (v ?? '').trim().length < 2
+                      ? context.l10n.enterAName
+                      : null,
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _phone,
                   keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(labelText: 'Contact phone'),
+                  decoration: InputDecoration(
+                    labelText: context.l10n.contactPhone,
+                  ),
                   validator: (v) => (v ?? '').trim().length < 9
-                      ? 'Enter a phone number'
+                      ? context.l10n.enterAPhoneNumber
                       : null,
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _address,
-                  decoration: const InputDecoration(
-                    labelText: 'Delivery address',
+                  decoration: InputDecoration(
+                    labelText: context.l10n.deliveryAddress,
                   ),
                   maxLines: 2,
-                  validator: (v) =>
-                      (v ?? '').trim().length < 5 ? 'Enter an address' : null,
+                  validator: (v) => (v ?? '').trim().length < 5
+                      ? context.l10n.enterAnAddress
+                      : null,
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _notes,
-                  decoration: const InputDecoration(
-                    labelText: 'Notes (optional)',
+                  decoration: InputDecoration(
+                    labelText: context.l10n.notesOptional,
                   ),
                   maxLines: 2,
                 ),
@@ -384,13 +398,15 @@ class _AcceptQuoteDialogState extends ConsumerState<_AcceptQuoteDialog> {
                 if (settings.depositsAvailable)
                   SegmentedButton<String>(
                     segments: [
-                      const ButtonSegment(
+                      ButtonSegment(
                         value: 'full',
-                        label: Text('Pay in full'),
+                        label: Text(context.l10n.payInFull),
                       ),
                       ButtonSegment(
                         value: 'deposit',
-                        label: Text('${settings.depositPercent}% deposit'),
+                        label: Text(
+                          context.l10n.deposit(settings.depositPercent),
+                        ),
                       ),
                     ],
                     selected: {_plan},
@@ -401,8 +417,13 @@ class _AcceptQuoteDialogState extends ConsumerState<_AcceptQuoteDialog> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     pricing.paymentPlan == 'deposit'
-                        ? 'Total ${currencyFormat.format(pricing.total)} · pay ${currencyFormat.format(pricing.depositAmount)} now'
-                        : 'Total ${currencyFormat.format(pricing.total)}',
+                        ? context.l10n.totalPayNow(
+                            currencyFormat.format(pricing.total),
+                            currencyFormat.format(pricing.depositAmount),
+                          )
+                        : context.l10n.total2(
+                            currencyFormat.format(pricing.total),
+                          ),
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
@@ -414,7 +435,7 @@ class _AcceptQuoteDialogState extends ConsumerState<_AcceptQuoteDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(context.l10n.cancel),
         ),
         FilledButton(
           onPressed: _saving ? null : _accept,
@@ -424,7 +445,7 @@ class _AcceptQuoteDialogState extends ConsumerState<_AcceptQuoteDialog> {
                   height: 18,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('Place order'),
+              : Text(context.l10n.placeOrder),
         ),
       ],
     );

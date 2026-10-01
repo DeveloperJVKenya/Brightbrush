@@ -11,6 +11,7 @@ import '../../../shared/widgets/typewriter_text.dart';
 import '../application/guide_assistant_service.dart';
 import '../application/guide_providers.dart';
 import '../domain/guide_article.dart';
+import '../../../core/l10n/l10n_ext.dart';
 
 final _guideSearchProvider = StateProvider<String>((ref) => '');
 
@@ -25,7 +26,7 @@ Future<void> _showAnswerDialog(
 }) {
   return showGeneralDialog(
     context: context,
-    barrierLabel: 'Answer',
+    barrierLabel: context.l10n.answer,
     barrierColor: Colors.black.withValues(alpha: 0.45),
     transitionDuration: const Duration(milliseconds: 260),
     pageBuilder: (context, animation, secondaryAnimation) =>
@@ -135,7 +136,7 @@ class _AnswerCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'Saved answer — shown while offline',
+                          context.l10n.savedAnswerShownWhileOffline,
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: theme.colorScheme.onSecondaryContainer,
                           ),
@@ -158,7 +159,7 @@ class _AnswerCard extends StatelessWidget {
                     alignment: Alignment.centerRight,
                     child: FilledButton.tonal(
                       onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Got it'),
+                      child: Text(context.l10n.gotIt),
                     ),
                   ),
                 ),
@@ -238,10 +239,12 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
     if (filtered.isEmpty) {
       return EmptyState(
         icon: Icons.menu_book_outlined,
-        title: articles.isEmpty ? 'Nothing here yet' : 'No matches',
+        title: articles.isEmpty
+            ? context.l10n.nothingHereYet
+            : context.l10n.noMatches,
         message: articles.isEmpty
-            ? 'Ask a question below and the assistant will help.'
-            : 'Try a different search, or ask below.',
+            ? context.l10n.askAQuestionBelowAndThe
+            : context.l10n.tryADifferentSearchOrAsk,
       );
     }
     final palette = [
@@ -333,7 +336,7 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Guide'),
+        title: Text(context.l10n.guide),
         backgroundColor: theme.colorScheme.primaryContainer,
         foregroundColor: theme.colorScheme.onPrimaryContainer,
       ),
@@ -366,7 +369,7 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Answers for what you can do here — search below, or ask your own question.',
+                        context.l10n.answersForWhatYouCanDo,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w500,
                         ),
@@ -377,15 +380,17 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
               ),
               const SizedBox(height: 16),
               LiveSearchField(
-                hintText: 'Search questions, e.g. "assign order"',
+                hintText: context.l10n.searchQuestionsEGAssignOrder,
                 onChanged: (v) =>
                     ref.read(_guideSearchProvider.notifier).state = v,
               ),
               const SizedBox(height: 12),
               Expanded(
                 child: articlesAsync.when(
-                  loading: () => const Center(
-                    child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+                  loading: () => Center(
+                    child: CircularProgressIndicator(
+                      semanticsLabel: context.l10n.loading,
+                    ),
                   ),
                   error: (error, stack) {
                     appLogger.e(
@@ -399,13 +404,13 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
                     if (cached.isEmpty) {
                       return EmptyState(
                         icon: Icons.cloud_off_rounded,
-                        title: 'Couldn\'t load the guide',
+                        title: context.l10n.couldntLoadTheGuide,
                         message: friendlyError(error),
                         action: TextButton.icon(
                           onPressed: () =>
                               ref.invalidate(myGuideArticlesProvider),
                           icon: const Icon(Icons.refresh_rounded),
-                          label: const Text('Retry'),
+                          label: Text(context.l10n.retry),
                         ),
                       );
                     }
@@ -433,7 +438,9 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  'You\'re offline — showing saved answers. Asking something new needs a connection.',
+                                  context
+                                      .l10n
+                                      .youreOfflineShowingSavedAnswersAsking,
                                   style: theme.textTheme.labelSmall?.copyWith(
                                     color:
                                         theme.colorScheme.onSecondaryContainer,
@@ -494,7 +501,7 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'Ask something else — needs internet',
+                          context.l10n.askSomethingElseNeedsInternet,
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w600,
@@ -525,8 +532,8 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
                             ),
                             child: TextField(
                               controller: _askController,
-                              decoration: const InputDecoration(
-                                hintText: 'Type your question…',
+                              decoration: InputDecoration(
+                                hintText: context.l10n.typeYourQuestion,
                                 border: InputBorder.none,
                                 isDense: true,
                                 contentPadding: EdgeInsets.symmetric(

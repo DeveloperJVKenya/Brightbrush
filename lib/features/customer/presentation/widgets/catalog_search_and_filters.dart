@@ -9,6 +9,8 @@ import '../../../catalog/application/catalog_providers.dart';
 import '../../../catalog/domain/catalog_category.dart';
 import '../../../catalog/domain/catalog_item.dart';
 import 'ai_search_dialog.dart';
+import '../../../../core/l10n/l10n_ext.dart';
+import '../../../../core/l10n/enum_l10n.dart';
 
 String catalogSortLabel(AppLocalizations l10n, CatalogSort s) => switch (s) {
   CatalogSort.recommended => l10n.sortRecommended,
@@ -83,7 +85,7 @@ class _CatalogSearchBarState extends ConsumerState<CatalogSearchBar> {
         trailing: [
           if (query.isNotEmpty)
             IconButton(
-              tooltip: 'Clear search',
+              tooltip: context.l10n.clearSearch,
               onPressed: () {
                 controller.clear();
                 _submit('');
@@ -151,7 +153,7 @@ class _CatalogSearchBarState extends ConsumerState<CatalogSearchBar> {
               for (final c in CatalogCategory.values)
                 ActionChip(
                   avatar: Icon(c.icon, size: 16),
-                  label: Text(c.label),
+                  label: Text(c.tr(context)),
                   onPressed: () {
                     _controller.closeView('');
                     ref.read(catalogCategoryFilterProvider.notifier).state = c;
@@ -185,7 +187,7 @@ class _CatalogSearchBarState extends ConsumerState<CatalogSearchBar> {
           ),
           title: Text(item.name, maxLines: 1, overflow: TextOverflow.ellipsis),
           subtitle: Text(
-            '${item.category.label} · ${currencyFormat.format(item.fromPrice)}',
+            '${item.category.tr(context)} · ${currencyFormat.format(item.fromPrice)}',
           ),
           onTap: () {
             ref.read(recentSearchesProvider.notifier).add(text);
@@ -346,7 +348,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                         for (final c in CatalogCategory.values)
                           ChoiceChip(
                             avatar: Icon(c.icon, size: 16),
-                            label: Text(c.label),
+                            label: Text(c.tr(context)),
                             selected: _category == c,
                             onSelected: (s) =>
                                 setState(() => _category = s ? c : null),

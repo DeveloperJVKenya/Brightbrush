@@ -20,6 +20,8 @@ import '../application/cart_providers.dart';
 import 'widgets/catalog_home_sections.dart';
 import 'widgets/catalog_item_card.dart';
 import 'widgets/catalog_search_and_filters.dart';
+import '../../../core/l10n/l10n_ext.dart';
+import '../../../core/l10n/enum_l10n.dart';
 
 /// Grid (false) or list (true) on the product listing.
 final catalogListViewProvider = StateProvider<bool>((ref) => false);
@@ -90,8 +92,7 @@ class _CustomerCatalogScreenState extends ConsumerState<CustomerCatalogScreen> {
     if (ref.read(currentUidProvider) == null) {
       showAuthRequiredSheet(
         context,
-        message:
-            'Sign in or create an account to add "${item.name}" to your cart.',
+        message: context.l10n.signInOrCreateAnAccount(item.name),
       );
       return;
     }
@@ -128,7 +129,7 @@ class _CustomerCatalogScreenState extends ConsumerState<CustomerCatalogScreen> {
       );
       messenger.showSnackBar(
         SnackBar(
-          content: Text('Couldn\'t add to cart: ${friendlyError(error)}'),
+          content: Text(l10n.couldntAddToCart(friendlyError(error))),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -565,7 +566,7 @@ class _ResultsHeader extends ConsumerWidget {
     final filters = ref.watch(catalogFiltersProvider);
     final title = query.isNotEmpty
         ? '"$query"'
-        : category?.label ??
+        : category?.tr(context) ??
               (filters.customisableOnly
                   ? l10n.filterCustomisable
                   : l10n.sectionAllProducts);
@@ -581,7 +582,7 @@ class _ResultsHeader extends ConsumerWidget {
       if (category != null)
         InputChip(
           avatar: Icon(category.icon, size: 16),
-          label: Text(category.label),
+          label: Text(category.tr(context)),
           onDeleted: () =>
               ref.read(catalogCategoryFilterProvider.notifier).state = null,
         ),
@@ -642,7 +643,7 @@ class _ResultsHeader extends ConsumerWidget {
             Row(
               children: [
                 IconButton(
-                  tooltip: 'Back to home',
+                  tooltip: context.l10n.backToHome,
                   onPressed: () => resetCatalogBrowsing(ref),
                   icon: const Icon(Icons.arrow_back_rounded),
                 ),

@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../core/logging/stream_error_logger.dart';
 import '../domain/support_ticket.dart';
+import '../../../core/connectivity/queued_write.dart';
 
 class SupportTicketsRepository {
   SupportTicketsRepository(this._db);
@@ -46,13 +47,15 @@ class SupportTicketsRepository {
       '[support] create() subject="${ticket.subject}" customerId=$customerId',
     );
     try {
-      final doc = await _tickets.add(
-        ticket.toFirestoreCreate(
-          customerId: customerId,
-          customerName: customerName,
+      final doc = await queuedWrite(
+        _tickets.add(
+          ticket.toFirestoreCreate(
+            customerId: customerId,
+            customerName: customerName,
+          ),
         ),
       );
-      appLogger.i('[support] created ${doc.id}');
+      appLogger.i('[support] created ${doc?.id ?? '(queued offline)'}');
     } catch (error, stack) {
       appLogger.e(
         '[support] create() failed for subject="${ticket.subject}"',

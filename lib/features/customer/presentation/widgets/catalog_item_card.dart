@@ -9,6 +9,8 @@ import '../../../../shared/widgets/catalog_image.dart';
 import '../../../catalog/domain/catalog_item.dart';
 import '../../../growth/growth_providers.dart';
 import '../../../growth/growth_settings.dart';
+import '../../../../core/l10n/l10n_ext.dart';
+import '../../../../core/l10n/enum_l10n.dart';
 
 /// Height of everything under the square image on a grid card, before
 /// text scaling. Parents size grid rows as `tileWidth + this * textScale`.
@@ -196,7 +198,7 @@ class _CardInfo extends StatelessWidget {
           RatingLine(avg: item.ratingAvg, count: item.ratingCount)
         else
           Text(
-            item.category.label,
+            item.category.tr(context),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.labelSmall?.copyWith(
@@ -335,7 +337,7 @@ class CatalogItemListTile extends StatelessWidget {
                     ),
                     ApproxPrice(kes: item.fromPrice),
                     Text(
-                      '${item.category.label} · ${l10n.minOrderShort(item.moq, item.leadTimeDays)}',
+                      '${item.category.tr(context)} · ${l10n.minOrderShort(item.moq, item.leadTimeDays)}',
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: scheme.onSurfaceVariant,
                       ),
@@ -381,7 +383,7 @@ class RatingLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Semantics(
-      label: '${avg.toStringAsFixed(1)} stars from $count reviews',
+      label: context.l10n.starsFromReviews(avg.toStringAsFixed(1), count),
       child: ExcludeSemantics(
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -522,7 +524,9 @@ class WishlistHeart extends ConsumerWidget {
       color: saved ? const Color(0xFFE11D48) : Colors.black87,
     );
     return IconButton(
-      tooltip: saved ? 'Remove from wishlist' : 'Save to wishlist',
+      tooltip: saved
+          ? context.l10n.removeFromWishlist
+          : context.l10n.saveToWishlist,
       visualDensity: VisualDensity.compact,
       style: filled
           ? IconButton.styleFrom(
@@ -535,7 +539,7 @@ class WishlistHeart extends ConsumerWidget {
         if (ref.read(currentUidProvider) == null) {
           showAuthRequiredSheet(
             context,
-            message: 'Sign in to save "$itemName" to your wishlist.',
+            message: context.l10n.signInToSaveToYour(itemName),
           );
           return;
         }

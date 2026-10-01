@@ -11,6 +11,7 @@ import '../../payments/application/payments_providers.dart';
 import '../application/notifications_providers.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/notifications_repository.dart';
+import '../../../core/l10n/l10n_ext.dart';
 
 /// Every notice for the signed-in user (order moves, proofs, payments,
 /// messages, reminders), plus which channels they want them on.
@@ -39,7 +40,7 @@ class InboxScreen extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => EmptyState(
         icon: Icons.cloud_off_rounded,
-        title: 'Couldn\'t load notifications',
+        title: context.l10n.couldntLoadNotifications,
         message: friendlyError(e),
       ),
       data: (items) => ListView(
@@ -51,7 +52,7 @@ class InboxScreen extends ConsumerWidget {
             children: [
               Expanded(
                 child: Text(
-                  '${items.where((n) => !n.read).length} unread',
+                  context.l10n.unread(items.where((n) => !n.read).length),
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
               ),
@@ -64,7 +65,7 @@ class InboxScreen extends ConsumerWidget {
                 child: Text(AppLocalizations.of(context).markAllRead),
               ),
               IconButton(
-                tooltip: 'Notification settings',
+                tooltip: context.l10n.notificationSettings,
                 icon: const Icon(Icons.tune_rounded),
                 onPressed: () => showModalBottomSheet<void>(
                   context: context,
@@ -78,8 +79,7 @@ class InboxScreen extends ConsumerWidget {
             EmptyState(
               icon: Icons.notifications_none_rounded,
               title: AppLocalizations.of(context).noNotifications,
-              message:
-                  'Order updates, proofs, payments and messages will appear here.',
+              message: context.l10n.orderUpdatesProofsPaymentsAndMessages,
             ),
           for (final n in items)
             Dismissible(
@@ -151,10 +151,8 @@ class _PushPromptState extends ConsumerState<_PushPrompt> {
     return Card(
       child: ListTile(
         leading: const Icon(Icons.notifications_active_outlined),
-        title: const Text('Get alerts on this device'),
-        subtitle: const Text(
-          'Order updates and messages, even when the app is closed.',
-        ),
+        title: Text(context.l10n.getAlertsOnThisDevice),
+        subtitle: Text(context.l10n.orderUpdatesAndMessagesEvenWhen),
         trailing: FilledButton(
           onPressed: () async {
             final uid = ref.read(currentUidProvider);
@@ -172,14 +170,14 @@ class _PushPromptState extends ConsumerState<_PushPrompt> {
               SnackBar(
                 content: Text(
                   ok
-                      ? 'Alerts switched on for this device'
-                      : 'Couldn\'t switch on alerts — check your browser/phone notification permission.',
+                      ? context.l10n.alertsSwitchedOnForThisDevice
+                      : context.l10n.couldntSwitchOnAlertsCheckYour,
                 ),
                 behavior: SnackBarBehavior.floating,
               ),
             );
           },
-          child: const Text('Turn on'),
+          child: Text(context.l10n.turnOn),
         ),
       ),
     );
@@ -205,12 +203,12 @@ class _PrefsSheet extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const ListTile(
-            title: Text('How should we reach you?'),
-            subtitle: Text('The in-app inbox always gets everything.'),
+          ListTile(
+            title: Text(context.l10n.howShouldWeReachYou),
+            subtitle: Text(context.l10n.theInAppInboxAlwaysGets),
           ),
           SwitchListTile(
-            title: const Text('Push notifications'),
+            title: Text(context.l10n.pushNotifications),
             value: prefs.push,
             onChanged: (v) => save(
               NotificationPrefs(
@@ -222,7 +220,7 @@ class _PrefsSheet extends ConsumerWidget {
             ),
           ),
           SwitchListTile(
-            title: const Text('Email'),
+            title: Text(context.l10n.email),
             value: prefs.email,
             onChanged: (v) => save(
               NotificationPrefs(
@@ -235,7 +233,7 @@ class _PrefsSheet extends ConsumerWidget {
           ),
           SwitchListTile(
             title: const Text('WhatsApp'),
-            subtitle: const Text('Uses the phone number on your profile'),
+            subtitle: Text(context.l10n.usesThePhoneNumberOnYour),
             value: prefs.whatsapp,
             onChanged: (v) => save(
               NotificationPrefs(
@@ -247,8 +245,8 @@ class _PrefsSheet extends ConsumerWidget {
             ),
           ),
           SwitchListTile(
-            title: const Text('Reminders & offers'),
-            subtitle: const Text('Cart reminders and promotions'),
+            title: Text(context.l10n.remindersOffers),
+            subtitle: Text(context.l10n.cartRemindersAndPromotions),
             value: prefs.marketing,
             onChanged: (v) => save(
               NotificationPrefs(
@@ -274,7 +272,7 @@ class NotificationBell extends ConsumerWidget {
     if (ref.watch(currentUidProvider) == null) return const SizedBox.shrink();
     final unread = ref.watch(unreadCountProvider);
     return IconButton(
-      tooltip: 'Notifications',
+      tooltip: context.l10n.notificationsTitle,
       onPressed: () => context.push('/notifications'),
       icon: Badge(
         isLabelVisible: unread > 0,

@@ -94,6 +94,7 @@ Future<void> pumpHome(
   required Size size,
   double textScale = 1,
   List<CatalogItem>? items,
+  Locale? locale,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
@@ -130,6 +131,7 @@ Future<void> pumpHome(
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
+        locale: locale,
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(
             context,
@@ -229,6 +231,30 @@ void main() {
           ),
         );
       }
+      expect(tester.takeException(), isNull);
+      await tester.pump(const Duration(seconds: 6));
+    });
+  }
+
+  // Kiswahili strings run longer than English: same layout checks in sw.
+  for (final (label, size) in [
+    ('small phone', const Size(340, 720)),
+    ('desktop', const Size(1440, 900)),
+  ]) {
+    testWidgets('home in Kiswahili lays out without overflow on $label', (
+      tester,
+    ) async {
+      await pumpHome(tester, size: size, locale: const Locale('sw'));
+      expect(find.text('Nunua kwa aina'), findsOneWidget);
+      if (_shots) {
+        await expectLater(
+          find.byType(MaterialApp),
+          matchesGoldenFile(
+            'goldens/home_sw_${label.replaceAll(RegExp('[^a-z]+'), '_')}.png',
+          ),
+        );
+      }
+      await scrollThrough(tester);
       expect(tester.takeException(), isNull);
       await tester.pump(const Duration(seconds: 6));
     });

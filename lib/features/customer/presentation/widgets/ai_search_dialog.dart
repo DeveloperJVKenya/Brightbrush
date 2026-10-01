@@ -7,6 +7,7 @@ import '../../../../core/errors/user_facing_error.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../catalog/application/ai_catalog_search_service.dart';
 import '../../../catalog/application/catalog_providers.dart';
+import '../../../../core/l10n/l10n_ext.dart';
 
 /// "Ask AI" entry point for the catalog: the customer describes what they
 /// need in plain language, Gemini maps it to the closest category (from the
@@ -51,7 +52,7 @@ class _AiSearchDialogState extends ConsumerState<AiSearchDialog> {
           SnackBar(
             content: Text(
               suggestion.rationale.isEmpty
-                  ? 'Filters updated.'
+                  ? context.l10n.filtersUpdated
                   : suggestion.rationale,
             ),
             behavior: SnackBarBehavior.floating,
@@ -65,8 +66,9 @@ class _AiSearchDialogState extends ConsumerState<AiSearchDialog> {
         stackTrace: stack,
       );
       setState(
-        () => _error =
-            'Couldn\'t reach the AI assistant: ${friendlyError(error)}',
+        () => _error = context.l10n.couldntReachTheAiAssistant(
+          friendlyError(error),
+        ),
       );
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -81,7 +83,7 @@ class _AiSearchDialogState extends ConsumerState<AiSearchDialog> {
         children: [
           Icon(Icons.auto_awesome_rounded, color: theme.colorScheme.primary),
           const SizedBox(width: 10),
-          const Text('Ask what you need'),
+          Text(context.l10n.askWhatYouNeed),
         ],
       ),
       content: SizedBox(
@@ -91,22 +93,21 @@ class _AiSearchDialogState extends ConsumerState<AiSearchDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Describe the occasion or item in your own words — e.g. "something for a corporate '
-              'summer picnic, 60 people" — and we\'ll set the right filters.',
+              context.l10n.describeTheOccasionOrItemIn,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 14),
             Semantics(
-              label: 'What are you branding, and for what?',
+              label: context.l10n.whatAreYouBrandingAndFor,
               textField: true,
               child: TextField(
                 controller: _controller,
                 autofocus: true,
                 maxLines: 3,
-                decoration: const InputDecoration(
-                  hintText: 'What are you branding, and for what?',
+                decoration: InputDecoration(
+                  hintText: context.l10n.whatAreYouBrandingAndFor,
                 ),
                 onSubmitted: (_) => _ask(),
               ),
@@ -124,7 +125,7 @@ class _AiSearchDialogState extends ConsumerState<AiSearchDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(context.l10n.cancel),
         ),
         FilledButton.icon(
           onPressed: _loading ? null : _ask,
@@ -135,7 +136,7 @@ class _AiSearchDialogState extends ConsumerState<AiSearchDialog> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.auto_awesome_rounded, size: 18),
-          label: const Text('Ask'),
+          label: Text(context.l10n.ask),
         ),
       ],
     );

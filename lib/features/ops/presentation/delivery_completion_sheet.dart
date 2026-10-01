@@ -1,11 +1,11 @@
 import 'dart:ui' as ui;
 
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/connectivity/connection_status.dart';
 import '../../../core/errors/user_facing_error.dart';
 import '../../orders/domain/order_model.dart';
 import '../application/ops_providers.dart';
@@ -63,14 +63,7 @@ class _CompletionSheetState extends ConsumerState<_CompletionSheet> {
     setState(() => _photo = bytes);
   }
 
-  Future<bool> _offline() async {
-    try {
-      final r = await Connectivity().checkConnectivity();
-      return r.every((c) => c == ConnectivityResult.none);
-    } catch (_) {
-      return false;
-    }
-  }
+  Future<bool> _offline() async => ref.read(isOfflineProvider);
 
   /// No signal: keep the code-confirmed handover on the phone and send it
   /// automatically when the connection returns (the server still checks

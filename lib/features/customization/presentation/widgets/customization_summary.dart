@@ -1,7 +1,10 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../domain/customization_options.dart';
 import '../../domain/customization_pricing.dart';
+import '../../../../core/l10n/l10n_ext.dart';
+import '../../../../core/l10n/enum_l10n.dart';
 
 /// Compact read-only description of a customised line: colour, size
 /// breakdown, each decoration (method, placement, size, artwork/text,
@@ -23,8 +26,9 @@ class CustomizationSummary extends StatelessWidget {
     final sizes = config.sizeQuantities.entries
         .where((e) => e.value > 0)
         .map(
-          (e) =>
-              e.key == oneSizeLabel ? '${e.value} pcs' : '${e.key}×${e.value}',
+          (e) => e.key == oneSizeLabel
+              ? context.l10n.pcs2(e.value)
+              : '${e.key}×${e.value}',
         )
         .join(', ');
     return Column(
@@ -48,8 +52,8 @@ class CustomizationSummary extends StatelessWidget {
                     padding: const EdgeInsets.only(right: 6),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(4),
-                      child: Image.network(
-                        d.artworkUrl!,
+                      child: Image(
+                        image: CachedNetworkImageProvider(d.artworkUrl!),
                         width: 28,
                         height: 28,
                         fit: BoxFit.contain,
@@ -66,11 +70,11 @@ class CustomizationSummary extends StatelessWidget {
                 Expanded(
                   child: Text(
                     [
-                      '${d.placement.label}: ${d.method.label}, ${d.sizeClass.label.toLowerCase()}',
+                      '${d.placement.tr(context)}: ${d.method.tr(context)}, ${d.sizeClass.tr(context).toLowerCase()}',
                       if (d.artworkName != null) d.artworkName!,
                       if ((d.text ?? '').isNotEmpty) '"${d.text}"',
                       if (d.threadColours.isNotEmpty)
-                        'threads ${d.threadColours.join('/')}',
+                        context.l10n.threadsList(d.threadColours.join('/')),
                     ].join(' · '),
                     style: small,
                   ),
@@ -82,7 +86,11 @@ class CustomizationSummary extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
-              'Names (${config.names.length}): ${config.names.take(6).join(', ')}${config.names.length > 6 ? '…' : ''}',
+              context.l10n.namesList(
+                config.names.length,
+                config.names.take(6).join(', ') +
+                    (config.names.length > 6 ? '…' : ''),
+              ),
               style: small,
             ),
           ),

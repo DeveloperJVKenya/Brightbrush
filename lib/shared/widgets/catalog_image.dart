@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -30,8 +31,8 @@ class CatalogImage extends StatelessWidget {
       borderRadius: borderRadius,
       child: imageUrls.isEmpty
           ? _placeholder(context)
-          : Image.network(
-              imageUrls.first,
+          : Image(
+              image: CachedNetworkImageProvider(imageUrls.first),
               fit: BoxFit.cover,
               semanticLabel: semanticLabel,
               loadingBuilder: (context, child, progress) {

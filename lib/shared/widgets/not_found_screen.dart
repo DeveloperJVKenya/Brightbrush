@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'empty_state.dart';
+import '../../core/l10n/l10n_ext.dart';
 
 /// Shown for an address that matches no page (a typo, or a link to a page
 /// that has since moved). Sends the visitor home rather than leaving them
@@ -16,12 +17,12 @@ class NotFoundScreen extends StatelessWidget {
         child: Center(
           child: EmptyState(
             icon: Icons.travel_explore_rounded,
-            title: 'Page not found',
-            message: 'That link doesn\'t lead anywhere in BrightBrush.',
+            title: context.l10n.pageNotFound,
+            message: context.l10n.thatLinkDoesntLeadAnywhereIn,
             action: FilledButton.icon(
               onPressed: () => context.go('/splash'),
               icon: const Icon(Icons.home_rounded),
-              label: const Text('Go home'),
+              label: Text(context.l10n.goHome),
             ),
           ),
         ),

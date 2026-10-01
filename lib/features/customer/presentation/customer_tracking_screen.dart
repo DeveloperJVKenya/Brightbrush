@@ -7,6 +7,7 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/live_orders_map.dart';
 import '../../orders/application/orders_providers.dart';
 import '../../orders/domain/order_status.dart';
+import '../../../core/l10n/l10n_ext.dart';
 
 /// Live map view of the customer's own delivery — reuses [LiveOrdersMap],
 /// the same widget the Delivery Staff Route Map and Admin Deliveries screen
@@ -19,8 +20,8 @@ class CustomerTrackingScreen extends ConsumerWidget {
     final ordersAsync = ref.watch(myOrdersProvider);
 
     return ordersAsync.when(
-      loading: () => const Center(
-        child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+      loading: () => Center(
+        child: CircularProgressIndicator(semanticsLabel: context.l10n.loading),
       ),
       error: (error, stack) {
         appLogger.e(
@@ -30,12 +31,12 @@ class CustomerTrackingScreen extends ConsumerWidget {
         );
         return EmptyState(
           icon: Icons.cloud_off_rounded,
-          title: 'Couldn\'t load your orders',
+          title: context.l10n.couldntLoadYourOrders,
           message: friendlyError(error),
           action: TextButton.icon(
             onPressed: () => ref.invalidate(myOrdersProvider),
             icon: const Icon(Icons.refresh_rounded),
-            label: const Text('Retry'),
+            label: Text(context.l10n.retry),
           ),
         );
       },
@@ -46,9 +47,8 @@ class CustomerTrackingScreen extends ConsumerWidget {
         return LiveOrdersMap(
           orders: outForDelivery,
           emptyIcon: Icons.local_shipping_outlined,
-          emptyTitle: 'Nothing out for delivery',
-          emptyMessage:
-              'Once an order is out for delivery, track it live here.',
+          emptyTitle: context.l10n.nothingOutForDelivery,
+          emptyMessage: context.l10n.onceAnOrderIsOutFor,
         );
       },
     );

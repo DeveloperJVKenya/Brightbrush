@@ -10,6 +10,7 @@ import '../../../core/firebase/firebase_providers.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/brand_mark.dart';
+import '../../../core/l10n/l10n_ext.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -83,8 +84,7 @@ class _BrandPanel extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'One system for orders, production, delivery and the numbers behind '
-            'every cap, hoodie and campaign package.',
+            context.l10n.oneSystemForOrdersProductionDelivery,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               color: Colors.white.withValues(alpha: 0.85),
             ),
@@ -137,7 +137,9 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
         error: e,
         stackTrace: stack,
       );
-      setState(() => _error = e.message ?? 'Something went wrong (${e.code}).');
+      setState(
+        () => _error = e.message ?? context.l10n.somethingWentWrong(e.code),
+      );
     } catch (error, stack) {
       appLogger.e(
         '[auth] Sign-in/sign-up failed with an unexpected error',
@@ -156,7 +158,7 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
     final email = _email.text.trim();
     if (!email.contains('@')) {
       setState(() {
-        _error = 'Enter your email above first, then tap "Forgot password?".';
+        _error = context.l10n.enterYourEmailAboveFirstThen;
         _info = null;
       });
       return;
@@ -164,20 +166,14 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
     await _run(() async {
       await ref.read(firebaseAuthProvider).sendPasswordResetEmail(email: email);
       appLogger.i('[auth] Password reset email requested for $email');
-      setState(
-        () => _info =
-            'If an account exists for $email, a reset link is on its way. Check your inbox and spam folder.',
-      );
+      setState(() => _info = context.l10n.ifAnAccountExistsForA(email));
     });
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_isSignUp && !_acceptedTerms) {
-      setState(
-        () =>
-            _error = 'Please accept the Terms and Privacy Policy to continue.',
-      );
+      setState(() => _error = context.l10n.pleaseAcceptTheTermsAndPrivacy);
       return;
     }
     setState(() => _info = null);
@@ -233,14 +229,14 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            _isSignUp ? 'Create your account' : 'Sign in',
+            _isSignUp ? context.l10n.createYourAccount : context.l10n.signIn,
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 6),
           Text(
-            'Access your BrightBrush Creations workspace.',
+            context.l10n.accessYourBrightbrushCreationsWorkspace,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -249,8 +245,8 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
           if (_isSignUp) ...[
             TextFormField(
               controller: _displayName,
-              decoration: const InputDecoration(
-                labelText: 'Full name',
+              decoration: InputDecoration(
+                labelText: context.l10n.fullName,
                 prefixIcon: Icon(Icons.person_outline),
               ),
             ),
@@ -259,30 +255,32 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
           TextFormField(
             controller: _email,
             keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(
-              labelText: 'Email',
+            decoration: InputDecoration(
+              labelText: context.l10n.email,
               prefixIcon: Icon(Icons.mail_outline),
             ),
-            validator: (v) =>
-                (v == null || !v.contains('@')) ? 'Enter a valid email' : null,
+            validator: (v) => (v == null || !v.contains('@'))
+                ? context.l10n.enterAValidEmail
+                : null,
           ),
           const SizedBox(height: 12),
           TextFormField(
             controller: _password,
             obscureText: true,
-            decoration: const InputDecoration(
-              labelText: 'Password',
+            decoration: InputDecoration(
+              labelText: context.l10n.password,
               prefixIcon: Icon(Icons.lock_outline),
             ),
-            validator: (v) =>
-                (v == null || v.length < 6) ? 'At least 6 characters' : null,
+            validator: (v) => (v == null || v.length < 6)
+                ? context.l10n.atLeast6Characters
+                : null,
           ),
           if (!_isSignUp)
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: _loading ? null : _forgotPassword,
-                child: const Text('Forgot password?'),
+                child: Text(context.l10n.forgotPassword),
               ),
             )
           else
@@ -294,22 +292,22 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
               title: Wrap(
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  const Text('I agree to the '),
+                  Text(context.l10n.iAgreeToThe),
                   InkWell(
                     onTap: () => context.push('/legal/terms'),
                     child: Text(
-                      'Terms',
+                      context.l10n.terms,
                       style: TextStyle(
                         color: theme.colorScheme.primary,
                         decoration: TextDecoration.underline,
                       ),
                     ),
                   ),
-                  const Text(' and '),
+                  Text(context.l10n.and),
                   InkWell(
                     onTap: () => context.push('/legal/privacy'),
                     child: Text(
-                      'Privacy Policy',
+                      context.l10n.privacyPolicy,
                       style: TextStyle(
                         color: theme.colorScheme.primary,
                         decoration: TextDecoration.underline,
@@ -331,7 +329,11 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
                       color: Colors.white,
                     ),
                   )
-                : Text(_isSignUp ? 'Create account' : 'Sign in'),
+                : Text(
+                    _isSignUp
+                        ? context.l10n.createAccount
+                        : context.l10n.signIn,
+                  ),
           ),
           const SizedBox(height: 8),
           TextButton(
@@ -340,8 +342,8 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
                 : () => setState(() => _isSignUp = !_isSignUp),
             child: Text(
               _isSignUp
-                  ? 'Already have an account? Sign in'
-                  : "Don't have an account? Sign up",
+                  ? context.l10n.alreadyHaveAnAccountSignIn
+                  : context.l10n.dontHaveAnAccountSignUp,
             ),
           ),
           if (_info != null) ...[
@@ -363,8 +365,7 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
           if (!_isSignUp) ...[
             const SizedBox(height: 8),
             Text(
-              'Signing up here always creates a plain User account. Every other '
-              'role is assigned afterward by an Admin/CEO or Developer.',
+              context.l10n.signingUpHereAlwaysCreatesA,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),

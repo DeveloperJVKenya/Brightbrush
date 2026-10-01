@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,6 +19,7 @@ import '../../features/commerce/presentation/customer_account_tile.dart';
 import '../../features/growth/rewards_card.dart';
 import '../../features/catalog/application/catalog_providers.dart';
 import 'empty_state.dart';
+import '../../core/l10n/l10n_ext.dart';
 
 /// Account screen shared by every role that has a `/profile` route (Manager,
 /// Delivery Staff, Customer). Admin/CEO and Developer don't get one — they
@@ -81,7 +83,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Couldn\'t upload photo: ${friendlyError(error)}'),
+            content: Text(
+              context.l10n.couldntUploadPhoto(friendlyError(error)),
+            ),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -113,8 +117,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile updated'),
+          SnackBar(
+            content: Text(context.l10n.profileUpdated),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -124,7 +128,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Couldn\'t save: ${friendlyError(error)}'),
+            content: Text(context.l10n.couldntSave(friendlyError(error))),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -154,8 +158,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     return SafeArea(
       child: profileAsync.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+        loading: () => Center(
+          child: CircularProgressIndicator(
+            semanticsLabel: context.l10n.loading,
+          ),
         ),
         error: (error, stack) {
           appLogger.e(
@@ -165,21 +171,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           );
           return EmptyState(
             icon: Icons.cloud_off_rounded,
-            title: 'Couldn\'t load your profile',
+            title: context.l10n.couldntLoadYourProfile,
             message: friendlyError(error),
             action: TextButton.icon(
               onPressed: () => ref.invalidate(myProfileProvider),
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Retry'),
+              label: Text(context.l10n.retry),
             ),
           );
         },
         data: (profile) {
           if (profile == null) {
-            return const EmptyState(
+            return EmptyState(
               icon: Icons.person_off_outlined,
-              title: 'No profile found',
-              message: 'Sign in again to load your account details.',
+              title: context.l10n.noProfileFound,
+              message: context.l10n.signInAgainToLoadYour,
             );
           }
           if (!_seeded) {
@@ -200,14 +206,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Profile',
+                    context.l10n.navProfile,
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Your account details.',
+                    context.l10n.yourAccountDetails,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -242,7 +248,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       backgroundImage: _pickedPhotoBytes != null
                                           ? MemoryImage(_pickedPhotoBytes!)
                                           : (profile.photoUrl != null
-                                                ? NetworkImage(
+                                                ? CachedNetworkImageProvider(
                                                     profile.photoUrl!,
                                                   )
                                                 : null),
@@ -336,18 +342,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           const SizedBox(height: 20),
                           TextFormField(
                             controller: _nameController,
-                            decoration: const InputDecoration(
-                              labelText: 'Display name',
+                            decoration: InputDecoration(
+                              labelText: context.l10n.displayName,
                             ),
                             validator: (v) => (v == null || v.trim().isEmpty)
-                                ? 'Required'
+                                ? context.l10n.required
                                 : null,
                           ),
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _phoneController,
-                            decoration: const InputDecoration(
-                              labelText: 'Phone (optional)',
+                            decoration: InputDecoration(
+                              labelText: context.l10n.phoneOptional,
                             ),
                             keyboardType: TextInputType.phone,
                           ),
@@ -355,14 +361,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             const SizedBox(height: 12),
                             TextFormField(
                               controller: _vehicleController,
-                              decoration: const InputDecoration(
-                                labelText: 'Vehicle plate (optional)',
+                              decoration: InputDecoration(
+                                labelText: context.l10n.vehiclePlateOptional,
                               ),
                             ),
                             const SizedBox(height: 4),
                             SwitchListTile(
                               contentPadding: EdgeInsets.zero,
-                              title: const Text('Available for deliveries'),
+                              title: Text(context.l10n.availableForDeliveries),
                               value: _available,
                               onChanged: (v) => setState(() => _available = v),
                             ),
@@ -379,7 +385,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'Daily wage: ${currencyFormat.format(profile.dailyWage)}/day (set by Admin)',
+                                  context.l10n.dailyWageDaySetByAdmin(
+                                    currencyFormat.format(profile.dailyWage),
+                                  ),
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     color: theme.colorScheme.onSurfaceVariant,
                                   ),
@@ -389,7 +397,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           ],
                           const SizedBox(height: 8),
                           Text(
-                            'Member since ${DateFormat('MMM d, y').format(profile.createdAt)}',
+                            context.l10n.memberSince(
+                              DateFormat('MMM d, y').format(profile.createdAt),
+                            ),
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -409,7 +419,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                         strokeWidth: 2,
                                       ),
                                     )
-                                  : const Text('Save changes'),
+                                  : Text(context.l10n.saveChanges),
                             ),
                           ),
                         ],
@@ -418,7 +428,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'Security',
+                    context.l10n.security,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -428,7 +438,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     margin: EdgeInsets.zero,
                     child: ListTile(
                       leading: const Icon(Icons.lock_outline_rounded),
-                      title: const Text('Change password'),
+                      title: Text(context.l10n.changePassword),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: _changePassword,
                     ),
@@ -439,9 +449,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       margin: EdgeInsets.zero,
                       child: ListTile(
                         leading: const Icon(Icons.palette_outlined),
-                        title: const Text('My artwork'),
-                        subtitle: const Text(
-                          'Your saved logos for branding orders',
+                        title: Text(context.l10n.myArtwork),
+                        subtitle: Text(
+                          context.l10n.yourSavedLogosForBrandingOrders,
                         ),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () => context.push('/customer/artwork'),
@@ -457,7 +467,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         margin: EdgeInsets.zero,
                         child: ListTile(
                           leading: const Icon(Icons.favorite_border_rounded),
-                          title: const Text('Wishlist'),
+                          title: Text(context.l10n.wishlist),
                           trailing: const Icon(Icons.chevron_right),
                           onTap: () => context.push('/customer/wishlist'),
                         ),
@@ -470,7 +480,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     child: OutlinedButton.icon(
                       onPressed: _signOut,
                       icon: const Icon(Icons.logout_rounded),
-                      label: const Text('Sign out'),
+                      label: Text(context.l10n.signOut),
                     ),
                   ),
                 ],
@@ -524,8 +534,8 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Password changed'),
+          SnackBar(
+            content: Text(context.l10n.passwordChanged),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -536,7 +546,9 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
         error: error,
         stackTrace: stack,
       );
-      setState(() => _error = error.message ?? 'Couldn\'t change password');
+      setState(
+        () => _error = error.message ?? context.l10n.couldntChangePassword,
+      );
     } catch (error, stack) {
       appLogger.e(
         '[auth] Password change failed',
@@ -552,7 +564,7 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Change password'),
+      title: Text(context.l10n.changePassword),
       content: Form(
         key: _formKey,
         child: Column(
@@ -561,16 +573,20 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
             TextFormField(
               controller: _currentController,
               obscureText: true,
-              decoration: const InputDecoration(labelText: 'Current password'),
-              validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
+              decoration: InputDecoration(
+                labelText: context.l10n.currentPassword,
+              ),
+              validator: (v) =>
+                  (v == null || v.isEmpty) ? context.l10n.required : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _newController,
               obscureText: true,
-              decoration: const InputDecoration(labelText: 'New password'),
-              validator: (v) =>
-                  (v == null || v.length < 6) ? 'At least 6 characters' : null,
+              decoration: InputDecoration(labelText: context.l10n.newPassword),
+              validator: (v) => (v == null || v.length < 6)
+                  ? context.l10n.atLeast6Characters
+                  : null,
             ),
             if (_error != null) ...[
               const SizedBox(height: 8),
@@ -588,7 +604,7 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(context.l10n.cancel),
         ),
         FilledButton(
           onPressed: _saving ? null : _submit,
@@ -598,7 +614,7 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
                   height: 18,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('Save'),
+              : Text(context.l10n.save),
         ),
       ],
     );

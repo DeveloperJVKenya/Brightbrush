@@ -48,6 +48,9 @@ void main() async {
   ).settings = const Settings(
     persistenceEnabled: true,
     cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+    // Web: keep the offline copy working in every open tab, not just the
+    // first one.
+    webPersistentTabManager: WebPersistentMultipleTabManager(),
   );
   await Monitoring.init();
   final prefs = await SharedPreferences.getInstance();

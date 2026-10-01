@@ -612,3 +612,12 @@ describe('Phase 6: platform', () => {
     await assertFails(setDoc(doc(as('admin'), 'Settings/business'), { ...base, workingHours: 'x'.repeat(201) }));
   });
 });
+
+describe('Languages', () => {
+  it('a user saves their own app language; nobody else can', async () => {
+    await assertSucceeds(setDoc(doc(as('alice'), 'Users/alice/Settings/preferences'), { language: 'sw', updatedAt: serverTimestamp() }));
+    await assertSucceeds(getDoc(doc(as('alice'), 'Users/alice/Settings/preferences')));
+    await assertFails(setDoc(doc(as('bob'), 'Users/alice/Settings/preferences'), { language: 'en' }));
+    await assertFails(getDoc(doc(as('bob'), 'Users/alice/Settings/preferences')));
+  });
+});

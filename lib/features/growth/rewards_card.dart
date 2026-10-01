@@ -9,6 +9,7 @@ import '../../core/formatting/currency.dart';
 import '../payments/application/payments_providers.dart';
 import 'growth_providers.dart';
 import '../../shared/whatsapp.dart';
+import '../../core/l10n/l10n_ext.dart';
 
 /// Profile card: loyalty points, the customer's referral code to share,
 /// and a place to enter a friend's code before the first order.
@@ -46,9 +47,12 @@ class _RewardsCardState extends ConsumerState<RewardsCard> {
     final base =
         ref.read(businessSettingsProvider).valueOrNull?.appBaseUrl ??
         'https://bright-brush.web.app';
-    final text =
-        'Get your custom branding from ${businessNameOf(context)}! Use my code $_code when you sign up '
-        'and we both get ${s.referralBonusPoints} points after your first order. $base';
+    final text = context.l10n.getYourCustomBrandingFromUse(
+      businessNameOf(context),
+      _code ?? '',
+      s.referralBonusPoints,
+      base,
+    );
     await SharePlus.instance.share(ShareParams(text: text));
   }
 
@@ -57,23 +61,23 @@ class _RewardsCardState extends ConsumerState<RewardsCard> {
     final code = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Enter a friend\'s code'),
+        title: Text(context.l10n.enterAFriendsCode),
         content: TextField(
           controller: controller,
           textCapitalization: TextCapitalization.characters,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             hintText: 'e.g. JANE4821',
-            helperText: 'Only before your first order.',
+            helperText: context.l10n.onlyBeforeYourFirstOrder,
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Apply'),
+            child: Text(context.l10n.apply),
           ),
         ],
       ),
@@ -84,9 +88,7 @@ class _RewardsCardState extends ConsumerState<RewardsCard> {
           .read(firebaseFunctionsProvider)
           .httpsCallable('claimReferral')
           .call({'code': code});
-      _snack(
-        'Code applied — you\'ll both get bonus points after your first order.',
-      );
+      if (mounted) _snack(context.l10n.codeAppliedYoullBothGetBonus);
     } catch (e) {
       _snack(friendlyError(e));
     }
@@ -115,14 +117,14 @@ class _RewardsCardState extends ConsumerState<RewardsCard> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Rewards',
+                      context.l10n.rewards,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
                   Text(
-                    '$points pts',
+                    context.l10n.pts(points),
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w800,
                       color: theme.colorScheme.primary,
@@ -131,7 +133,10 @@ class _RewardsCardState extends ConsumerState<RewardsCard> {
                 ],
               ),
               Text(
-                'Worth ${currencyFormat.format(points * s.pointValue)} off. You earn ${s.pointsPerHundred} point(s) for every KES 100 you spend.',
+                context.l10n.worthOffYouEarnPointS(
+                  currencyFormat.format(points * s.pointValue),
+                  s.pointsPerHundred,
+                ),
                 style: theme.textTheme.bodySmall,
               ),
               const Divider(height: 24),
@@ -144,12 +149,12 @@ class _RewardsCardState extends ConsumerState<RewardsCard> {
                       onPressed: _busy ? null : _getCode,
                       icon: const Icon(Icons.group_add_outlined),
                       label: Text(
-                        'Refer a friend (+${s.referralBonusPoints} pts each)',
+                        context.l10n.referAFriendPtsEach(s.referralBonusPoints),
                       ),
                     ),
                     TextButton(
                       onPressed: _enterCode,
-                      child: const Text('I have a code'),
+                      child: Text(context.l10n.iHaveACode),
                     ),
                   ],
                 )
@@ -166,17 +171,17 @@ class _RewardsCardState extends ConsumerState<RewardsCard> {
                       ),
                     ),
                     IconButton(
-                      tooltip: 'Copy',
+                      tooltip: context.l10n.copy,
                       icon: const Icon(Icons.copy_rounded),
                       onPressed: () {
                         Clipboard.setData(ClipboardData(text: _code!));
-                        _snack('Copied');
+                        _snack(context.l10n.copied);
                       },
                     ),
                     FilledButton.icon(
                       onPressed: () => _share(s),
                       icon: const Icon(Icons.share_rounded),
-                      label: const Text('Share'),
+                      label: Text(context.l10n.share),
                     ),
                   ],
                 ),

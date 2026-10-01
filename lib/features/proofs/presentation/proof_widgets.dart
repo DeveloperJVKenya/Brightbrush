@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +10,8 @@ import '../../../core/firebase/firebase_providers.dart';
 import '../../orders/domain/order_model.dart';
 import '../../orders/domain/order_status.dart';
 import '../data/proofs_repository.dart';
+import '../../../core/l10n/l10n_ext.dart';
+import '../../../core/l10n/enum_l10n.dart';
 
 final proofsRepositoryProvider = Provider<ProofsRepository>((ref) {
   return ProofsRepository(
@@ -51,7 +54,7 @@ class _CustomerProofPanelState extends ConsumerState<CustomerProofPanel> {
 
   Future<void> _respond(OrderProof proof, bool approve) async {
     if (!approve && _comment.text.trim().isEmpty) {
-      _snack(context, 'Tell us what you\'d like changed.');
+      _snack(context, context.l10n.tellUsWhatYoudLikeChanged);
       return;
     }
     setState(() => _busy = true);
@@ -69,8 +72,8 @@ class _CustomerProofPanelState extends ConsumerState<CustomerProofPanel> {
         _snack(
           context,
           approve
-              ? 'Approved — production can begin.'
-              : 'Thanks — we\'ll send a revised proof.',
+              ? context.l10n.approvedProductionCanBegin
+              : context.l10n.thanksWellSendARevisedProof,
         );
       }
     } catch (error) {
@@ -94,7 +97,7 @@ class _CustomerProofPanelState extends ConsumerState<CustomerProofPanel> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Design proof',
+          context.l10n.designProof,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
           ),
@@ -111,8 +114,7 @@ class _CustomerProofPanelState extends ConsumerState<CustomerProofPanel> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Our designers are preparing a digital proof of your branding. '
-                          'You\'ll approve it here before anything is produced.',
+                          context.l10n.ourDesignersArePreparingADigital,
                           style: theme.textTheme.bodyMedium,
                         ),
                       ),
@@ -125,7 +127,10 @@ class _CustomerProofPanelState extends ConsumerState<CustomerProofPanel> {
                         children: [
                           Chip(
                             label: Text(
-                              'Version ${latest.version} · ${order.proofStatus.label}',
+                              context.l10n.version(
+                                latest.version,
+                                order.proofStatus.tr(context),
+                              ),
                             ),
                             visualDensity: VisualDensity.compact,
                           ),
@@ -138,7 +143,11 @@ class _CustomerProofPanelState extends ConsumerState<CustomerProofPanel> {
                       ],
                       if (latest.stitchCount != null)
                         Text(
-                          '${NumberFormat.decimalPattern().format(latest.stitchCount)} stitches',
+                          context.l10n.stitches(
+                            NumberFormat.decimalPattern().format(
+                              latest.stitchCount,
+                            ),
+                          ),
                           style: theme.textTheme.bodySmall,
                         ),
                       if (latest.status == ProofResponse.pending &&
@@ -148,8 +157,9 @@ class _CustomerProofPanelState extends ConsumerState<CustomerProofPanel> {
                           controller: _comment,
                           maxLines: 3,
                           maxLength: 2000,
-                          decoration: const InputDecoration(
-                            labelText: 'Comments (required to request changes)',
+                          decoration: InputDecoration(
+                            labelText:
+                                context.l10n.commentsRequiredToRequestChanges,
                           ),
                         ),
                         Wrap(
@@ -161,14 +171,14 @@ class _CustomerProofPanelState extends ConsumerState<CustomerProofPanel> {
                                   ? null
                                   : () => _respond(latest, true),
                               icon: const Icon(Icons.check_rounded),
-                              label: const Text('Approve proof'),
+                              label: Text(context.l10n.approveProof),
                             ),
                             OutlinedButton.icon(
                               onPressed: _busy
                                   ? null
                                   : () => _respond(latest, false),
                               icon: const Icon(Icons.edit_note_rounded),
-                              label: const Text('Request changes'),
+                              label: Text(context.l10n.requestChanges),
                             ),
                           ],
                         ),
@@ -176,7 +186,7 @@ class _CustomerProofPanelState extends ConsumerState<CustomerProofPanel> {
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
-                            'Your comment: ${latest.customerComment}',
+                            context.l10n.yourComment(latest.customerComment!),
                             style: theme.textTheme.bodySmall,
                           ),
                         ),
@@ -184,14 +194,17 @@ class _CustomerProofPanelState extends ConsumerState<CustomerProofPanel> {
                         ExpansionTile(
                           tilePadding: EdgeInsets.zero,
                           title: Text(
-                            'Earlier versions (${proofs.length - 1})',
+                            context.l10n.earlierVersions(proofs.length - 1),
                           ),
                           children: [
                             for (final p in proofs.skip(1))
                               ListTile(
                                 contentPadding: EdgeInsets.zero,
                                 title: Text(
-                                  'Version ${p.version} · ${p.status.name}',
+                                  context.l10n.version2(
+                                    p.version,
+                                    p.status.name,
+                                  ),
                                 ),
                                 subtitle: Text(p.customerComment ?? p.note),
                               ),
@@ -222,13 +235,16 @@ class ProofImages extends StatelessWidget {
         itemBuilder: (context, i) => GestureDetector(
           onTap: () => showDialog<void>(
             context: context,
-            builder: (context) =>
-                Dialog(child: InteractiveViewer(child: Image.network(urls[i]))),
+            builder: (context) => Dialog(
+              child: InteractiveViewer(
+                child: Image(image: CachedNetworkImageProvider(urls[i])),
+              ),
+            ),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: Image.network(
-              urls[i],
+            child: Image(
+              image: CachedNetworkImageProvider(urls[i]),
               height: 180,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stack) => const SizedBox(
@@ -300,7 +316,7 @@ class _SendProofDialogState extends ConsumerState<_SendProofDialog> {
           );
       if (mounted) {
         Navigator.pop(context);
-        _snack(context, 'Proof sent to the customer');
+        _snack(context, context.l10n.proofSentToTheCustomer);
       }
     } catch (error) {
       if (mounted) _snack(context, friendlyError(error));
@@ -315,7 +331,7 @@ class _SendProofDialogState extends ConsumerState<_SendProofDialog> {
         ref.watch(orderProofsProvider(widget.order.id)).valueOrNull ?? const [];
     final theme = Theme.of(context);
     return AlertDialog(
-      title: Text('Proof · ${widget.order.displayNumber}'),
+      title: Text(context.l10n.proof(widget.order.displayNumber)),
       content: SizedBox(
         width: 520,
         child: SingleChildScrollView(
@@ -324,7 +340,7 @@ class _SendProofDialogState extends ConsumerState<_SendProofDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Status: ${widget.order.proofStatus.label}',
+                context.l10n.status(widget.order.proofStatus.tr(context)),
                 style: theme.textTheme.labelLarge,
               ),
               for (final p in proofs.take(3))
@@ -336,13 +352,16 @@ class _SendProofDialogState extends ConsumerState<_SendProofDialog> {
                     ProofResponse.changesRequested => Icons.edit_note_rounded,
                     ProofResponse.pending => Icons.hourglass_top_rounded,
                   }),
-                  title: Text('Version ${p.version} · ${p.status.name}'),
+                  title: Text(context.l10n.version2(p.version, p.status.name)),
                   subtitle: p.customerComment == null
                       ? null
-                      : Text('Customer: ${p.customerComment}'),
+                      : Text(context.l10n.customer(p.customerComment!)),
                 ),
               const Divider(),
-              Text('Send a new version', style: theme.textTheme.titleSmall),
+              Text(
+                context.l10n.sendANewVersion,
+                style: theme.textTheme.titleSmall,
+              ),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -377,7 +396,7 @@ class _SendProofDialogState extends ConsumerState<_SendProofDialog> {
                     OutlinedButton.icon(
                       onPressed: _pick,
                       icon: const Icon(Icons.add_photo_alternate_outlined),
-                      label: const Text('Add mockup / stitch-out photos'),
+                      label: Text(context.l10n.addMockupStitchOutPhotos),
                     ),
                 ],
               ),
@@ -386,17 +405,16 @@ class _SendProofDialogState extends ConsumerState<_SendProofDialog> {
                 controller: _stitches,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(
-                  labelText: 'Stitch count (embroidery, optional)',
+                decoration: InputDecoration(
+                  labelText: context.l10n.stitchCountEmbroideryOptional,
                 ),
               ),
               TextField(
                 controller: _note,
                 maxLines: 3,
                 maxLength: 2000,
-                decoration: const InputDecoration(
-                  labelText:
-                      'Note to customer (sizes, thread colours, placement)',
+                decoration: InputDecoration(
+                  labelText: context.l10n.noteToCustomerSizesThreadColours,
                 ),
               ),
             ],
@@ -406,7 +424,7 @@ class _SendProofDialogState extends ConsumerState<_SendProofDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Close'),
+          child: Text(context.l10n.close),
         ),
         FilledButton.icon(
           onPressed: _sending || _images.isEmpty ? null : _send,
@@ -417,7 +435,7 @@ class _SendProofDialogState extends ConsumerState<_SendProofDialog> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.send_rounded),
-          label: const Text('Send proof'),
+          label: Text(context.l10n.sendProof),
         ),
       ],
     );

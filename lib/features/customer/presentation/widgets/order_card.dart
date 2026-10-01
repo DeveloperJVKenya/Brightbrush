@@ -4,6 +4,7 @@ import '../../../../core/formatting/currency.dart';
 
 import '../../../../shared/widgets/order_status_timeline.dart';
 import '../../../orders/domain/order_model.dart';
+import '../../../../core/l10n/l10n_ext.dart';
 
 class OrderCard extends StatelessWidget {
   const OrderCard({super.key, required this.order, required this.onTap});
@@ -31,7 +32,7 @@ class OrderCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        'Order ${order.displayNumber}',
+                        context.l10n.order(order.displayNumber),
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
@@ -47,7 +48,10 @@ class OrderCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${order.itemCount} item(s) · ${currencyFormat.format(order.total)}',
+                  context.l10n.itemS(
+                    order.itemCount,
+                    currencyFormat.format(order.total),
+                  ),
                   style: theme.textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 14),

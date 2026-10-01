@@ -10,6 +10,7 @@ import '../../../shared/widgets/staggered_entrance.dart';
 import '../../../shared/search/search_utils.dart';
 import '../../orders/application/orders_providers.dart';
 import 'widgets/order_card.dart';
+import '../../../core/l10n/l10n_ext.dart';
 
 final _myOrdersSearchProvider = StateProvider<String>((ref) => '');
 
@@ -32,7 +33,7 @@ class MyOrdersScreen extends ConsumerWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'My orders',
+                    context.l10n.myOrders,
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -41,28 +42,30 @@ class MyOrdersScreen extends ConsumerWidget {
                 TextButton.icon(
                   onPressed: () => context.push('/customer/quotes'),
                   icon: const Icon(Icons.request_quote_outlined),
-                  label: const Text('My quotes'),
+                  label: Text(context.l10n.myQuotes),
                 ),
               ],
             ),
             const SizedBox(height: 4),
             Text(
-              'Every order you\'ve placed, with live status as it moves through production.',
+              context.l10n.everyOrderYouvePlacedWithLive,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 16),
             LiveSearchField(
-              hintText: 'Search your orders',
+              hintText: context.l10n.searchYourOrders,
               onChanged: (v) =>
                   ref.read(_myOrdersSearchProvider.notifier).state = v,
             ),
             const SizedBox(height: 12),
             Expanded(
               child: ordersAsync.when(
-                loading: () => const Center(
-                  child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+                loading: () => Center(
+                  child: CircularProgressIndicator(
+                    semanticsLabel: context.l10n.loading,
+                  ),
                 ),
                 error: (error, stack) {
                   appLogger.e(
@@ -72,12 +75,12 @@ class MyOrdersScreen extends ConsumerWidget {
                   );
                   return EmptyState(
                     icon: Icons.cloud_off_rounded,
-                    title: 'Couldn\'t load orders',
+                    title: context.l10n.couldntLoadOrders,
                     message: friendlyError(error),
                     action: TextButton.icon(
                       onPressed: () => ref.invalidate(myOrdersProvider),
                       icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('Retry'),
+                      label: Text(context.l10n.retry),
                     ),
                   );
                 },
@@ -90,10 +93,12 @@ class MyOrdersScreen extends ConsumerWidget {
                   if (filtered.isEmpty) {
                     return EmptyState(
                       icon: Icons.receipt_long_outlined,
-                      title: orders.isEmpty ? 'No orders yet' : 'No matches',
+                      title: orders.isEmpty
+                          ? context.l10n.noOrdersYet
+                          : context.l10n.noMatches,
                       message: orders.isEmpty
-                          ? 'Orders you place from the catalog will show up here with live status.'
-                          : 'Try a different search term.',
+                          ? context.l10n.ordersYouPlaceFromTheCatalog
+                          : context.l10n.tryADifferentSearchTerm,
                     );
                   }
                   return ListView.separated(

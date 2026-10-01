@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -10,6 +11,8 @@ import '../../core/errors/user_facing_error.dart';
 import '../../core/firebase/firebase_providers.dart';
 import '../../l10n/app_localizations.dart';
 import '../../core/logging/stream_error_logger.dart';
+import '../../core/connectivity/queued_write.dart';
+import '../../core/l10n/l10n_ext.dart';
 
 class ChatMessage {
   const ChatMessage({
@@ -109,7 +112,9 @@ class OrderChatButton extends ConsumerWidget {
         child: const Icon(Icons.chat_bubble_outline_rounded),
       ),
       label: Text(
-        asStaff ? 'Chat with customer' : AppLocalizations.of(context).messageUs,
+        asStaff
+            ? context.l10n.chatWithCustomer
+            : AppLocalizations.of(context).messageUs,
       ),
     );
   }
@@ -192,8 +197,8 @@ class _ChatSheetState extends ConsumerState<_ChatSheet> {
     if ((await file.length() ?? 0) > 10 * 1024 * 1024) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Files must be under 10 MB.'),
+          SnackBar(
+            content: Text(context.l10n.filesMustBeUnder10Mb),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -242,24 +247,26 @@ class _ChatSheetState extends ConsumerState<_ChatSheet> {
     if (user == null) return;
     setState(() => _sending = true);
     try {
-      await ref
-          .read(firestoreProvider)
-          .collection('Orders')
-          .doc(widget.orderId)
-          .collection('Messages')
-          .add({
-            'from': user.uid,
-            'fromRole': widget.asStaff ? 'staff' : 'customer',
-            'fromName': widget.asStaff
-                ? 'BrightBrush'
-                : (user.displayName ?? 'Customer').substring(
-                    0,
-                    (user.displayName ?? 'Customer').length.clamp(0, 80),
-                  ),
-            'text': text,
-            'attachments': _pending,
-            'at': FieldValue.serverTimestamp(),
-          });
+      await queuedWrite(
+        ref
+            .read(firestoreProvider)
+            .collection('Orders')
+            .doc(widget.orderId)
+            .collection('Messages')
+            .add({
+              'from': user.uid,
+              'fromRole': widget.asStaff ? 'staff' : 'customer',
+              'fromName': widget.asStaff
+                  ? 'BrightBrush'
+                  : (user.displayName ?? 'Customer').substring(
+                      0,
+                      (user.displayName ?? 'Customer').length.clamp(0, 80),
+                    ),
+              'text': text,
+              'attachments': _pending,
+              'at': FieldValue.serverTimestamp(),
+            }),
+      );
       _text.clear();
       _pending.clear();
     } catch (e) {
@@ -291,7 +298,7 @@ class _ChatSheetState extends ConsumerState<_ChatSheet> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              'Messages · ${widget.orderLabel}',
+              context.l10n.messages(widget.orderLabel),
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
@@ -302,8 +309,8 @@ class _ChatSheetState extends ConsumerState<_ChatSheet> {
                 ? Center(
                     child: Text(
                       widget.asStaff
-                          ? 'No messages yet.'
-                          : 'Questions about sizes, placement or delivery? Send us a message.',
+                          ? context.l10n.noMessagesYet
+                          : context.l10n.questionsAboutSizesPlacementOrDelivery,
                       textAlign: TextAlign.center,
                     ),
                   )
@@ -348,8 +355,11 @@ class _ChatSheetState extends ConsumerState<_ChatSheet> {
                                             child: ClipRRect(
                                               borderRadius:
                                                   BorderRadius.circular(8),
-                                              child: Image.network(
-                                                a['url'] as String,
+                                              child: Image(
+                                                image:
+                                                    CachedNetworkImageProvider(
+                                                      a['url'] as String,
+                                                    ),
                                                 height: 160,
                                                 fit: BoxFit.cover,
                                               ),
@@ -393,7 +403,7 @@ class _ChatSheetState extends ConsumerState<_ChatSheet> {
               child: Row(
                 children: [
                   IconButton(
-                    tooltip: 'Attach photo or PDF',
+                    tooltip: context.l10n.attachPhotoOrPdf,
                     onPressed: _sending ? null : _attach,
                     icon: const Icon(Icons.attach_file_rounded),
                   ),
@@ -403,8 +413,8 @@ class _ChatSheetState extends ConsumerState<_ChatSheet> {
                       minLines: 1,
                       maxLines: 4,
                       maxLength: 2000,
-                      decoration: const InputDecoration(
-                        hintText: 'Write a message',
+                      decoration: InputDecoration(
+                        hintText: context.l10n.writeAMessage,
                         counterText: '',
                       ),
                     ),

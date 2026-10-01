@@ -16,6 +16,8 @@ import '../../../marketing/application/marketing_providers.dart';
 import '../../../marketing/domain/announcement_model.dart';
 import '../../../payments/application/payments_providers.dart';
 import 'catalog_item_card.dart';
+import '../../../../core/l10n/l10n_ext.dart';
+import '../../../../core/l10n/enum_l10n.dart';
 
 /// Content width breakpoints shared by the home sections.
 bool isWideCatalog(BuildContext context) =>
@@ -601,7 +603,7 @@ class _CategoryTileState extends State<_CategoryTile> {
     final theme = Theme.of(context);
     return Semantics(
       button: true,
-      label: '${widget.category.label}, ${widget.count} items',
+      label: context.l10n.items2(widget.category.tr(context), widget.count),
       child: ExcludeSemantics(
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
@@ -631,7 +633,7 @@ class _CategoryTileState extends State<_CategoryTile> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  widget.category.label,
+                  widget.category.tr(context),
                   maxLines: 2,
                   textAlign: TextAlign.center,
                   overflow: TextOverflow.ellipsis,
@@ -1004,7 +1006,10 @@ class PackagesRail extends ConsumerWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '${p.itemIds.length} items · ${currencyFormat.format(p.price)}',
+                                context.l10n.items3(
+                                  p.itemIds.length,
+                                  currencyFormat.format(p.price),
+                                ),
                                 style: theme.textTheme.bodySmall,
                               ),
                             ],

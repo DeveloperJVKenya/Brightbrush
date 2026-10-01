@@ -4,6 +4,7 @@ import { logger } from 'firebase-functions/v2';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 
 import { app, db } from '../core/app';
+import { localizeNotice, openInAppLabel } from './notice_i18n';
 import { requireRole } from '../core/authz';
 import { asObject, requireEnum } from '../core/validate';
 import { callProvider } from '../payments/http_util';
@@ -67,12 +68,23 @@ function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 }
 
-async function sendEmail(c: ChannelConfig, to: string, subject: string, text: string, link: string | undefined, businessName: string) {
+async function sendEmail(
+  c: ChannelConfig,
+  to: string,
+  subject: string,
+  text: string,
+  link: string | undefined,
+  businessName: string,
+  lang?: string,
+) {
+  const footer = lang === 'sw'
+    ? 'Unaweza kubadilisha ujumbe unaopokea kwenye Wasifu → Arifa.'
+    : 'You can change which messages you get in Profile → Notifications.';
   const html = `<div style="font-family:Arial,sans-serif;font-size:15px;color:#222">
 <h2 style="color:#5B2A86">${escapeHtml(businessName)}</h2>
 <p>${escapeHtml(text).replace(/\n/g, '<br>')}</p>
-${link ? `<p><a href="${escapeHtml(link)}" style="background:#5B2A86;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none">Open in the app</a></p>` : ''}
-<p style="color:#999;font-size:12px">You can change which messages you get in Profile → Notifications.</p></div>`;
+${link ? `<p><a href="${escapeHtml(link)}" style="background:#5B2A86;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none">${openInAppLabel(lang)}</a></p>` : ''}
+<p style="color:#999;font-size:12px">${footer}</p></div>`;
   switch (c.emailProvider) {
     case 'resend':
       await callProvider('https://api.resend.com/emails', {
@@ -132,11 +144,13 @@ async function sendWhatsapp(c: ChannelConfig, to: string, title: string, body: s
 export async function notifyUser(uid: string, notice: Notice): Promise<void> {
   try {
     const userRef = db.collection('Users').doc(uid);
-    const [user, prefsSnap, devices, channels, settings] = await Promise.all([
+    const [user, prefsSnap, langSnap, devices, channels, settings] = await Promise.all([
       userRef.get(),
       // Preferences live in a sub-document: the Users doc itself only allows
       // a fixed set of profile fields (firestore.rules).
       userRef.collection('Settings').doc('notifications').get(),
+      // App language, saved by the app when the customer picks one.
+      userRef.collection('Settings').doc('preferences').get(),
       userRef.collection('Devices').get(),
       loadChannels(),
       loadBusinessSettings(),
@@ -145,12 +159,14 @@ export async function notifyUser(uid: string, notice: Notice): Promise<void> {
     const prefs = { push: true, email: true, whatsapp: true, marketing: true, ...(prefsSnap.data() ?? {}) };
     if (notice.type.startsWith('marketing') && prefs.marketing === false) return;
     const link = notice.link ? `${settings.appBaseUrl}/#${notice.link}` : undefined;
+    const lang = langSnap.data()?.language as string | undefined;
+    const { title, body } = localizeNotice(lang, notice.title, notice.body);
 
     await db.collection('Notifications').add({
       uid,
       type: notice.type,
-      title: notice.title,
-      body: notice.body,
+      title,
+      body,
       link: notice.link ?? null,
       orderId: notice.orderId ?? null,
       read: false,
@@ -164,7 +180,7 @@ export async function notifyUser(uid: string, notice: Notice): Promise<void> {
         getMessaging(app)
           .sendEachForMulticast({
             tokens,
-            notification: { title: notice.title, body: notice.body },
+            notification: { title, body },
             data: { link: notice.link ?? '', type: notice.type },
             webpush: link ? { fcmOptions: { link } } : undefined,
           })
@@ -178,11 +194,11 @@ export async function notifyUser(uid: string, notice: Notice): Promise<void> {
       );
     }
     if (prefs.email && channels.emailEnabled && u.email) {
-      jobs.push(sendEmail(channels, String(u.email), notice.title, notice.body, link, settings.businessName));
+      jobs.push(sendEmail(channels, String(u.email), title, body, link, settings.businessName, lang));
     }
     const wa = kenyanWhatsappNumber(String(u.phone ?? ''));
     if (prefs.whatsapp && channels.whatsappEnabled && wa) {
-      jobs.push(sendWhatsapp(channels, wa, notice.title, `${notice.body}${link ? `\n${link}` : ''}`));
+      jobs.push(sendWhatsapp(channels, wa, title, `${body}${link ? `\n${link}` : ''}`));
     }
     const results = await Promise.allSettled(jobs);
     results.forEach((r) => {

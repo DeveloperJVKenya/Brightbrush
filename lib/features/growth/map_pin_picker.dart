@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../../core/l10n/l10n_ext.dart';
 
 /// Tap the map to drop the delivery pin (drivers get exact coordinates
 /// instead of a geocoded guess). Returns the chosen point, or null.
@@ -27,7 +28,7 @@ class _PinDialogState extends State<_PinDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Drop a pin on your delivery point'),
+      title: Text(context.l10n.dropAPinOnYourDelivery),
       contentPadding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
       content: SizedBox(
         width: 560,
@@ -51,11 +52,11 @@ class _PinDialogState extends State<_PinDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(context.l10n.cancel),
         ),
         FilledButton(
           onPressed: _pin == null ? null : () => Navigator.pop(context, _pin),
-          child: const Text('Use this spot'),
+          child: Text(context.l10n.useThisSpot),
         ),
       ],
     );

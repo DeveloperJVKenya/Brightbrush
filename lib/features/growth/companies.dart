@@ -13,6 +13,7 @@ import '../../core/logging/stream_error_logger.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../customization/domain/customization_pricing.dart';
 import '../orders/application/orders_providers.dart';
+import '../../core/l10n/l10n_ext.dart';
 
 class Company {
   const Company({
@@ -177,13 +178,13 @@ class MyUniformProgramsCard extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '${company.name} uniforms',
+              context.l10n.uniforms(company.name),
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
             Text(
-              'Approved branded items for your team — just choose sizes.',
+              context.l10n.approvedBrandedItemsForYourTeam,
               style: theme.textTheme.bodySmall,
             ),
             for (final p in programs) ...[
@@ -247,21 +248,20 @@ class CompaniesTab extends ConsumerWidget {
           builder: (_) => const _CompanyDialog(),
         ),
         icon: const Icon(Icons.add_business_outlined),
-        label: const Text('New company'),
+        label: Text(context.l10n.newCompany),
       ),
       body: companies.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => EmptyState(
           icon: Icons.cloud_off_rounded,
-          title: 'Couldn\'t load companies',
+          title: context.l10n.couldntLoadCompanies,
           message: friendlyError(e),
         ),
         data: (list) => list.isEmpty
-            ? const EmptyState(
+            ? EmptyState(
                 icon: Icons.business_outlined,
-                title: 'No companies yet',
-                message:
-                    'Group buyers from the same organisation: shared discount, credit and uniform programs.',
+                title: context.l10n.noCompaniesYet,
+                message: context.l10n.groupBuyersFromTheSameOrganisation,
               )
             : ListView(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
@@ -287,8 +287,9 @@ class _CompanyCard extends ConsumerWidget {
         title: Text(company.name),
         subtitle: Text(
           [
-            '${company.memberIds.length} buyer(s)',
-            if (company.discountPercent > 0) '${company.discountPercent}% off',
+            context.l10n.buyerS(company.memberIds.length),
+            if (company.discountPercent > 0)
+              context.l10n.off(company.discountPercent),
             if (company.creditEnabled)
               '${company.paymentTermsDays}-day terms${company.creditLimit > 0 ? ', limit ${currencyFormat.format(company.creditLimit)}' : ''}',
           ].join(' · '),
@@ -303,7 +304,7 @@ class _CompanyCard extends ConsumerWidget {
                 builder: (_) => _CompanyDialog(existing: company),
               ),
               icon: const Icon(Icons.edit_outlined),
-              label: const Text('Edit company & buyers'),
+              label: Text(context.l10n.editCompanyBuyers),
             ),
           ),
           for (final p in programs)
@@ -327,7 +328,7 @@ class _CompanyCard extends ConsumerWidget {
                 builder: (_) => _ProgramDialog(company: company),
               ),
               icon: const Icon(Icons.add_rounded),
-              label: const Text('New uniform program'),
+              label: Text(context.l10n.newUniformProgram),
             ),
           ),
         ],
@@ -425,8 +426,8 @@ class _CompanyDialogState extends ConsumerState<_CompanyDialog> {
     return AlertDialog(
       title: Text(
         widget.existing == null
-            ? 'New company'
-            : 'Edit ${widget.existing!.name}',
+            ? context.l10n.newCompany
+            : context.l10n.edit2(widget.existing!.name),
       ),
       content: SizedBox(
         width: 500,
@@ -436,25 +437,27 @@ class _CompanyDialogState extends ConsumerState<_CompanyDialog> {
             children: [
               TextField(
                 controller: _name,
-                decoration: const InputDecoration(labelText: 'Company name'),
+                decoration: InputDecoration(
+                  labelText: context.l10n.companyName,
+                ),
               ),
               TextField(
                 controller: _pin,
-                decoration: const InputDecoration(
-                  labelText: 'KRA PIN (for invoices / eTIMS)',
+                decoration: InputDecoration(
+                  labelText: context.l10n.kraPinForInvoicesEtims,
                 ),
               ),
               TextField(
                 controller: _discount,
                 keyboardType: TextInputType.number,
                 inputFormatters: digits,
-                decoration: const InputDecoration(
-                  labelText: 'Discount for all buyers (%)',
+                decoration: InputDecoration(
+                  labelText: context.l10n.discountForAllBuyers,
                 ),
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Credit terms'),
+                title: Text(context.l10n.creditTerms),
                 value: _credit,
                 onChanged: (v) => setState(() => _credit = v),
               ),
@@ -462,15 +465,15 @@ class _CompanyDialogState extends ConsumerState<_CompanyDialog> {
                 TextField(
                   controller: _terms,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Payment terms (days)',
+                  decoration: InputDecoration(
+                    labelText: context.l10n.paymentTermsDays,
                   ),
                 ),
                 TextField(
                   controller: _limit,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Company credit limit (KES, 0 = none)',
+                  decoration: InputDecoration(
+                    labelText: context.l10n.companyCreditLimitKes0None,
                   ),
                 ),
               ],
@@ -478,14 +481,14 @@ class _CompanyDialogState extends ConsumerState<_CompanyDialog> {
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Buyers (${_members.length})',
+                  context.l10n.buyers(_members.length),
                   style: Theme.of(context).textTheme.labelLarge,
                 ),
               ),
               TextField(
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   prefixIcon: Icon(Icons.search_rounded),
-                  hintText: 'Find customers by name or email',
+                  hintText: context.l10n.findCustomersByNameOrEmail,
                 ),
                 onChanged: (v) => setState(() => _query = v.trim()),
               ),
@@ -517,15 +520,15 @@ class _CompanyDialogState extends ConsumerState<_CompanyDialog> {
                   .delete();
               if (context.mounted) Navigator.pop(context);
             },
-            child: const Text('Delete'),
+            child: Text(context.l10n.delete),
           ),
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(context.l10n.cancel),
         ),
         FilledButton(
           onPressed: _saving ? null : _save,
-          child: const Text('Save'),
+          child: Text(context.l10n.save),
         ),
       ],
     );
@@ -614,7 +617,9 @@ class _ProgramDialogState extends ConsumerState<_ProgramDialog> {
     ];
     return AlertDialog(
       title: Text(
-        widget.existing == null ? 'New uniform program' : 'Edit program',
+        widget.existing == null
+            ? context.l10n.newUniformProgram
+            : context.l10n.editProgram,
       ),
       content: SizedBox(
         width: 500,
@@ -625,24 +630,27 @@ class _ProgramDialogState extends ConsumerState<_ProgramDialog> {
             children: [
               TextField(
                 controller: _name,
-                decoration: const InputDecoration(
-                  labelText: 'Program name',
-                  hintText: 'e.g. 2027 staff uniforms',
+                decoration: InputDecoration(
+                  labelText: context.l10n.programName,
+                  hintText: context.l10n.eG2027StaffUniforms,
                 ),
               ),
               TextField(
                 controller: _description,
-                decoration: const InputDecoration(
-                  labelText: 'Notes for buyers',
+                decoration: InputDecoration(
+                  labelText: context.l10n.notesForBuyers,
                 ),
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Active'),
+                title: Text(context.l10n.active),
                 value: _active,
                 onChanged: (v) => setState(() => _active = v),
               ),
-              Text('Items', style: Theme.of(context).textTheme.labelLarge),
+              Text(
+                context.l10n.items,
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
               for (final (i, item) in _items.indexed)
                 ListTile(
                   dense: true,
@@ -657,9 +665,7 @@ class _ProgramDialogState extends ConsumerState<_ProgramDialog> {
                   ),
                 ),
               if (candidates.isEmpty)
-                const Text(
-                  'Items come from customised orders this company has placed. Once a buyer orders a branded item, it can be added here.',
-                )
+                Text(context.l10n.itemsComeFromCustomisedOrdersThis)
               else
                 PopupMenuButton<int>(
                   onSelected: (i) => setState(
@@ -674,17 +680,17 @@ class _ProgramDialogState extends ConsumerState<_ProgramDialog> {
                     for (final (i, c) in candidates.indexed)
                       PopupMenuItem(
                         value: i,
-                        child: Text('${c.name} (from ${c.order})'),
+                        child: Text(context.l10n.from2(c.name, c.order)),
                       ),
                   ],
-                  child: const Padding(
+                  child: Padding(
                     padding: EdgeInsets.symmetric(vertical: 8),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.add_rounded),
                         SizedBox(width: 6),
-                        Text('Add from a past order'),
+                        Text(context.l10n.addFromAPastOrder),
                       ],
                     ),
                   ),
@@ -706,15 +712,15 @@ class _ProgramDialogState extends ConsumerState<_ProgramDialog> {
                   .delete();
               if (context.mounted) Navigator.pop(context);
             },
-            child: const Text('Delete'),
+            child: Text(context.l10n.delete),
           ),
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(context.l10n.cancel),
         ),
         FilledButton(
           onPressed: _saving ? null : _save,
-          child: const Text('Save'),
+          child: Text(context.l10n.save),
         ),
       ],
     );

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng;
 import '../../../core/monitoring/monitoring.dart';
 
+import '../../../core/errors/server_messages.dart';
 import '../../../core/errors/user_facing_error.dart';
 import '../../../core/firebase/firebase_providers.dart';
 import '../../../core/formatting/currency.dart';
@@ -24,6 +25,7 @@ import '../../payments/application/payments_providers.dart';
 import '../../payments/domain/business_settings.dart';
 import '../../../l10n/app_localizations.dart';
 import '../application/cart_providers.dart';
+import '../../../core/l10n/l10n_ext.dart';
 
 /// One resolved cart row — a catalog item or a package — with what the
 /// checkout needs to render and validate it. [available] is false when the
@@ -92,7 +94,7 @@ class CartCheckoutScreen extends ConsumerWidget {
       appLogger.e('[checkout] Failed to load cart', error: error);
       return EmptyState(
         icon: Icons.cloud_off_rounded,
-        title: 'Couldn\'t load your cart',
+        title: context.l10n.couldntLoadYourCart,
         message: friendlyError(error),
         action: TextButton.icon(
           onPressed: () {
@@ -101,15 +103,15 @@ class CartCheckoutScreen extends ConsumerWidget {
             ref.invalidate(activePackagesProvider);
           },
           icon: const Icon(Icons.refresh_rounded),
-          label: const Text('Retry'),
+          label: Text(context.l10n.retry),
         ),
       );
     }
     if (!cartAsync.hasValue ||
         !catalogAsync.hasValue ||
         !packagesAsync.hasValue) {
-      return const Center(
-        child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+      return Center(
+        child: CircularProgressIndicator(semanticsLabel: context.l10n.loading),
       );
     }
 
@@ -118,8 +120,7 @@ class CartCheckoutScreen extends ConsumerWidget {
       return EmptyState(
         icon: Icons.shopping_cart_outlined,
         title: AppLocalizations.of(context).cartEmpty,
-        message:
-            'Add items or seasonal packages from the catalog to start an order.',
+        message: context.l10n.addItemsOrSeasonalPackagesFrom,
       );
     }
 
@@ -132,7 +133,7 @@ class CartCheckoutScreen extends ConsumerWidget {
         lines.add(
           _CartLine(
             key: entry.key,
-            name: pkg?.name ?? 'Package no longer available',
+            name: pkg?.name ?? context.l10n.packageNoLongerAvailable,
             unitPrice: pkg?.price ?? 0,
             quantity: entry.value,
             minQuantity: 1,
@@ -147,7 +148,7 @@ class CartCheckoutScreen extends ConsumerWidget {
         lines.add(
           _CartLine(
             key: entry.key,
-            name: item?.name ?? 'Item no longer available',
+            name: item?.name ?? context.l10n.itemNoLongerAvailable,
             unitPrice: item?.basePrice ?? 0,
             quantity: entry.value,
             minQuantity: item == null || item.moq < 1 ? 1 : item.moq,
@@ -181,7 +182,7 @@ class CartCheckoutScreen extends ConsumerWidget {
         _CartLine(
           key: entry.key,
           itemId: entry.value.itemId,
-          name: item?.name ?? 'Item no longer available',
+          name: item?.name ?? context.l10n.itemNoLongerAvailable,
           unitPrice: price?.unitPrice ?? 0,
           quantity: config.quantity,
           minQuantity: 1,
@@ -292,15 +293,18 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
 
   String? get _blockingProblem {
     if (widget.lines.any((l) => !l.available)) {
-      return 'Remove the items that are no longer available to continue.';
+      return context.l10n.removeTheItemsThatAreNo;
     }
     final invalid = widget.lines.where((l) => l.problem != null).firstOrNull;
     if (invalid != null) {
-      return '"${invalid.name}": ${invalid.problem} Tap edit to fix it.';
+      return context.l10n.tapEditToFixIt(
+        invalid.name,
+        translateServerMessage(invalid.problem!),
+      );
     }
     final below = widget.lines.where((l) => l.belowMinimum).firstOrNull;
     if (below != null) {
-      return '"${below.name}" has a minimum order of ${below.minQuantity}.';
+      return context.l10n.hasAMinimumOrderOf(below.name, below.minQuantity);
     }
     return null;
   }
@@ -308,6 +312,7 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
   Future<void> _placeOrder() async {
     if (!_formKey.currentState!.validate()) return;
     if (_blockingProblem != null) return;
+    final l10n = context.l10n;
     setState(() => _placing = true);
     try {
       final orderId = await ref
@@ -335,7 +340,7 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
             .save(
               SavedAddress(
                 id: '',
-                label: 'Delivery address',
+                label: l10n.deliveryAddress,
                 address: _deliveryAddress.text.trim(),
                 contactName: _contactName.text.trim(),
                 contactPhone: _contactPhone.text.trim(),
@@ -349,8 +354,8 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
       // transaction that creates the order.
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Order placed — you can pay for it right here.'),
+          SnackBar(
+            content: Text(context.l10n.orderPlacedYouCanPayFor),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -360,7 +365,7 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Couldn\'t place order: ${friendlyError(error)}'),
+            content: Text(context.l10n.couldntPlaceOrder(friendlyError(error))),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -410,7 +415,7 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
     final problem =
         _blockingProblem ??
         (_deliveryMethod == 'delivery' && zones.isNotEmpty && zone == null
-            ? 'Choose your delivery area.'
+            ? context.l10n.chooseYourDeliveryArea
             : null);
 
     final itemsList = ListView.separated(
@@ -447,7 +452,10 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
                       ),
                       if (line.isCustom && line.available) ...[
                         Text(
-                          '${line.quantity} pcs · ${currencyFormat.format(line.lineTotal)}',
+                          context.l10n.pcs(
+                            line.quantity,
+                            currencyFormat.format(line.lineTotal),
+                          ),
                           style: theme.textTheme.bodySmall,
                         ),
                         CustomizationSummary(config: line.custom!),
@@ -462,12 +470,12 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
                         Text(
                           line.available
                               ? [
-                                  if (line.isPackage) 'Package',
+                                  if (line.isPackage) context.l10n.package,
                                   currencyFormat.format(line.unitPrice),
                                   if (line.minQuantity > 1)
-                                    'min ${line.minQuantity}',
+                                    context.l10n.min(line.minQuantity),
                                 ].join(' · ')
-                              : 'Remove this to continue',
+                              : context.l10n.removeThisToContinue,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: line.available && !line.belowMinimum
                                 ? theme.colorScheme.onSurfaceVariant
@@ -479,7 +487,7 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
                 ),
                 if (line.isCustom && line.available)
                   IconButton(
-                    tooltip: 'Edit',
+                    tooltip: context.l10n.edit,
                     icon: const Icon(Icons.edit_outlined),
                     onPressed: () => context.push(
                       '/customer/catalog/${line.itemId}/customize?line=${line.key}',
@@ -494,7 +502,7 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
                         .setQuantity(line.key, next),
                   ),
                 IconButton(
-                  tooltip: 'Remove',
+                  tooltip: context.l10n.remove,
                   icon: const Icon(Icons.delete_outline_rounded),
                   onPressed: () => line.isCustom
                       ? ref.read(cartActionsProvider).removeCustomLine(line.key)
@@ -542,15 +550,15 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
             if (settings.allowPickup) ...[
               const SizedBox(height: 8),
               SegmentedButton<String>(
-                segments: const [
+                segments: [
                   ButtonSegment(
                     value: 'delivery',
-                    label: Text('Deliver to me'),
+                    label: Text(context.l10n.deliverToMe),
                     icon: Icon(Icons.local_shipping_outlined),
                   ),
                   ButtonSegment(
                     value: 'pickup',
-                    label: Text('I\'ll pick up'),
+                    label: Text(context.l10n.illPickUp),
                     icon: Icon(Icons.storefront_outlined),
                   ),
                 ],
@@ -563,7 +571,7 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
                 Padding(
                   padding: const EdgeInsets.only(top: 6),
                   child: Text(
-                    'Pick up at: ${settings.pickupAddress}',
+                    context.l10n.pickUpAt(settings.pickupAddress),
                     style: theme.textTheme.bodySmall,
                   ),
                 ),
@@ -572,7 +580,9 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 initialValue: _zoneId,
-                decoration: const InputDecoration(labelText: 'Delivery area'),
+                decoration: InputDecoration(
+                  labelText: context.l10n.deliveryArea,
+                ),
                 items: [
                   for (final z in zones)
                     DropdownMenuItem(
@@ -593,8 +603,9 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
                 labelText: AppLocalizations.of(context).contactName,
               ),
               maxLength: 80,
-              validator: (v) =>
-                  (v == null || v.trim().length < 2) ? 'Enter your name' : null,
+              validator: (v) => (v == null || v.trim().length < 2)
+                  ? context.l10n.enterYourName
+                  : null,
             ),
             TextFormField(
               controller: _contactPhone,
@@ -603,7 +614,7 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
                 labelText: AppLocalizations.of(context).contactPhone,
               ),
               validator: (v) => (v == null || v.trim().length < 9)
-                  ? 'Enter a phone number'
+                  ? context.l10n.enterAPhoneNumber
                   : null,
             ),
             const SizedBox(height: 12),
@@ -662,8 +673,8 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
                       ),
                       label: Text(
                         _pinLat == null
-                            ? 'Drop a pin for the driver (optional)'
-                            : 'Pin set — tap to adjust',
+                            ? context.l10n.dropAPinForTheDriver
+                            : context.l10n.pinSetTapToAdjust,
                       ),
                     ),
                   ),
@@ -671,25 +682,25 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
                     value: _saveAddress,
                     onChanged: (v) => setState(() => _saveAddress = v ?? false),
                   ),
-                  const Text('Save'),
+                  Text(context.l10n.save),
                 ],
               ),
             if (_deliveryMethod == 'delivery')
               TextFormField(
                 controller: _deliveryAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Delivery address',
+                decoration: InputDecoration(
+                  labelText: context.l10n.deliveryAddress,
                 ),
                 maxLines: 2,
                 maxLength: 300,
                 validator: (v) => (v == null || v.trim().length < 5)
-                    ? 'Enter a delivery address'
+                    ? context.l10n.enterADeliveryAddress
                     : null,
               ),
             TextFormField(
               controller: _notes,
-              decoration: const InputDecoration(
-                labelText: 'Notes (artwork details, colours, sizes...)',
+              decoration: InputDecoration(
+                labelText: context.l10n.notesArtworkDetailsColoursSizes,
               ),
               maxLines: 3,
               maxLength: 1000,
@@ -702,14 +713,14 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
                     controller: _coupon,
                     textCapitalization: TextCapitalization.characters,
                     decoration: InputDecoration(
-                      labelText: 'Promo code',
+                      labelText: context.l10n.promoCode,
                       helperText: _couponPreview == null
                           ? null
                           : !couponCurrent
-                          ? 'Cart changed — apply again'
+                          ? context.l10n.cartChangedApplyAgain
                           : _couponPreview!.valid
                           ? (_couponPreview!.message.isEmpty
-                                ? 'Code applied'
+                                ? context.l10n.codeApplied
                                 : _couponPreview!.message)
                           : null,
                       errorText: couponCurrent && !_couponPreview!.valid
@@ -723,7 +734,7 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
                   padding: const EdgeInsets.only(top: 8),
                   child: OutlinedButton(
                     onPressed: _checkingCoupon ? null : _applyCoupon,
-                    child: const Text('Apply'),
+                    child: Text(context.l10n.apply),
                   ),
                 ),
               ],
@@ -732,7 +743,7 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
             moneyRow(AppLocalizations.of(context).subtotal, pricing.subtotal),
             if (corporate > 0)
               moneyRow(
-                'Account discount (${account!.discountPercent}%)',
+                context.l10n.accountDiscount(account!.discountPercent),
                 -corporate,
               ),
             if (loyalty.enabled && myPoints > 0)
@@ -741,27 +752,31 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
                 controlAffinity: ListTileControlAffinity.leading,
                 value: _usePoints,
                 onChanged: (v) => setState(() => _usePoints = v ?? false),
-                title: Text('Use my points ($myPoints available)'),
+                title: Text(context.l10n.useMyPointsAvailable(myPoints)),
                 subtitle: Text(
-                  'Up to ${loyalty.maxRedeemPercent}% of the order',
+                  context.l10n.upToOfTheOrder(loyalty.maxRedeemPercent),
                 ),
               ),
             if (points.value > 0)
-              moneyRow('Points (${points.points})', -points.value),
+              moneyRow(context.l10n.points(points.points), -points.value),
             if (couponAmount > 0)
               moneyRow(
-                'Promo ${_coupon.text.trim().toUpperCase()}',
+                context.l10n.promo(_coupon.text.trim().toUpperCase()),
                 -couponAmount,
               ),
             if (pricing.deliveryFee > 0)
-              moneyRow('Delivery', pricing.deliveryFee)
+              moneyRow(context.l10n.delivery, pricing.deliveryFee)
             else if (settings.deliveryFlatFee > 0)
-              moneyRow('Delivery (free)', 0),
+              moneyRow(context.l10n.deliveryFree, 0),
             if (pricing.taxAmount > 0)
               moneyRow(
                 pricing.pricesIncludeVat
-                    ? 'Includes VAT (${(pricing.taxRate * 100).toStringAsFixed(0)}%)'
-                    : 'VAT (${(pricing.taxRate * 100).toStringAsFixed(0)}%)',
+                    ? context.l10n.includesVat(
+                        (pricing.taxRate * 100).toStringAsFixed(0),
+                      )
+                    : context.l10n.vat(
+                        (pricing.taxRate * 100).toStringAsFixed(0),
+                      ),
                 pricing.taxAmount,
               ),
             const Divider(),
@@ -777,26 +792,27 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
             if (settings.depositsAvailable ||
                 (account?.creditEnabled ?? false)) ...[
               const SizedBox(height: 12),
-              Text(
-                'How would you like to pay?',
-                style: theme.textTheme.labelLarge,
-              ),
+              Text(context.l10n.howToPay, style: theme.textTheme.labelLarge),
               const SizedBox(height: 6),
               SegmentedButton<String>(
                 segments: [
-                  const ButtonSegment(
+                  ButtonSegment(
                     value: 'full',
-                    label: Text('Pay in full'),
+                    label: Text(context.l10n.payInFull),
                   ),
                   if (settings.depositsAvailable)
                     ButtonSegment(
                       value: 'deposit',
-                      label: Text('${settings.depositPercent}% deposit'),
+                      label: Text(
+                        context.l10n.deposit(settings.depositPercent),
+                      ),
                     ),
                   if (account?.creditEnabled ?? false)
                     ButtonSegment(
                       value: 'credit',
-                      label: Text('On account (${account!.paymentTermsDays}d)'),
+                      label: Text(
+                        context.l10n.onAccountD(account!.paymentTermsDays),
+                      ),
                     ),
                 ],
                 selected: {_paymentPlan},
@@ -807,7 +823,12 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
                 Padding(
                   padding: const EdgeInsets.only(top: 6),
                   child: Text(
-                    'Nothing to pay now — we\'ll invoice ${account?.companyName.isNotEmpty == true ? account!.companyName : 'your account'}, due in ${account?.paymentTermsDays ?? 30} days.',
+                    context.l10n.invoiceNothingNow(
+                      account?.companyName.isNotEmpty == true
+                          ? account!.companyName
+                          : context.l10n.yourAccount,
+                      account?.paymentTermsDays ?? 30,
+                    ),
                     style: theme.textTheme.bodySmall,
                   ),
                 ),
@@ -815,16 +836,19 @@ class _CheckoutBodyState extends ConsumerState<_CheckoutBody> {
                 Padding(
                   padding: const EdgeInsets.only(top: 6),
                   child: Text(
-                    'Pay ${currencyFormat.format(pricing.depositAmount)} now to start production, '
-                    'and ${currencyFormat.format(pricing.total - pricing.depositAmount)} before delivery.',
+                    context.l10n.payNowToStartProductionAnd(
+                      currencyFormat.format(pricing.depositAmount),
+                      currencyFormat.format(
+                        pricing.total - pricing.depositAmount,
+                      ),
+                    ),
                     style: theme.textTheme.bodySmall,
                   ),
                 ),
             ],
             const SizedBox(height: 8),
             Text(
-              'You\'ll choose how to pay (M-Pesa, card and more) on the next screen. '
-              'Final prices are confirmed when the order is placed.',
+              context.l10n.youllChooseHowToPayM,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -899,7 +923,7 @@ class _QuantityStepper extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
-          tooltip: 'Decrease quantity',
+          tooltip: context.l10n.decreaseQuantity,
           visualDensity: VisualDensity.compact,
           icon: const Icon(Icons.remove_circle_outline_rounded),
           onPressed: quantity > minQuantity
@@ -922,7 +946,7 @@ class _QuantityStepper extends StatelessWidget {
           ),
         ),
         IconButton(
-          tooltip: 'Increase quantity',
+          tooltip: context.l10n.increaseQuantity,
           visualDensity: VisualDensity.compact,
           icon: const Icon(Icons.add_circle_outline_rounded),
           onPressed: () => onChanged(quantity + 1),
@@ -937,24 +961,26 @@ class _QuantityStepper extends StatelessWidget {
     return showDialog<int>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Quantity'),
+        title: Text(context.l10n.quantity),
         content: TextField(
           controller: controller,
           autofocus: true,
           keyboardType: TextInputType.number,
           decoration: InputDecoration(
-            helperText: minQuantity > 1 ? 'Minimum $minQuantity' : null,
+            helperText: minQuantity > 1
+                ? context.l10n.minimum(minQuantity)
+                : null,
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             onPressed: () =>
                 Navigator.pop(context, int.tryParse(controller.text.trim())),
-            child: const Text('Set'),
+            child: Text(context.l10n.set),
           ),
         ],
       ),

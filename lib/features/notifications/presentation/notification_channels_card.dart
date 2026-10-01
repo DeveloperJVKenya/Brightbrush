@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/errors/user_facing_error.dart';
 import '../application/notifications_providers.dart';
+import '../../../core/l10n/l10n_ext.dart';
 
 final _channelsProvider = FutureProvider.autoDispose<Map<String, dynamic>>(
   (ref) => ref.watch(notificationsRepositoryProvider).adminGetChannels(),
@@ -84,7 +85,7 @@ class _NotificationChannelsCardState
       _waToken.clear();
       _seeded = false;
       ref.invalidate(_channelsProvider);
-      _snack('Notification channels saved');
+      if (mounted) _snack(context.l10n.notificationChannelsSaved);
     } catch (e) {
       _snack(friendlyError(e));
     } finally {
@@ -96,7 +97,7 @@ class _NotificationChannelsCardState
     setState(() => _busy = true);
     try {
       await ref.read(notificationsRepositoryProvider).adminTest();
-      _snack('Test sent — check your inbox, email and WhatsApp.');
+      if (mounted) _snack(context.l10n.testSentCheckYourInboxEmail);
     } catch (e) {
       _snack(friendlyError(e));
     } finally {
@@ -116,32 +117,34 @@ class _NotificationChannelsCardState
         padding: const EdgeInsets.all(16),
         child: async.hasError
             ? Text(
-                'Couldn\'t load notification settings: ${friendlyError(async.error!)}',
+                context.l10n.couldntLoadNotificationSettings(
+                  friendlyError(async.error!),
+                ),
               )
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Notifications',
+                    context.l10n.notificationsTitle,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   Text(
-                    'In-app and push notifications work out of the box. Add email and WhatsApp below; customers choose their channels in their inbox.',
+                    context.l10n.inAppAndPushNotificationsWork,
                     style: theme.textTheme.bodySmall,
                   ),
                   const Divider(height: 24),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Email'),
+                    title: Text(context.l10n.email),
                     value: _emailOn,
                     onChanged: (v) => setState(() => _emailOn = v),
                   ),
                   DropdownButtonFormField<String>(
                     initialValue: _provider,
-                    decoration: const InputDecoration(
-                      labelText: 'Email provider',
+                    decoration: InputDecoration(
+                      labelText: context.l10n.emailProvider,
                     ),
                     items: const [
                       DropdownMenuItem(
@@ -161,18 +164,17 @@ class _NotificationChannelsCardState
                   ),
                   TextField(
                     controller: _emailFrom,
-                    decoration: const InputDecoration(
-                      labelText: 'From address',
+                    decoration: InputDecoration(
+                      labelText: context.l10n.fromAddress,
                       hintText: 'BrightBrush <orders@yourdomain.co.ke>',
-                      helperText:
-                          'Must be a sender/domain verified with the provider.',
+                      helperText: context.l10n.mustBeASenderDomainVerified,
                     ),
                   ),
                   TextField(
                     controller: _emailKey,
                     obscureText: true,
                     decoration: InputDecoration(
-                      labelText: 'API key',
+                      labelText: context.l10n.apiKey,
                       helperText:
                           (d['emailApiKeyPreview'] as String? ?? '').isEmpty
                           ? null
@@ -182,7 +184,7 @@ class _NotificationChannelsCardState
                   const Divider(height: 32),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('WhatsApp (Meta Cloud API)'),
+                    title: Text(context.l10n.whatsappMetaCloudApi),
                     subtitle: const Text(
                       'Needs an approved message template with two parameters: {{1}} title, {{2}} message.',
                     ),
@@ -191,33 +193,34 @@ class _NotificationChannelsCardState
                   ),
                   TextField(
                     controller: _waPhoneId,
-                    decoration: const InputDecoration(
-                      labelText: 'Phone number ID',
-                      helperText: 'Meta for Developers → WhatsApp → API Setup',
+                    decoration: InputDecoration(
+                      labelText: context.l10n.phoneNumberId,
+                      helperText:
+                          context.l10n.metaForDevelopersWhatsappApiSetup,
                     ),
                   ),
                   TextField(
                     controller: _waToken,
                     obscureText: true,
                     decoration: InputDecoration(
-                      labelText: 'Permanent access token',
+                      labelText: context.l10n.permanentAccessToken,
                       helperText:
                           (d['whatsappTokenPreview'] as String? ?? '').isEmpty
-                          ? 'Create a System User token with whatsapp_business_messaging.'
+                          ? context.l10n.createASystemUserTokenWith
                           : 'Saved (${d['whatsappTokenPreview']}). Leave blank to keep it.',
                     ),
                   ),
                   TextField(
                     controller: _waTemplate,
-                    decoration: const InputDecoration(
-                      labelText: 'Template name',
+                    decoration: InputDecoration(
+                      labelText: context.l10n.templateName,
                       hintText: 'order_update',
                     ),
                   ),
                   TextField(
                     controller: _waLang,
-                    decoration: const InputDecoration(
-                      labelText: 'Template language code',
+                    decoration: InputDecoration(
+                      labelText: context.l10n.templateLanguageCode,
                       hintText: 'en',
                     ),
                   ),
@@ -228,12 +231,12 @@ class _NotificationChannelsCardState
                       FilledButton.icon(
                         onPressed: _busy ? null : _save,
                         icon: const Icon(Icons.save_rounded),
-                        label: const Text('Save'),
+                        label: Text(context.l10n.save),
                       ),
                       OutlinedButton.icon(
                         onPressed: _busy ? null : _test,
                         icon: const Icon(Icons.send_rounded),
-                        label: const Text('Send me a test'),
+                        label: Text(context.l10n.sendMeATest),
                       ),
                     ],
                   ),

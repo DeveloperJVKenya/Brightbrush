@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -107,8 +108,8 @@ class _AnnouncementRow extends ConsumerWidget {
         leading: announcement.imageUrl != null
             ? ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  announcement.imageUrl!,
+                child: Image(
+                  image: CachedNetworkImageProvider(announcement.imageUrl!),
                   width: 48,
                   height: 48,
                   fit: BoxFit.cover,

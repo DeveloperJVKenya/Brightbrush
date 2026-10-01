@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/orders/domain/order_status.dart';
 import '../../l10n/app_localizations.dart';
 import '../settings/shared_preferences_provider.dart';
+import 'l10n_ext.dart';
 
 /// App language (English / Kiswahili), remembered per device.
 class LocaleNotifier extends StateNotifier<Locale?> {
@@ -42,8 +43,8 @@ class LanguageTile extends ConsumerWidget {
       title: Text(AppLocalizations.of(context).language),
       trailing: DropdownButton<String?>(
         value: locale?.languageCode,
-        items: const [
-          DropdownMenuItem(value: null, child: Text('Auto')),
+        items: [
+          DropdownMenuItem(value: null, child: Text(context.l10n.auto)),
           DropdownMenuItem(value: 'en', child: Text('English')),
           DropdownMenuItem(value: 'sw', child: Text('Kiswahili')),
         ],

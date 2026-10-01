@@ -18,6 +18,8 @@ import '../../quotes/presentation/request_quote_sheet.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/whatsapp.dart';
 import '../application/cart_providers.dart';
+import '../../../core/l10n/l10n_ext.dart';
+import '../../../core/l10n/enum_l10n.dart';
 
 class CatalogItemDetailScreen extends ConsumerWidget {
   const CatalogItemDetailScreen({super.key, required this.itemId});
@@ -31,11 +33,11 @@ class CatalogItemDetailScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          tooltip: 'Back',
+          tooltip: context.l10n.back,
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Item details'),
+        title: Text(context.l10n.itemDetails),
         actions: [
           Builder(
             builder: (context) {
@@ -58,8 +60,10 @@ class CatalogItemDetailScreen extends ConsumerWidget {
         ],
       ),
       body: itemsAsync.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+        loading: () => Center(
+          child: CircularProgressIndicator(
+            semanticsLabel: context.l10n.loading,
+          ),
         ),
         error: (error, stack) {
           appLogger.e(
@@ -69,12 +73,12 @@ class CatalogItemDetailScreen extends ConsumerWidget {
           );
           return EmptyState(
             icon: Icons.cloud_off_rounded,
-            title: 'Failed to load',
+            title: context.l10n.failedToLoad,
             message: friendlyError(error),
             action: TextButton.icon(
               onPressed: () => ref.invalidate(activeCatalogItemsProvider),
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Retry'),
+              label: Text(context.l10n.retry),
             ),
           );
         },
@@ -82,10 +86,10 @@ class CatalogItemDetailScreen extends ConsumerWidget {
           final matches = items.where((i) => i.id == itemId);
           final item = matches.isEmpty ? null : matches.first;
           if (item == null) {
-            return const EmptyState(
+            return EmptyState(
               icon: Icons.search_off_rounded,
-              title: 'Item not found',
-              message: 'It may have been removed or is no longer active.',
+              title: context.l10n.itemNotFound,
+              message: context.l10n.itMayHaveBeenRemovedOr,
             );
           }
           return _RecordView(
@@ -154,10 +158,10 @@ class _DetailBody extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Chip(label: Text(item.category.label)),
+              Chip(label: Text(item.category.tr(context))),
               if (item.isFeatured) ...[
                 const SizedBox(width: 8),
-                const BrandBadge(label: 'Featured'),
+                BrandBadge(label: context.l10n.badgeFeatured),
               ],
             ],
           ),
@@ -171,7 +175,7 @@ class _DetailBody extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(
             item.fromPrice < item.basePrice
-                ? 'From ${currencyFormat.format(item.fromPrice)}'
+                ? context.l10n.from(currencyFormat.format(item.fromPrice))
                 : currencyFormat.format(item.basePrice),
             style: theme.textTheme.titleLarge?.copyWith(
               color: theme.colorScheme.primary,
@@ -184,17 +188,20 @@ class _DetailBody extends ConsumerWidget {
             spacing: 16,
             runSpacing: 8,
             children: [
-              _MetaChip(icon: Icons.numbers_rounded, label: 'MOQ ${item.moq}'),
+              _MetaChip(
+                icon: Icons.numbers_rounded,
+                label: context.l10n.moq(item.moq),
+              ),
               _MetaChip(
                 icon: Icons.schedule_rounded,
-                label: '${item.leadTimeDays} day lead time',
+                label: context.l10n.dayLeadTime(item.leadTimeDays),
               ),
             ],
           ),
           const SizedBox(height: 20),
           Text(
             item.description.isEmpty
-                ? 'No description provided yet.'
+                ? context.l10n.noDescriptionProvidedYet
                 : item.description,
             style: theme.textTheme.bodyMedium,
           ),
@@ -212,7 +219,16 @@ class _DetailBody extends ConsumerWidget {
           if (item.priceTiers.isNotEmpty) ...[
             const SizedBox(height: 12),
             Text(
-              'Volume pricing: ${item.priceTiers.map((t) => '${t.minQty}+ pcs ${currencyFormat.format(t.unitPrice)}').join(' · ')}',
+              context.l10n.volumePricing(
+                item.priceTiers
+                    .map(
+                      (t) => context.l10n.tierPcs(
+                        t.minQty,
+                        currencyFormat.format(t.unitPrice),
+                      ),
+                    )
+                    .join(' · '),
+              ),
               style: theme.textTheme.bodySmall,
             ),
           ],
@@ -225,7 +241,7 @@ class _DetailBody extends ConsumerWidget {
                 for (final m in item.decorationMethods)
                   Chip(
                     avatar: Icon(m.icon, size: 16),
-                    label: Text(m.label),
+                    label: Text(m.tr(context)),
                     visualDensity: VisualDensity.compact,
                   ),
               ],
@@ -250,8 +266,7 @@ class _DetailBody extends ConsumerWidget {
                   if (ref.read(currentUidProvider) == null) {
                     showAuthRequiredSheet(
                       context,
-                      message:
-                          'Sign in or create an account to add "${item.name}" to your cart.',
+                      message: context.l10n.signInOrCreateAnAccount(item.name),
                     );
                     return;
                   }
@@ -270,8 +285,11 @@ class _DetailBody extends ConsumerWidget {
                         SnackBar(
                           content: Text(
                             qty == item.moq && item.moq > 1
-                                ? '${item.name} added (minimum order ${item.moq})'
-                                : '${item.name} added to cart ($qty)',
+                                ? context.l10n.addedMinimumOrder(
+                                    item.name,
+                                    item.moq,
+                                  )
+                                : context.l10n.addedToCart(item.name, qty),
                           ),
                           behavior: SnackBarBehavior.floating,
                         ),
@@ -287,7 +305,7 @@ class _DetailBody extends ConsumerWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'Couldn\'t add to cart: ${friendlyError(error)}',
+                            context.l10n.couldntAddToCart(friendlyError(error)),
                           ),
                           behavior: SnackBarBehavior.floating,
                         ),

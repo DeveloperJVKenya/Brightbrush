@@ -8,6 +8,7 @@ import '../../core/errors/user_facing_error.dart';
 import '../../core/firebase/firebase_providers.dart';
 import '../../core/settings/shared_preferences_provider.dart';
 import 'growth_providers.dart';
+import '../../core/l10n/l10n_ext.dart';
 
 /// Currencies customers can see approximate prices in (charged in KES).
 const displayCurrencies = ['USD', 'EUR', 'GBP', 'UGX', 'TZS', 'RWF'];
@@ -74,8 +75,8 @@ class _LoyaltyCurrencyCardState extends ConsumerState<LoyaltyCurrencyCard> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Saved'),
+          SnackBar(
+            content: Text(context.l10n.saved),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -137,14 +138,14 @@ class _LoyaltyCurrencyCardState extends ConsumerState<LoyaltyCurrencyCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Loyalty & referrals',
+              context.l10n.loyaltyReferrals,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Loyalty programme on'),
+              title: Text(context.l10n.loyaltyProgrammeOn),
               value: _enabled,
               onChanged: (v) => setState(() => _enabled = v),
             ),
@@ -152,21 +153,21 @@ class _LoyaltyCurrencyCardState extends ConsumerState<LoyaltyCurrencyCard> {
               spacing: 12,
               runSpacing: 8,
               children: [
-                field(_perHundred, 'Points per KES 100 spent'),
-                field(_value, 'KES value of 1 point'),
-                field(_bonus, 'Referral bonus (points each)'),
-                field(_maxPct, 'Max % of an order paid with points'),
+                field(_perHundred, context.l10n.pointsPerKes100Spent),
+                field(_value, context.l10n.kesValueOf1Point),
+                field(_bonus, context.l10n.referralBonusPointsEach),
+                field(_maxPct, context.l10n.maxOfAnOrderPaidWith),
               ],
             ),
             const Divider(height: 32),
             Text(
-              'Display currencies',
+              context.l10n.displayCurrencies,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
             Text(
-              'KES per 1 unit. Customers can see approximate prices in these; everything is still charged in KES.',
+              context.l10n.kesPer1UnitCustomersCan,
               style: theme.textTheme.bodySmall,
             ),
             const SizedBox(height: 8),
@@ -175,14 +176,14 @@ class _LoyaltyCurrencyCardState extends ConsumerState<LoyaltyCurrencyCard> {
               runSpacing: 8,
               children: [
                 for (final c in displayCurrencies)
-                  field(_rates[c]!, 'KES per 1 $c'),
+                  field(_rates[c]!, context.l10n.kesPer1(c)),
               ],
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
               onPressed: _saving ? null : _save,
               icon: const Icon(Icons.save_rounded),
-              label: const Text('Save loyalty & currencies'),
+              label: Text(context.l10n.saveLoyaltyCurrencies),
             ),
           ],
         ),
@@ -256,12 +257,12 @@ class DisplayCurrencyTile extends ConsumerWidget {
     final code = ref.watch(displayCurrencyProvider);
     return ListTile(
       leading: const Icon(Icons.currency_exchange_rounded),
-      title: const Text('Also show prices in'),
-      subtitle: const Text('Approximate only — you pay in KES.'),
+      title: Text(context.l10n.alsoShowPricesIn),
+      subtitle: Text(context.l10n.approximateOnlyYouPayInKes),
       trailing: DropdownButton<String?>(
         value: rates.containsKey(code) ? code : null,
         items: [
-          const DropdownMenuItem(value: null, child: Text('KES only')),
+          DropdownMenuItem(value: null, child: Text(context.l10n.kesOnly)),
           for (final c in rates.keys)
             DropdownMenuItem(value: c, child: Text(c)),
         ],
