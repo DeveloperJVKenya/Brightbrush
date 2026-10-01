@@ -35,6 +35,10 @@ class CatalogRepository {
         .where('isActive', isEqualTo: true)
         .orderBy('createdAt', descending: true)
         .snapshots()
+        // An empty answer from the offline cache only means "nothing saved
+        // on this device yet" (a first visit on a slow connection) — keep
+        // showing the loading state instead of "No items in the catalog".
+        .where((snap) => !(snap.metadata.isFromCache && snap.docs.isEmpty))
         .map((snap) => snap.docs.map(CatalogItem.fromFirestore).toList())
         .transform(logStreamErrors('[catalog] streamActive() failed'));
   }

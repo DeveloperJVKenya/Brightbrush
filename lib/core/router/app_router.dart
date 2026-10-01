@@ -18,6 +18,7 @@ import '../../features/customer/presentation/customer_modules.dart';
 import '../../features/customer/presentation/customer_routes.dart';
 import '../../shared/widgets/adaptive_role_shell.dart';
 import '../../shared/widgets/module_spec.dart';
+import '../../shared/widgets/not_found_screen.dart';
 import '../../shared/widgets/placeholder_screen.dart';
 import '../../shared/widgets/role_nav_item.dart';
 import '../auth/app_role.dart';
@@ -73,9 +74,18 @@ final routerProvider = Provider<GoRouter>((ref) {
     observers: [
       FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
     ],
+    // A mistyped or outdated address shows a way back instead of a bare
+    // error page.
+    errorBuilder: (context, state) => const NotFoundScreen(),
     refreshListenable: refresh,
     redirect: (context, state) async {
       final path = state.matchedLocation;
+
+      if (path == '/') return '/splash';
+
+      // An address that matches no page: show "Page not found" (the
+      // errorBuilder) for everyone, rather than sending guests to sign in.
+      if (state.topRoute == null) return null;
 
       if (path == '/splash') {
         // Anonymous sign-in is disabled project-wide, so there's nothing to
@@ -116,6 +126,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      // The bare root (old bookmarks, "home" links) resolves like a fresh
+      // start: to the signed-in role's home, or the catalog for guests.
+      GoRoute(path: '/', redirect: (context, state) => '/splash'),
       GoRoute(
         path: '/splash',
         builder: (context, state) => const SplashScreen(),

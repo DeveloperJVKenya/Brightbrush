@@ -4,6 +4,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_performance/firebase_performance.dart';
 import 'package:flutter/foundation.dart';
 
 import '../firebase/firebase_providers.dart';
@@ -18,6 +19,15 @@ class Monitoring {
   static int _webReports = 0;
 
   static Future<void> init() async {
+    // Start-up, screen and network timings (Firebase console → Performance).
+    // Touching the instance is what loads the SDK on the web.
+    unawaited(
+      FirebasePerformance.instance
+          .setPerformanceCollectionEnabled(!kDebugMode)
+          .catchError((Object e) {
+            appLogger.w('[monitoring] performance unavailable', error: e);
+          }),
+    );
     if (!kIsWeb) {
       await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(
         !kDebugMode,

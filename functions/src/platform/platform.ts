@@ -243,7 +243,10 @@ export const BACKUP_BUCKET = 'bright-brush-firestore-backups';
 export const backupFirestore = onSchedule(
   { schedule: 'every day 02:00', timeZone: 'Africa/Nairobi', timeoutSeconds: 540 },
   async () => {
-    const { v1 } = await import('@google-cloud/firestore');
+    // A CommonJS package: loaded with import(), Node only exposes `v1` on
+    // the default export (the named binding is undefined).
+    const mod = await import('@google-cloud/firestore');
+    const v1 = mod.v1 ?? (mod as unknown as { default: typeof mod }).default.v1;
     const client = new v1.FirestoreAdminClient();
     const projectId = process.env.GCLOUD_PROJECT ?? 'bright-brush';
     const stamp = new Date().toISOString().slice(0, 10);
