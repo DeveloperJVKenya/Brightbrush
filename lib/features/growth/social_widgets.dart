@@ -354,8 +354,9 @@ class WishlistButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (ref.watch(currentUidProvider) == null) return const SizedBox.shrink();
-    final saved =
-        ref.watch(wishlistProvider).valueOrNull?.contains(itemId) ?? false;
+    final saved = ref.watch(
+      wishlistProvider.select((w) => w.valueOrNull?.contains(itemId) ?? false),
+    );
     return IconButton(
       tooltip: saved
           ? context.l10n.removeFromWishlist

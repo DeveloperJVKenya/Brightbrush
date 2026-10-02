@@ -234,3 +234,40 @@ final filteredPackagesProvider = Provider<AsyncValue<List<PackageModel>>>((
     return filterBySearch(packages, query, (p) => p.searchFields);
   });
 });
+
+/// The product rows on the customer Home, computed once per catalog (or
+/// recently-viewed) change instead of on every rebuild of the page.
+class HomeRails {
+  const HomeRails({
+    this.featured = const [],
+    this.deals = const [],
+    this.topRated = const [],
+    this.newArrivals = const [],
+    this.recent = const [],
+  });
+
+  final List<CatalogItem> featured;
+  final List<CatalogItem> deals;
+  final List<CatalogItem> topRated;
+  final List<CatalogItem> newArrivals;
+  final List<CatalogItem> recent;
+}
+
+final homeRailsProvider = Provider<HomeRails>((ref) {
+  final items = ref.watch(activeCatalogItemsProvider).valueOrNull ?? const [];
+  final recentIds = ref.watch(recentlyViewedProvider);
+  final now = DateTime.now();
+  List<CatalogItem> top(Iterable<CatalogItem> it, CatalogSort s) =>
+      sortCatalog(it.toList(), s).take(12).toList();
+  final byId = {for (final i in items) i.id: i};
+  return HomeRails(
+    featured: top(items.where((i) => i.isFeatured), CatalogSort.recommended),
+    deals: top(
+      items.where((i) => i.bulkSavingPercent >= 5),
+      CatalogSort.bulkSaving,
+    ),
+    topRated: top(items.where((i) => i.ratingCount > 0), CatalogSort.topRated),
+    newArrivals: top(items.where((i) => i.isNewAt(now)), CatalogSort.newest),
+    recent: [for (final id in recentIds) ?byId[id]],
+  );
+});

@@ -42,7 +42,16 @@ class CatalogItemCard extends StatefulWidget {
 }
 
 class _CatalogItemCardState extends State<CatalogItemCard> {
-  bool _hovering = false;
+  /// Hover is tracked outside build(): moving the mouse over a card only
+  /// redraws its border/shadow and the quick-add bar, never the photo,
+  /// badges or text (which made fast mouse moves over the grid lag).
+  final _hovering = ValueNotifier<bool>(false);
+
+  @override
+  void dispose() {
+    _hovering.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,8 +60,8 @@ class _CatalogItemCardState extends State<CatalogItemCard> {
     final item = widget.item;
     final l10n = AppLocalizations.of(context);
     final canHover =
-        Theme.of(context).platform != TargetPlatform.android &&
-        Theme.of(context).platform != TargetPlatform.iOS;
+        theme.platform != TargetPlatform.android &&
+        theme.platform != TargetPlatform.iOS;
 
     Widget image = CatalogImage(
       imageUrls: item.imageUrls,
@@ -64,103 +73,114 @@ class _CatalogItemCardState extends State<CatalogItemCard> {
       image = Hero(tag: widget.heroTag!, child: image);
     }
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovering = true),
-      onExit: (_) => setState(() => _hovering = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        curve: Curves.easeOut,
-        transform: Matrix4.translationValues(0, _hovering ? -3 : 0, 0),
-        decoration: BoxDecoration(
-          color: scheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: _hovering
-                ? scheme.primary.withValues(alpha: 0.35)
-                : scheme.outlineVariant.withValues(alpha: 0.6),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: _hovering ? 0.12 : 0.04),
-              blurRadius: _hovering ? 18 : 6,
-              offset: Offset(0, _hovering ? 8 : 2),
+    // Built once per data change; hover never rebuilds this.
+    final content = Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        onTap: widget.onTap,
+        // The border highlight below is the hover cue; the ink hover wash
+        // would repaint the whole card on every mouse enter/leave.
+        hoverColor: Colors.transparent,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AspectRatio(
+              aspectRatio: 1,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  image,
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    right: 44,
+                    child: _Badges(item: item),
+                  ),
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: WishlistHeart(itemId: item.id, itemName: item.name),
+                  ),
+                  if (item.isCustomizable)
+                    Positioned(
+                      left: 8,
+                      right: 8,
+                      bottom: 8,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: _Pill(
+                          icon: Icons.brush_rounded,
+                          label: l10n.badgeCustomisable,
+                          background: Colors.black.withValues(alpha: 0.62),
+                          foreground: Colors.white,
+                        ),
+                      ),
+                    ),
+                  if (canHover)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: ValueListenableBuilder<bool>(
+                        valueListenable: _hovering,
+                        // Not built at all until the first hover.
+                        builder: (context, hovering, _) => IgnorePointer(
+                          ignoring: !hovering,
+                          child: AnimatedSlide(
+                            offset: hovering ? Offset.zero : const Offset(0, 1),
+                            duration: const Duration(milliseconds: 160),
+                            curve: Curves.easeOut,
+                            child: hovering
+                                ? _QuickAddBar(
+                                    onAdd: widget.onAddToCart,
+                                    customise: item.isCustomizable,
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 6, 8),
+                child: _CardInfo(item: item, onAdd: widget.onAddToCart),
+              ),
             ),
           ],
         ),
-        clipBehavior: Clip.antiAlias,
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            onTap: widget.onTap,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                AspectRatio(
-                  aspectRatio: 1,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      image,
-                      Positioned(
-                        top: 8,
-                        left: 8,
-                        right: 44,
-                        child: _Badges(item: item),
-                      ),
-                      Positioned(
-                        top: 4,
-                        right: 4,
-                        child: WishlistHeart(
-                          itemId: item.id,
-                          itemName: item.name,
-                        ),
-                      ),
-                      if (item.isCustomizable)
-                        Positioned(
-                          left: 8,
-                          right: 8,
-                          bottom: 8,
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: _Pill(
-                              icon: Icons.brush_rounded,
-                              label: l10n.badgeCustomisable,
-                              background: Colors.black.withValues(alpha: 0.62),
-                              foreground: Colors.white,
-                            ),
-                          ),
-                        ),
-                      if (canHover)
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          child: AnimatedSlide(
-                            offset: _hovering
-                                ? Offset.zero
-                                : const Offset(0, 1),
-                            duration: const Duration(milliseconds: 180),
-                            curve: Curves.easeOut,
-                            child: AnimatedOpacity(
-                              opacity: _hovering ? 1 : 0,
-                              duration: const Duration(milliseconds: 180),
-                              child: _QuickAddBar(
-                                onAdd: widget.onAddToCart,
-                                customise: item.isCustomizable,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(10, 8, 6, 8),
-                    child: _CardInfo(item: item, onAdd: widget.onAddToCart),
-                  ),
-                ),
-              ],
+      ),
+    );
+
+    final rest = BoxDecoration(
+      color: scheme.surface,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.6)),
+    );
+    // Hover = a stronger border drawn on top, switched instantly. No
+    // animated shadow or lift: with several cards under a fast-moving mouse
+    // those animations were the main cause of hover lag.
+    final hoverBorder = BoxDecoration(
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: scheme.primary, width: 1.5),
+    );
+
+    return MouseRegion(
+      onEnter: canHover ? (_) => _hovering.value = true : null,
+      onExit: canHover ? (_) => _hovering.value = false : null,
+      child: DecoratedBox(
+        decoration: rest,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: ValueListenableBuilder<bool>(
+            valueListenable: _hovering,
+            child: content,
+            builder: (context, hovering, child) => DecoratedBox(
+              position: DecorationPosition.foreground,
+              decoration: hovering ? hoverBorder : const BoxDecoration(),
+              child: child,
             ),
           ),
         ),
@@ -516,8 +536,9 @@ class WishlistHeart extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final saved =
-        ref.watch(wishlistProvider).valueOrNull?.contains(itemId) ?? false;
+    final saved = ref.watch(
+      wishlistProvider.select((w) => w.valueOrNull?.contains(itemId) ?? false),
+    );
     final icon = Icon(
       saved ? Icons.favorite_rounded : Icons.favorite_border_rounded,
       size: 19,

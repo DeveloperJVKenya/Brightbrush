@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -44,20 +45,23 @@ class CustomerCatalogScreen extends ConsumerStatefulWidget {
 
 class _CustomerCatalogScreenState extends ConsumerState<CustomerCatalogScreen> {
   final _scroll = ScrollController();
-  bool _showBackToTop = false;
+
+  /// Drives only the back-to-top button: flipping it never rebuilds the
+  /// page (a full rebuild mid-scroll caused a visible hitch).
+  final _showBackToTop = ValueNotifier<bool>(false);
 
   @override
   void initState() {
     super.initState();
     _scroll.addListener(() {
-      final show = _scroll.offset > 1200;
-      if (show != _showBackToTop) setState(() => _showBackToTop = show);
+      _showBackToTop.value = _scroll.offset > 1200;
     });
   }
 
   @override
   void dispose() {
     _scroll.dispose();
+    _showBackToTop.dispose();
     super.dispose();
   }
 
@@ -138,10 +142,7 @@ class _CustomerCatalogScreenState extends ConsumerState<CustomerCatalogScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
     final browsing = ref.watch(catalogBrowsingProvider);
-    final cartCount = ref.watch(cartItemCountProvider);
-    final allAsync = ref.watch(activeCatalogItemsProvider);
     final listedAsync = ref.watch(filteredCatalogItemsProvider);
 
     // Any change to what's listed starts the results from the top.
@@ -160,33 +161,9 @@ class _CustomerCatalogScreenState extends ConsumerState<CustomerCatalogScreen> {
         if (!didPop) resetCatalogBrowsing(ref);
       },
       child: Scaffold(
-        floatingActionButton: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            AnimatedScale(
-              scale: _showBackToTop ? 1 : 0,
-              duration: const Duration(milliseconds: 180),
-              child: FloatingActionButton.small(
-                heroTag: null,
-                tooltip: l10n.backToTop,
-                onPressed: _toTop,
-                child: const Icon(Icons.keyboard_arrow_up_rounded),
-              ),
-            ),
-            if (cartCount > 0) ...[
-              const SizedBox(height: 10),
-              FloatingActionButton.extended(
-                heroTag: null,
-                onPressed: () => context.go('/customer/cart'),
-                icon: Badge.count(
-                  count: cartCount,
-                  child: const Icon(Icons.shopping_cart_rounded),
-                ),
-                label: Text(l10n.cartCount(cartCount)),
-              ),
-            ],
-          ],
+        floatingActionButton: _CatalogFabs(
+          showBackToTop: _showBackToTop,
+          onBackToTop: _toTop,
         ),
         body: LayoutBuilder(
           builder: (context, constraints) {
@@ -220,7 +197,7 @@ class _CustomerCatalogScreenState extends ConsumerState<CustomerCatalogScreen> {
                     title: CatalogSearchBar(onOpenItem: _open),
                   ),
                   if (!browsing)
-                    ..._homeSlivers(pad, allAsync.valueOrNull ?? const [])
+                    ..._homeSlivers(pad)
                   else
                     _ResultsHeader(padding: pad),
                   SliverPersistentHeader(
@@ -245,97 +222,80 @@ class _CustomerCatalogScreenState extends ConsumerState<CustomerCatalogScreen> {
     );
   }
 
-  List<Widget> _homeSlivers(EdgeInsets pad, List<CatalogItem> items) {
+  /// Home sections, each its own sliver: the scroll view only lays out and
+  /// paints the ones near the screen (one big Column had to do all of them
+  /// on every frame). Each rail reads its own slice of [homeRailsProvider].
+  List<Widget> _homeSlivers(EdgeInsets pad) {
     final l10n = AppLocalizations.of(context);
-    final now = DateTime.now();
-    List<CatalogItem> top(Iterable<CatalogItem> it, CatalogSort s) =>
-        sortCatalog(it.toList(), s).take(12).toList();
-    final featured = top(
-      items.where((i) => i.isFeatured),
-      CatalogSort.recommended,
+    Widget section(Widget child, {double top = 0}) => SliverPadding(
+      padding: pad.copyWith(top: top),
+      sliver: SliverToBoxAdapter(child: child),
     );
-    final deals = top(
-      items.where((i) => i.bulkSavingPercent >= 5),
-      CatalogSort.bulkSaving,
-    );
-    final rated = top(
-      items.where((i) => i.ratingCount > 0),
-      CatalogSort.topRated,
-    );
-    final fresh = top(items.where((i) => i.isNewAt(now)), CatalogSort.newest);
-    final byId = {for (final i in items) i.id: i};
-    final recent = [
-      for (final id in ref.watch(recentlyViewedProvider)) ?byId[id],
-    ];
-
     Widget rail(
       String title,
       IconData icon,
-      List<CatalogItem> list, {
+      List<CatalogItem> Function(HomeRails r) pick, {
       CatalogSort? seeAll,
       Color? accent,
-    }) => list.isEmpty
-        ? const SizedBox.shrink()
-        : ProductRail(
-            title: title,
-            icon: icon,
-            items: list,
-            accent: accent,
-            onOpen: _open,
-            onAdd: _add,
-            onSeeAll: seeAll == null ? null : () => _seeAll(seeAll),
-          );
+    }) => section(
+      _HomeRail(
+        title: title,
+        icon: icon,
+        pick: pick,
+        accent: accent,
+        onOpen: _open,
+        onAdd: _add,
+        onSeeAll: seeAll == null ? null : () => _seeAll(seeAll),
+      ),
+    );
 
     return [
-      SliverPadding(
-        padding: pad.copyWith(top: 4),
-        sliver: SliverToBoxAdapter(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              HomeHeroSection(onDesign: _designYourOwn),
-              const TrustStrip(),
-              const Padding(
-                padding: EdgeInsets.only(top: 16),
-                child: MyUniformProgramsCard(),
-              ),
-              const CategoryTilesSection(),
-              rail(l10n.sectionRecentlyViewed, Icons.history_rounded, recent),
-              rail(
-                l10n.sectionFeatured,
-                Icons.bolt_rounded,
-                featured,
-                seeAll: CatalogSort.recommended,
-                accent: const Color(0xFFF79009),
-              ),
-              rail(
-                l10n.sectionBulkDeals,
-                Icons.local_offer_rounded,
-                deals,
-                seeAll: CatalogSort.bulkSaving,
-                accent: const Color(0xFFD92D20),
-              ),
-              DesignYourOwnBanner(onTap: _designYourOwn),
-              rail(
-                l10n.sectionTopRated,
-                Icons.star_rounded,
-                rated,
-                seeAll: CatalogSort.topRated,
-                accent: const Color(0xFFF5A623),
-              ),
-              rail(
-                l10n.sectionNewArrivals,
-                Icons.fiber_new_rounded,
-                fresh,
-                seeAll: CatalogSort.newest,
-                accent: const Color(0xFF12B76A),
-              ),
-              const PackagesRail(),
-              const SizedBox(height: 20),
-            ],
-          ),
+      // The carousel animates on its own; a repaint boundary keeps that
+      // from repainting the rest of the page.
+      section(
+        RepaintBoundary(child: HomeHeroSection(onDesign: _designYourOwn)),
+        top: 4,
+      ),
+      section(const TrustStrip()),
+      section(
+        const Padding(
+          padding: EdgeInsets.only(top: 16),
+          child: MyUniformProgramsCard(),
         ),
       ),
+      section(const CategoryTilesSection()),
+      rail(l10n.sectionRecentlyViewed, Icons.history_rounded, (r) => r.recent),
+      rail(
+        l10n.sectionFeatured,
+        Icons.bolt_rounded,
+        (r) => r.featured,
+        seeAll: CatalogSort.recommended,
+        accent: const Color(0xFFF79009),
+      ),
+      rail(
+        l10n.sectionBulkDeals,
+        Icons.local_offer_rounded,
+        (r) => r.deals,
+        seeAll: CatalogSort.bulkSaving,
+        accent: const Color(0xFFD92D20),
+      ),
+      section(DesignYourOwnBanner(onTap: _designYourOwn)),
+      rail(
+        l10n.sectionTopRated,
+        Icons.star_rounded,
+        (r) => r.topRated,
+        seeAll: CatalogSort.topRated,
+        accent: const Color(0xFFF5A623),
+      ),
+      rail(
+        l10n.sectionNewArrivals,
+        Icons.fiber_new_rounded,
+        (r) => r.newArrivals,
+        seeAll: CatalogSort.newest,
+        accent: const Color(0xFF12B76A),
+      ),
+      section(const PackagesRail()),
+      section(const SizedBox(height: 20)),
     ];
   }
 
@@ -412,6 +372,7 @@ class _CustomerCatalogScreenState extends ConsumerState<CustomerCatalogScreen> {
                 separatorBuilder: (_, _) => const SizedBox(height: 10),
                 itemBuilder: (context, i) => StaggeredEntrance(
                   index: i,
+                  id: 'list-${items[i].id}',
                   child: CatalogItemListTile(
                     item: items[i],
                     onTap: () => _open(items[i]),
@@ -462,6 +423,7 @@ class _ProductGrid extends StatelessWidget {
           delegate: SliverChildBuilderDelegate(
             (context, i) => StaggeredEntrance(
               index: i,
+              id: 'grid-${items[i].id}',
               child: CatalogItemCard(
                 item: items[i],
                 heroTag: 'catalog-item-${items[i].id}',
@@ -701,22 +663,27 @@ class _ToolbarDelegate extends SliverPersistentHeaderDelegate {
       old.padding != padding ||
       old.textScale != textScale;
 
+  // A pinned header is asked to build on every scroll frame. Handing back
+  // the same widget instance lets Flutter skip rebuilding the bar entirely.
+  late final Widget _flat = _build(false);
+  late final Widget _raised = _build(true);
+
+  Widget _build(bool raised) => SizedBox(
+    height: _height,
+    child: _Toolbar(
+      padding: padding,
+      browsing: browsing,
+      count: count,
+      raised: raised,
+    ),
+  );
+
   @override
   Widget build(
     BuildContext context,
     double shrinkOffset,
     bool overlapsContent,
-  ) {
-    return SizedBox(
-      height: _height,
-      child: _Toolbar(
-        padding: padding,
-        browsing: browsing,
-        count: count,
-        raised: overlapsContent || shrinkOffset > 0,
-      ),
-    );
-  }
+  ) => overlapsContent || shrinkOffset > 0 ? _raised : _flat;
 }
 
 class _Toolbar extends ConsumerWidget {
@@ -804,6 +771,89 @@ class _Toolbar extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Back-to-top and cart buttons. Rebuild only when the cart count or the
+/// back-to-top flag changes, never with the page.
+class _CatalogFabs extends ConsumerWidget {
+  const _CatalogFabs({required this.showBackToTop, required this.onBackToTop});
+
+  final ValueListenable<bool> showBackToTop;
+  final VoidCallback onBackToTop;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final cartCount = ref.watch(cartItemCountProvider);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        ValueListenableBuilder<bool>(
+          valueListenable: showBackToTop,
+          builder: (context, show, child) => AnimatedScale(
+            scale: show ? 1 : 0,
+            duration: const Duration(milliseconds: 180),
+            child: child,
+          ),
+          child: FloatingActionButton.small(
+            heroTag: null,
+            tooltip: l10n.backToTop,
+            onPressed: onBackToTop,
+            child: const Icon(Icons.keyboard_arrow_up_rounded),
+          ),
+        ),
+        if (cartCount > 0) ...[
+          const SizedBox(height: 10),
+          FloatingActionButton.extended(
+            heroTag: null,
+            onPressed: () => context.go('/customer/cart'),
+            icon: Badge.count(
+              count: cartCount,
+              child: const Icon(Icons.shopping_cart_rounded),
+            ),
+            label: Text(l10n.cartCount(cartCount)),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// One home rail, rebuilt only when its own items change.
+class _HomeRail extends ConsumerWidget {
+  const _HomeRail({
+    required this.title,
+    required this.icon,
+    required this.pick,
+    required this.onOpen,
+    required this.onAdd,
+    this.onSeeAll,
+    this.accent,
+  });
+
+  final String title;
+  final IconData icon;
+  final List<CatalogItem> Function(HomeRails r) pick;
+  final void Function(CatalogItem) onOpen;
+  final Future<void> Function(CatalogItem) onAdd;
+  final VoidCallback? onSeeAll;
+  final Color? accent;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final items = ref.watch(homeRailsProvider.select(pick));
+    if (items.isEmpty) return const SizedBox.shrink();
+    return ProductRail(
+      title: title,
+      icon: icon,
+      items: items,
+      accent: accent,
+      onOpen: onOpen,
+      onAdd: onAdd,
+      onSeeAll: onSeeAll,
     );
   }
 }

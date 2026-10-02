@@ -110,6 +110,7 @@ class MyOrdersScreen extends ConsumerWidget {
                       final order = filtered[index];
                       return StaggeredEntrance(
                         index: index,
+                        id: 'order-${order.id}',
                         child: OrderCard(
                           order: order,
                           onTap: () =>

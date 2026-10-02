@@ -216,6 +216,7 @@ class PackagesScreen extends ConsumerWidget {
                       final package = packages[index];
                       return StaggeredEntrance(
                         index: index,
+                        id: 'package-${package.id}',
                         child: PackageCard(
                           package: package,
                           onTap: () => _showPackageSheet(context, package),

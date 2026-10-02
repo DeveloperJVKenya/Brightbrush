@@ -54,20 +54,23 @@ class _ConnectionBannerHostState extends ConsumerState<ConnectionBannerHost> {
         if (_showBackOnline) setState(() => _showBackOnline = false);
       }
     });
-    final info = ref.watch(connectionStatusProvider);
-    appIsOffline = info.isOffline;
+    // Only what decides whether (and which) bar shows. Background checks
+    // (the "checking" spinner, latency) never rebuild the app wrapper.
+    final quality = ref.watch(
+      connectionStatusProvider.select((s) => s.quality),
+    );
+    appIsOffline = quality == NetQuality.offline;
 
     Widget? bar;
-    if (info.quality == NetQuality.offline) {
-      bar = _Bar(info: info, kind: _Kind.offline);
-    } else if (info.quality == NetQuality.weak && !_weakDismissed) {
+    if (quality == NetQuality.offline) {
+      bar = const _Bar(kind: _Kind.offline);
+    } else if (quality == NetQuality.weak && !_weakDismissed) {
       bar = _Bar(
-        info: info,
         kind: _Kind.weak,
         onDismiss: () => setState(() => _weakDismissed = true),
       );
     } else if (_showBackOnline) {
-      bar = _Bar(info: info, kind: _Kind.back);
+      bar = const _Bar(kind: _Kind.back);
     }
 
     return Column(
@@ -99,9 +102,8 @@ class _ConnectionBannerHostState extends ConsumerState<ConnectionBannerHost> {
 enum _Kind { offline, weak, back }
 
 class _Bar extends ConsumerWidget {
-  const _Bar({required this.info, required this.kind, this.onDismiss});
+  const _Bar({required this.kind, this.onDismiss});
 
-  final ConnectionInfo info;
   final _Kind kind;
   final VoidCallback? onDismiss;
 
@@ -127,6 +129,7 @@ class _Bar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final info = ref.watch(connectionStatusProvider);
     final l10n = AppLocalizations.of(context);
     final (
       Color bg,

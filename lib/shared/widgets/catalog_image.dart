@@ -25,23 +25,56 @@ class CatalogImage extends StatelessWidget {
   /// already covers it (avoids double-announcing the same text).
   final String? semanticLabel;
 
+  /// Decode widths are rounded up to these so cards of slightly different
+  /// sizes share one decoded copy in the image cache.
+  static const _decodeBuckets = [160, 240, 320, 480, 640, 960, 1280];
+
+  static int _decodeWidth(double logicalWidth, double dpr) {
+    final px = (logicalWidth * dpr).ceil();
+    for (final b in _decodeBuckets) {
+      if (px <= b) return b;
+    }
+    return _decodeBuckets.last;
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (imageUrls.isEmpty) {
+      return ClipRRect(
+        borderRadius: borderRadius,
+        child: _placeholder(context),
+      );
+    }
+    final dpr = MediaQuery.devicePixelRatioOf(context);
     return ClipRRect(
       borderRadius: borderRadius,
-      child: imageUrls.isEmpty
-          ? _placeholder(context)
-          : Image(
-              image: CachedNetworkImageProvider(imageUrls.first),
-              fit: BoxFit.cover,
-              semanticLabel: semanticLabel,
-              loadingBuilder: (context, child, progress) {
-                if (progress == null) return child;
-                return _placeholder(context, loading: true);
-              },
-              errorBuilder: (context, error, stackTrace) =>
-                  _placeholder(context),
-            ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final w = constraints.hasBoundedWidth
+              ? constraints.maxWidth
+              : (constraints.hasBoundedHeight ? constraints.maxHeight : 400.0);
+          // Decode at the size it's shown, not the photo's full size: much
+          // less decoding work and memory, so scrolling stays smooth.
+          final provider = ResizeImage(
+            CachedNetworkImageProvider(imageUrls.first),
+            width: _decodeWidth(w, dpr),
+            policy: ResizeImagePolicy.fit,
+            allowUpscaling: false,
+          );
+          return Image(
+            image: provider,
+            fit: BoxFit.cover,
+            gaplessPlayback: true,
+            filterQuality: FilterQuality.medium,
+            semanticLabel: semanticLabel,
+            frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+              if (wasSynchronouslyLoaded || frame != null) return child;
+              return _placeholder(context, loading: true);
+            },
+            errorBuilder: (context, error, stackTrace) => _placeholder(context),
+          );
+        },
+      ),
     );
   }
 

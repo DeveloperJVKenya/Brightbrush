@@ -120,7 +120,7 @@ The new rules block the old client-side order creation. Deploy in this order so 
 ```bash
 cd functions && npm install && npm test && cd ..
 npx firebase-tools deploy --only functions         # 1. backend first
-flutter build web --release
+flutter build web --wasm --release   # WebAssembly renderer where supported, JS fallback included
 npx firebase-tools deploy --only hosting           # 2. app that calls the backend
 npx firebase-tools deploy --only firestore         # 3. then lock the rules and indexes
 ```

@@ -14,7 +14,7 @@
 //    Firebase Storage photos (unique, tokened URLs): cache first.
 //  - Everything else (Firestore, Functions, Auth, reCAPTCHA, Maps) is never
 //    touched.
-const VERSION = 'bb-offline-v1';
+const VERSION = 'bb-offline-v2';
 const SHELL = VERSION + '-shell';
 const MEDIA = VERSION + '-media';
 const MAX_MEDIA = 400;
@@ -56,7 +56,9 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-const NETWORK_FIRST = /(^\/$|\/index\.html$|\/main\.dart\.js$|\/flutter_bootstrap\.js$|\/flutter\.js$|\/manifest\.json$)/;
+// The app's code (JS build and the WebAssembly build's .mjs/.wasm pair) is
+// always fetched fresh when online, so a release never mixes old and new.
+const NETWORK_FIRST = /(^\/$|\/index\.html$|\/main\.dart\.(js|mjs|wasm)$|\/flutter_bootstrap\.js$|\/flutter\.js$|\/manifest\.json$)/;
 const CDN_HOSTS = ['www.gstatic.com', 'fonts.gstatic.com', 'fonts.googleapis.com'];
 
 self.addEventListener('fetch', (event) => {
