@@ -249,7 +249,11 @@ export const backupFirestore = onSchedule(
     const v1 = mod.v1 ?? (mod as unknown as { default: typeof mod }).default.v1;
     const client = new v1.FirestoreAdminClient();
     const projectId = process.env.GCLOUD_PROJECT ?? 'bright-brush';
-    const stamp = new Date().toISOString().slice(0, 10);
+    // Nairobi date + time (02:00 Nairobi is still "yesterday" in UTC), so a
+    // manual run never collides with the nightly one.
+    const now = Date.now();
+    const hhmm = new Date(now + 3 * 3600 * 1000).toISOString().slice(11, 16).replace(':', '');
+    const stamp = `${nairobiDay(now)}-${hhmm}`;
     const [operation] = await client.exportDocuments({
       name: client.databasePath(projectId, DATABASE_ID),
       outputUriPrefix: `gs://${BACKUP_BUCKET}/${stamp}`,

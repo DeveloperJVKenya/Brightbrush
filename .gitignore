@@ -52,3 +52,6 @@ app_check_debug.json
 
 # Screenshots written by CATALOG_SHOTS=1 flutter test --update-goldens
 test/goldens/
+
+# Gradle build output
+android/build/
